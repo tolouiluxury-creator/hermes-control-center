@@ -1,0 +1,71 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Every colour in the app resolves through these variables so a
+ * theme change is a variable swap, never a component edit. Dark is the default;
+ * the light overrides mirror the same semantic names.
+ */
+@theme {
+  --color-base: #080b11;
+  --color-surface: #0d121b;
+  --color-elevated: #121926;
+  --color-hairline: #1e2836;
+  --color-hairline-strong: #2b3a4d;
+
+  --color-ink: #e6edf7;
+  --color-ink-muted: #93a3bb;
+  --color-ink-faint: #64748b;
+
+  --color-accent: #2dd4bf;
+  --color-accent-soft: #134e4a;
+  --color-agent: #a78bfa;
+  --color-ok: #34d399;
+  --color-warn: #fbbf24;
+  --color-danger: #f87171;
+  --color-info: #60a5fa;
+
+  --radius-card: 1rem;
+  --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root {
+  color-scheme: dark;
+  --glass-bg: color-mix(in oklab, var(--color-surface) 82%, transparent);
+  --glass-blur: 12px;
+  --shadow-card: 0 1px 0 0 rgb(255 255 255 / 4%) inset, 0 8px 24px -12px rgb(0 0 0 / 60%);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-base);
+  color: var(--color-ink);
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Motion is opt-out for anyone who asked the OS to reduce it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

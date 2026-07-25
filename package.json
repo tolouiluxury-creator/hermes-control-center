@@ -1,0 +1,72 @@
+{
+  "name": "hermes-control-center",
+  "version": "0.1.0",
+  "description": "Dashboard-first web control center for Hermes Agent - live widgets, metrics, chat, workflows and full agent management in your browser.",
+  "keywords": [
+    "hermes",
+    "hermes-agent",
+    "ai-agent",
+    "dashboard",
+    "control-center",
+    "self-hosted",
+    "webui"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "bin": {
+    "hermes-control-center": "dist/cli.js",
+    "hermes-cc": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,web -c cyan,magenta \"npm:dev:server\" \"npm:dev:web\"",
+    "dev:server": "tsx watch src/cli.ts --no-open",
+    "dev:web": "npm run dev --workspace web",
+    "build": "npm run build:web && npm run build:server",
+    "build:web": "npm run build --workspace web",
+    "build:server": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "doctor": "tsx src/cli.ts --doctor",
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck --workspace web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@fastify/static": "^10.1.2",
+    "cron-parser": "^5.6.2",
+    "fastify": "^5.10.0",
+    "open": "^11.0.0",
+    "picocolors": "^1.1.1",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^26.1.1",
+    "concurrently": "^10.0.4",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.7.0",
+    "prettier": "^3.9.6",
+    "tsx": "^4.23.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  }
+}
