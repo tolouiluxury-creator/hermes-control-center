@@ -3,6 +3,7 @@ import pc from 'picocolors';
 import { HELP_TEXT, OptionsError, parseOptions, type CliOptions } from './options.js';
 import { buildServer } from './server.js';
 import { createContext } from './context.js';
+import { initControlCenterConfig } from './config.js';
 import { Poller, defaultPollTasks } from './poller.js';
 import { runDoctor } from './doctor.js';
 import { findFreePort } from './util/port.js';
@@ -95,6 +96,20 @@ async function main(): Promise<void> {
     case 'version':
       process.stdout.write(`${pkg.version}\n`);
       return;
+    case 'init-config': {
+      const { path, created } = initControlCenterConfig();
+      log.plain();
+      if (created) {
+        log.ok(`Created ${path}`);
+        log.plain(
+          `     ${pc.dim('Put your API_SERVER_KEY in there as "apiKey", then run --doctor.')}`,
+        );
+      } else {
+        log.info(`${path} already exists — leaving it untouched.`);
+      }
+      log.plain();
+      return;
+    }
     case 'doctor':
       process.exitCode = await runDoctor(options);
       return;

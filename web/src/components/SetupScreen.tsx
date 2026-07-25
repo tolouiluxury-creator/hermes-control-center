@@ -31,13 +31,19 @@ function buildSteps(snapshot: StatusSnapshot): SetupStep[] {
       title: 'API-Server-Key setzen',
       done: apiServer.hasKey,
       explanation:
-        'Ohne Key bleiben Chat, Sessions und Runs gesperrt. Der Key wird aus deiner Hermes-Konfiguration ' +
-        'gelesen und verlässt den Server nie.',
-      commands: [
-        '# in ~/.hermes/.env',
-        'API_SERVER_ENABLED=true',
-        'API_SERVER_KEY=ein-langer-zufaelliger-string',
-      ],
+        !connection.configuredRemotely && connection.homeExists
+          ? 'Ohne Key bleiben Chat, Sessions und Runs gesperrt. Der Key wird aus deiner Hermes-Konfiguration ' +
+            'gelesen und verlässt den Server nie.'
+          : `Hermes läuft offenbar auf einem anderen Rechner. Trag den Key darum lokal ein — in ${connection.configPath} ` +
+            'als "apiKey". Er bleibt serverseitig und wird nie an den Browser gesendet.',
+      commands:
+        !connection.configuredRemotely && connection.homeExists
+          ? [
+              '# in ~/.hermes/.env',
+              'API_SERVER_ENABLED=true',
+              'API_SERVER_KEY=ein-langer-zufaelliger-string',
+            ]
+          : ['hermes-control-center --init-config'],
     },
     {
       id: 'api-server',

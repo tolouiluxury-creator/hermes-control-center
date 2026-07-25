@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import type { CliOptions } from '../options.js';
+import { loadControlCenterConfig, type LoadedConfig } from '../config.js';
 import { hermesHome, hermesProfileHome } from '../paths.js';
 import { asBoolean, asPort, readDotEnv } from './env.js';
 import {
@@ -12,7 +13,7 @@ import {
 } from './endpoints.js';
 
 /** Where a resolved value came from — surfaced in the UI so setup is debuggable. */
-export type ValueSource = 'flag' | 'env' | 'profile-config' | 'config' | 'default';
+export type ValueSource = 'flag' | 'env' | 'cc-config' | 'profile-config' | 'config' | 'default';
 
 export interface UpstreamTarget {
   url: string;
@@ -25,6 +26,10 @@ export interface HermesConnection {
   profile: string | null;
   /** Profile names found under <hermesHome>/profiles. */
   profiles: string[];
+  /** Path of our own config file, shown in setup guidance. */
+  configPath: string;
+  /** True when our config file supplies the connection — i.e. Hermes runs elsewhere. */
+  configuredRemotely: boolean;
   apiServer: UpstreamTarget & {
     key: string | null;
     keySource: ValueSource | null;
@@ -108,23 +113,36 @@ function listProfiles(home: string): string[] {
 export function discoverHermes(
   options: CliOptions,
   env: NodeJS.ProcessEnv = process.env,
+  loadedConfig: LoadedConfig = loadControlCenterConfig(env),
 ): HermesConnection {
   const warnings: string[] = [];
+  const fileConfig = loadedConfig.config;
   const home = hermesHome(env);
   const homeExists = existsSync(home);
 
-  if (!homeExists) {
+  // A config file that supplies the connection details is the normal shape for a
+  // remote Hermes (SSH tunnel, VPN), where no local ~/.hermes exists at all.
+  const configuredRemotely = Boolean(
+    fileConfig.apiKey ?? fileConfig.hermesApiUrl ?? fileConfig.hermesDashboardUrl,
+  );
+
+  warnings.push(...loadedConfig.notes);
+
+  if (!homeExists && !configuredRemotely) {
     warnings.push(
-      `Hermes home not found at ${home}. Set HERMES_HOME if your installation lives elsewhere.`,
+      `Hermes home not found at ${home}. Set HERMES_HOME if your installation lives elsewhere, ` +
+        `or put the connection details in ${loadedConfig.path} for a remote Hermes.`,
     );
   }
+
+  const profile = options.profile ?? fileConfig.profile ?? null;
 
   const rootEnv = readDotEnv(join(home, '.env'));
   const rootConfig = readConfigYaml(home, warnings);
 
-  const profileDir = options.profile ? hermesProfileHome(options.profile, env) : null;
-  if (profileDir && !existsSync(profileDir)) {
-    warnings.push(`Profile "${options.profile}" not found at ${profileDir}.`);
+  const profileDir = profile ? hermesProfileHome(profile, env) : null;
+  if (profileDir && !existsSync(profileDir) && homeExists) {
+    warnings.push(`Profile "${profile}" not found at ${profileDir}.`);
   }
   const profileEnv = profileDir ? readDotEnv(join(profileDir, '.env')) : {};
   const profileConfig = profileDir ? readConfigYaml(profileDir, warnings) : {};
@@ -139,6 +157,9 @@ export function discoverHermes(
   if (options.hermesApiUrl) {
     apiUrl = options.hermesApiUrl;
     apiSource = 'flag';
+  } else if (fileConfig.hermesApiUrl) {
+    apiUrl = fileConfig.hermesApiUrl.replace(/\/+$/, '');
+    apiSource = 'cc-config';
   } else {
     const portFromProfileEnv = asPort(profileEnv.API_SERVER_PORT);
     const portFromRootEnv = asPort(rootEnv.API_SERVER_PORT ?? env.API_SERVER_PORT);
@@ -188,6 +209,9 @@ export function discoverHermes(
   if (options.apiKey) {
     key = options.apiKey;
     keySource = 'flag';
+  } else if (fileConfig.apiKey) {
+    key = fileConfig.apiKey;
+    keySource = 'cc-config';
   } else if (asNonEmptyString(profileEnv.API_SERVER_KEY)) {
     key = asNonEmptyString(profileEnv.API_SERVER_KEY);
     keySource = 'profile-config';
@@ -216,7 +240,8 @@ export function discoverHermes(
   }
   if (!key) {
     warnings.push(
-      'No API_SERVER_KEY found. Set it in ~/.hermes/.env (or pass --api-key) to reach the Hermes API server.',
+      `No API_SERVER_KEY found. Put it in ${loadedConfig.path} as "apiKey", or in ~/.hermes/.env, ` +
+        'to reach the Hermes API server.',
     );
   }
 
@@ -227,6 +252,9 @@ export function discoverHermes(
   if (options.hermesDashboardUrl) {
     dashboardUrl = options.hermesDashboardUrl;
     dashboardSource = 'flag';
+  } else if (fileConfig.hermesDashboardUrl) {
+    dashboardUrl = fileConfig.hermesDashboardUrl.replace(/\/+$/, '');
+    dashboardSource = 'cc-config';
   } else {
     const port = asPort(env.HERMES_DASHBOARD_PORT);
     const host = asNonEmptyString(env.HERMES_DASHBOARD_HOST);
@@ -242,8 +270,10 @@ export function discoverHermes(
   return {
     hermesHome: home,
     homeExists,
-    profile: options.profile,
+    profile,
     profiles: listProfiles(home),
+    configPath: loadedConfig.path,
+    configuredRemotely,
     apiServer: { url: apiUrl, source: apiSource, key, keySource, enabled },
     dashboard: { url: dashboardUrl, source: dashboardSource },
     warnings,
@@ -256,6 +286,8 @@ export interface PublicHermesConnection {
   homeExists: boolean;
   profile: string | null;
   profiles: string[];
+  configPath: string;
+  configuredRemotely: boolean;
   apiServer: {
     url: string;
     source: ValueSource;
@@ -273,6 +305,8 @@ export function toPublicConnection(connection: HermesConnection): PublicHermesCo
     homeExists: connection.homeExists,
     profile: connection.profile,
     profiles: connection.profiles,
+    configPath: connection.configPath,
+    configuredRemotely: connection.configuredRemotely,
     apiServer: {
       url: connection.apiServer.url,
       source: connection.apiServer.source,

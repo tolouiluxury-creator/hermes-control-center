@@ -4,7 +4,7 @@
  * reviewable in one place; the shared shapes are small and change rarely.
  */
 
-export type ValueSource = 'flag' | 'env' | 'profile-config' | 'config' | 'default';
+export type ValueSource = 'flag' | 'env' | 'cc-config' | 'profile-config' | 'config' | 'default';
 
 export interface UpstreamTarget {
   url: string;
@@ -16,6 +16,8 @@ export interface PublicHermesConnection {
   homeExists: boolean;
   profile: string | null;
   profiles: string[];
+  configPath: string;
+  configuredRemotely: boolean;
   apiServer: {
     url: string;
     source: ValueSource;

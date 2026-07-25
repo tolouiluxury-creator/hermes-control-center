@@ -52,7 +52,7 @@ export function createContext(
     new HermesClient({
       name: 'dashboard',
       baseUrl: connection.dashboard.url,
-      profile: options.profile,
+      profile: connection.profile,
       defaultTimeoutMs: 15_000,
     }),
   );

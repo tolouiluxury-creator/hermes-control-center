@@ -64,6 +64,8 @@ function describeSource(source: ValueSource | null): string {
       return 'from command line';
     case 'env':
       return 'from environment';
+    case 'cc-config':
+      return 'from control center config';
     case 'profile-config':
       return 'from profile config';
     case 'config':
@@ -85,9 +87,13 @@ export async function runDoctor(options: CliOptions): Promise<number> {
 
   if (connection.homeExists) {
     log.ok(`Hermes home: ${connection.hermesHome}`);
+  } else if (connection.configuredRemotely) {
+    // Expected for a remote agent reached over an SSH tunnel or a VPN.
+    log.info(`No local Hermes home — using the connection from ${connection.configPath}`);
   } else {
     log.error(`Hermes home not found: ${connection.hermesHome}`);
-    log.plain(`     ${pc.dim('Set HERMES_HOME if your installation lives elsewhere.')}`);
+    log.plain(`     ${pc.dim('Set HERMES_HOME if your installation lives elsewhere,')}`);
+    log.plain(`     ${pc.dim('or run --init-config for a Hermes on another machine.')}`);
   }
   log.ok(`Control center state: ${controlCenterHome()}`);
 
@@ -123,6 +129,11 @@ export async function runDoctor(options: CliOptions): Promise<number> {
   );
   log.plain();
 
+  for (const warning of connection.warnings) {
+    if (!warning.includes('Hermes home not found')) log.warn(warning);
+  }
+  if (connection.warnings.length > 0) log.plain();
+
   const results = await probeUpstreams(connection);
   for (const result of results) {
     if (result.reachable) {
@@ -143,9 +154,15 @@ export async function runDoctor(options: CliOptions): Promise<number> {
     return 0;
   }
 
-  if (keyMissing && failures.length === 0) {
-    log.warn('Both surfaces respond, but no API key was found — chat and sessions stay locked.');
+  if (keyMissing) {
+    log.warn('No API key found — chat, sessions and runs stay locked.');
+    log.plain(`     ${pc.dim(`Set "apiKey" in ${connection.configPath}`)}`);
+    log.plain(`     ${pc.dim('to the value of API_SERVER_KEY from your Hermes installation.')}`);
+    log.plain(`     ${pc.dim('Run --init-config first if that file does not exist yet.')}`);
     log.plain();
+  }
+
+  if (keyMissing && failures.length === 0) {
     return 1;
   }
 

@@ -10,7 +10,7 @@ export interface CliOptions {
   hermesDashboardUrl: string | null;
   apiKey: string | null;
   logLevel: LogLevel;
-  mode: 'serve' | 'doctor' | 'help' | 'version';
+  mode: 'serve' | 'doctor' | 'init-config' | 'help' | 'version';
 }
 
 export const DEFAULT_PORT = 7777;
@@ -74,6 +74,7 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
         'api-key': { type: 'string' },
         'log-level': { type: 'string' },
         doctor: { type: 'boolean' },
+        'init-config': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
       },
@@ -88,9 +89,11 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
     ? 'help'
     : values.version
       ? 'version'
-      : values.doctor
-        ? 'doctor'
-        : 'serve';
+      : values['init-config']
+        ? 'init-config'
+        : values.doctor
+          ? 'doctor'
+          : 'serve';
 
   const port =
     toPort(values.port, '--port') ?? toPort(env.HERMES_CC_PORT, 'HERMES_CC_PORT') ?? DEFAULT_PORT;
@@ -132,6 +135,7 @@ export const HELP_TEXT = `
     --api-key <key>          Hermes API_SERVER_KEY (auto-detected from ~/.hermes/.env)
     --log-level <level>      debug | info | warn | error (default info)
     --doctor                 Check the Hermes connection and exit
+    --init-config            Create ~/.hermes-cc/config.json (for a remote Hermes) and exit
     -h, --help               Show this help
     -v, --version            Show version
 
