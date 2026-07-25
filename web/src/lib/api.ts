@@ -1,4 +1,5 @@
 import type { Meta, MetricSeries, PublicHermesConnection, StatusSnapshot } from './types';
+import type { DashboardLayout } from '@/widgets/types';
 
 /**
  * Thin fetch wrapper for the control-center backend. The backend is the only
@@ -62,6 +63,19 @@ export const login = (password: string): Promise<{ ok: boolean }> =>
 export const logout = (): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/auth/logout', { method: 'POST' });
 
+export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
+  apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
+
+export const saveDashboardLayout = (layout: DashboardLayout): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/dashboard/layout', {
+    method: 'PUT',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(layout),
+  });
+
+export const resetDashboardLayout = (): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/dashboard/layout', { method: 'DELETE' });
+
 export const getStatus = (fresh = false): Promise<StatusSnapshot> =>
   apiRequest<StatusSnapshot>(`/status${fresh ? '?fresh=1' : ''}`);
 
@@ -78,6 +92,7 @@ export const getMetricSeries = (metric: string, windowMs?: number): Promise<Metr
 export const queryKeys = {
   meta: ['meta'] as const,
   auth: ['auth'] as const,
+  dashboardLayout: ['dashboard', 'layout'] as const,
   status: ['status'] as const,
   connection: ['connection'] as const,
   metricSeries: (metric: string) => ['metrics', 'series', metric] as const,

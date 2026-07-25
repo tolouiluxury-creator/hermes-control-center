@@ -231,6 +231,49 @@ body {
 }
 
 /*
+ * Grid layout skin. The library ships positioning only; everything visible here
+ * is ours, so the grid matches the rest of the surface instead of looking bolted on.
+ */
+.react-grid-item.react-grid-placeholder {
+  background: var(--color-accent);
+  opacity: 0.14;
+  border-radius: var(--radius-card);
+  transition-duration: var(--duration-fast);
+}
+
+.react-grid-item.react-draggable-dragging {
+  z-index: 3;
+  cursor: grabbing;
+}
+
+.react-grid-item > .react-resizable-handle {
+  width: 18px;
+  height: 18px;
+  right: 2px;
+  bottom: 2px;
+  cursor: se-resize;
+  opacity: 0.5;
+  transition: opacity var(--duration-fast) var(--ease-ui);
+}
+
+.react-grid-item > .react-resizable-handle:hover {
+  opacity: 1;
+}
+
+/* The library's default handle is a background image; draw ours instead. */
+.react-grid-item > .react-resizable-handle::after {
+  content: '';
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-ink-faint);
+  border-bottom: 2px solid var(--color-ink-faint);
+  border-bottom-right-radius: 2px;
+}
+
+/*
  * Motion is opt-out for anyone who asked the OS to reduce it. The skeleton keeps
  * a static gradient rather than disappearing, so loading is still legible.
  */

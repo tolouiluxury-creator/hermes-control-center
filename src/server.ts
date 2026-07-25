@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import { resolveSpaRequest } from './util/spa.js';
 import type { AppContext } from './context.js';
 import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
+import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerMetaRoutes } from './routes/meta.js';
 import { registerStatusRoutes } from './routes/status.js';
 import { registerStreamRoutes } from './routes/stream.js';
@@ -72,6 +73,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
 
   await registerMetaRoutes(app, ctx.options);
   await registerStatusRoutes(app, ctx);
+  await registerDashboardRoutes(app, ctx);
   await registerStreamRoutes(app, ctx);
 
   const webRoot = resolveWebRoot();
