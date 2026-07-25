@@ -1,38 +1,140 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens. Every colour in the app resolves through these variables so a
- * theme change is a variable swap, never a component edit. Dark is the default;
- * the light overrides mirror the same semantic names.
+ * Design tokens.
+ *
+ * Every colour, radius and duration in the app resolves through a variable, so
+ * a theme change is a variable swap and never a component edit. Dark is the
+ * default because that is what the control center is designed around; the light
+ * theme mirrors the same semantic names rather than inverting values blindly.
+ *
+ * Naming is by role, not by appearance: `--color-ink-muted`, not `--color-grey`.
+ * A component that reaches for a raw hex is a bug.
  */
 @theme {
+  /* Surfaces, from furthest back to nearest the reader. */
   --color-base: #080b11;
   --color-surface: #0d121b;
   --color-elevated: #121926;
+  --color-raised: #18212f;
   --color-hairline: #1e2836;
   --color-hairline-strong: #2b3a4d;
 
+  /* Text. Three weights carry the whole hierarchy. */
   --color-ink: #e6edf7;
   --color-ink-muted: #93a3bb;
   --color-ink-faint: #64748b;
 
+  /* Accents. `accent` is the product colour; `agent` marks anything the agent
+     itself produced, so a user can always tell the two apart. */
   --color-accent: #2dd4bf;
+  --color-accent-strong: #5eead4;
   --color-accent-soft: #134e4a;
   --color-agent: #a78bfa;
+  --color-agent-soft: #3b2f63;
+
+  /* Status. Never used alone — always paired with a label or icon, so the
+     information survives for anyone who cannot separate these hues. */
   --color-ok: #34d399;
   --color-warn: #fbbf24;
   --color-danger: #f87171;
   --color-info: #60a5fa;
 
   --radius-card: 1rem;
+  --radius-control: 0.75rem;
+
+  /* One easing for everything that moves, so the app has a single feel. */
   --ease-ui: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --duration-instant: 90ms;
+  --duration-fast: 140ms;
+  --duration-slow: 240ms;
+
+  /* Layer order, declared once so no component invents its own z-index. */
+  --z-sidebar: 30;
+  --z-topbar: 40;
+  --z-overlay: 60;
+  --z-toast: 70;
 }
 
 :root {
   color-scheme: dark;
+
   --glass-bg: color-mix(in oklab, var(--color-surface) 82%, transparent);
   --glass-blur: 12px;
   --shadow-card: 0 1px 0 0 rgb(255 255 255 / 4%) inset, 0 8px 24px -12px rgb(0 0 0 / 60%);
+  --shadow-overlay: 0 24px 60px -20px rgb(0 0 0 / 70%);
+  --focus-ring: 0 0 0 2px var(--color-base), 0 0 0 4px var(--color-accent);
+
+  --sidebar-width: 15rem;
+  --sidebar-width-collapsed: 3.75rem;
+  --topbar-height: 3.5rem;
+}
+
+/*
+ * Light theme. Applied when the user picks it, or when the OS asks for light and
+ * the user has expressed no preference of their own.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme='dark']) {
+    color-scheme: light;
+
+    --color-base: #f6f8fb;
+    --color-surface: #ffffff;
+    --color-elevated: #ffffff;
+    --color-raised: #f1f5f9;
+    --color-hairline: #e2e8f0;
+    --color-hairline-strong: #cbd5e1;
+
+    --color-ink: #0f172a;
+    --color-ink-muted: #475569;
+    --color-ink-faint: #64748b;
+
+    --color-accent: #0d9488;
+    --color-accent-strong: #0f766e;
+    --color-accent-soft: #ccfbf1;
+    --color-agent: #7c3aed;
+    --color-agent-soft: #ede9fe;
+
+    --color-ok: #059669;
+    --color-warn: #b45309;
+    --color-danger: #dc2626;
+    --color-info: #2563eb;
+
+    --glass-bg: color-mix(in oklab, var(--color-surface) 88%, transparent);
+    --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 6%), 0 8px 24px -16px rgb(15 23 42 / 24%);
+    --shadow-overlay: 0 24px 60px -20px rgb(15 23 42 / 25%);
+  }
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-base: #f6f8fb;
+  --color-surface: #ffffff;
+  --color-elevated: #ffffff;
+  --color-raised: #f1f5f9;
+  --color-hairline: #e2e8f0;
+  --color-hairline-strong: #cbd5e1;
+
+  --color-ink: #0f172a;
+  --color-ink-muted: #475569;
+  --color-ink-faint: #64748b;
+
+  --color-accent: #0d9488;
+  --color-accent-strong: #0f766e;
+  --color-accent-soft: #ccfbf1;
+  --color-agent: #7c3aed;
+  --color-agent-soft: #ede9fe;
+
+  --color-ok: #059669;
+  --color-warn: #b45309;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+
+  --glass-bg: color-mix(in oklab, var(--color-surface) 88%, transparent);
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 6%), 0 8px 24px -16px rgb(15 23 42 / 24%);
+  --shadow-overlay: 0 24px 60px -20px rgb(15 23 42 / 25%);
 }
 
 html,
@@ -58,7 +160,80 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Motion is opt-out for anyone who asked the OS to reduce it. */
+/*
+ * One focus style for the whole app. Visible against every surface, and only
+ * shown for keyboard navigation so pointer users are not shouted at.
+ */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 0.5rem;
+}
+
+/* Scrollbars that do not fight the dark surfaces. */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-hairline-strong) transparent;
+  }
+}
+
+@utility card {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Placeholder shown while data loads. Conveys shape, never fake content. */
+@utility skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-raised) 25%,
+    var(--color-hairline) 37%,
+    var(--color-raised) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Motion is opt-out for anyone who asked the OS to reduce it. The skeleton keeps
+ * a static gradient rather than disappearing, so loading is still legible.
+ */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

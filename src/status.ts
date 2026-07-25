@@ -138,7 +138,11 @@ export async function buildStatusSnapshot(sources: StatusSources): Promise<Statu
       dashboardStatus.value ? normalizeComponentChecks(dashboardStatus.value) : [],
       healthDetailed.value ? normalizeReadinessChecks(healthDetailed.value) : [],
     ),
-    setupRequired: !apiReachable || !dashboardReachable || !api.hasKey,
+    // Only the dashboard is load-bearing: it supplies status, metrics, skills,
+    // MCP, cron and logs. A missing API server costs chat and runs, which is a
+    // banner on an otherwise working cockpit — not a wall in front of it. Many
+    // installations deliberately leave the API server switched off.
+    setupRequired: !dashboardReachable,
     connection,
   };
 }

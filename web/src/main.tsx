@@ -3,7 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from '@/App';
 import { ApiError, queryKeys } from '@/lib/api';
+import { initTheme } from '@/lib/theme';
 import '@/styles/app.css';
+
+// Before the first render, so no frame flashes in the wrong theme.
+initTheme();
 
 /**
  * A 401 anywhere means the session ended (expired, or the password was changed).
