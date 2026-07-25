@@ -132,6 +132,41 @@ export interface ReadinessCheck {
   detail: string | null;
 }
 
+const OK_WORDS = ['ok', 'healthy', 'pass', 'up', 'ready', 'true', 'running'];
+const FAIL_WORDS = ['fail', 'failed', 'error', 'down', 'unhealthy', 'false'];
+
+/**
+ * Reads one check's verdict. Anything not clearly good or bad — "degraded",
+ * "unknown" — stays null and renders as a warning rather than a false all-clear.
+ */
+export function readCheckStatus(value: unknown): { ok: boolean | null; detail: string | null } {
+  if (typeof value === 'boolean') return { ok: value, detail: null };
+
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    const ok = OK_WORDS.includes(normalized)
+      ? true
+      : FAIL_WORDS.includes(normalized)
+        ? false
+        : null;
+    return { ok, detail: value };
+  }
+
+  const entry = record(value);
+  if (entry) {
+    const nested = readCheckStatus(entry.status ?? entry.ok ?? entry.healthy);
+    const detail =
+      typeof entry.detail === 'string'
+        ? entry.detail
+        : typeof entry.message === 'string'
+          ? entry.message
+          : nested.detail;
+    return { ok: nested.ok, detail };
+  }
+
+  return { ok: null, detail: null };
+}
+
 /**
  * `/health/detailed` reports checks either as an object keyed by name or as an
  * array of entries. Both collapse to a sorted list.
@@ -139,31 +174,7 @@ export interface ReadinessCheck {
 export function normalizeReadinessChecks(raw: HealthDetailed): ReadinessCheck[] {
   const container = raw.readiness?.checks ?? raw.checks;
   const checks: ReadinessCheck[] = [];
-
-  const readStatus = (value: unknown): { ok: boolean | null; detail: string | null } => {
-    if (typeof value === 'boolean') return { ok: value, detail: null };
-    if (typeof value === 'string') {
-      const normalized = value.toLowerCase();
-      const ok = ['ok', 'healthy', 'pass', 'up', 'ready', 'true'].includes(normalized)
-        ? true
-        : ['fail', 'failed', 'error', 'down', 'unhealthy', 'false'].includes(normalized)
-          ? false
-          : null;
-      return { ok, detail: value };
-    }
-    const entry = record(value);
-    if (entry) {
-      const nested = readStatus(entry.status ?? entry.ok ?? entry.healthy);
-      const detail =
-        typeof entry.detail === 'string'
-          ? entry.detail
-          : typeof entry.message === 'string'
-            ? entry.message
-            : nested.detail;
-      return { ok: nested.ok, detail };
-    }
-    return { ok: null, detail: null };
-  };
+  const readStatus = readCheckStatus;
 
   if (Array.isArray(container)) {
     for (const item of container) {
@@ -190,8 +201,16 @@ export function normalizeReadinessChecks(raw: HealthDetailed): ReadinessCheck[] 
 export interface AgentSummary {
   version: string | null;
   gatewayRunning: boolean | null;
+  /** Free-text state such as "stopped"; more informative than the boolean. */
+  gatewayState: string | null;
+  gatewayExitReason: string | null;
   activeSessions: number | null;
+  activeAgents: number | null;
   profile: string | null;
+  profiles: string[];
+  /** Aggregate verdict the dashboard computes over its components. */
+  overall: string | null;
+  hermesHome: string | null;
 }
 
 export function normalizeDashboardStatus(raw: DashboardStatus): AgentSummary {
@@ -205,10 +224,58 @@ export function normalizeDashboardStatus(raw: DashboardStatus): AgentSummary {
           ? ['running', 'ok', 'up', 'online'].includes(gateway.status.toLowerCase())
           : null;
 
+  // 0.19 dropped the single `profile` field in favour of a list plus a separate
+  // active-profile endpoint, so fall back to the sole entry when there is one.
+  const profiles = raw.profiles ?? [];
+  const profile = raw.profile ?? (profiles.length === 1 ? (profiles[0] ?? null) : null);
+
   return {
     version: raw.version ?? raw.hermes_version ?? null,
     gatewayRunning,
+    gatewayState: raw.gateway_state ?? null,
+    gatewayExitReason: raw.gateway_exit_reason ?? null,
     activeSessions: toNumber(raw.active_sessions),
-    profile: raw.profile ?? null,
+    activeAgents: toNumber(raw.active_agents),
+    profile,
+    profiles,
+    overall: raw.overall ?? null,
+    hermesHome: raw.hermes_home ?? null,
   };
+}
+
+/**
+ * Readiness from the dashboard's own `components` map, which is available
+ * without the API server running — unlike `/health/detailed`. Entries look like
+ * `{ gateway: { status: "degraded", state: "stopped" } }`, and any extra field
+ * beyond `status` becomes the detail line.
+ */
+export function normalizeComponentChecks(raw: DashboardStatus): ReadinessCheck[] {
+  const components = record(raw.components);
+  if (!components) return [];
+
+  const checks: ReadinessCheck[] = [];
+
+  for (const [name, value] of Object.entries(components)) {
+    const entry = record(value);
+    const status = entry ? entry.status : value;
+    const { ok } = readCheckStatus(status);
+
+    let detail: string | null = null;
+    if (entry) {
+      const extras = Object.entries(entry)
+        .filter(([key, item]) => key !== 'status' && item !== null && item !== 0)
+        .map(([key, item]) => `${key}: ${String(item)}`);
+      detail = extras.length > 0 ? extras.join(', ') : (toDisplayString(status) ?? null);
+    } else {
+      detail = toDisplayString(status) ?? null;
+    }
+
+    checks.push({ name, ok, detail });
+  }
+
+  return checks.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function toDisplayString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
 }

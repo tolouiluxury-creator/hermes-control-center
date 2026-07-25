@@ -53,8 +53,14 @@ export interface HostMetrics {
 export interface AgentSummary {
   version: string | null;
   gatewayRunning: boolean | null;
+  gatewayState: string | null;
+  gatewayExitReason: string | null;
   activeSessions: number | null;
+  activeAgents: number | null;
   profile: string | null;
+  profiles: string[];
+  overall: string | null;
+  hermesHome: string | null;
 }
 
 export interface ReadinessCheck {

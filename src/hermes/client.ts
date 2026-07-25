@@ -1,5 +1,6 @@
 import type { ZodType } from 'zod';
 import { describeError } from '../log.js';
+import type { TokenProvider } from './sessionToken.js';
 
 export type UpstreamName = 'api-server' | 'dashboard';
 
@@ -73,6 +74,11 @@ export interface HermesClientConfig {
   /** Appended as ?profile= to dashboard requests. */
   profile?: string | null;
   defaultTimeoutMs?: number;
+  /**
+   * Supplies a bearer token that can expire — the dashboard's session token.
+   * Takes precedence over apiKey, and a 401 triggers one refresh and retry.
+   */
+  tokenProvider?: TokenProvider;
 }
 
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -102,14 +108,16 @@ export class HermesClient {
     return url.toString();
   }
 
-  private headers(options: RequestOptions): Record<string, string> {
+  private async headers(options: RequestOptions): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       accept: 'application/json',
       ...options.headers,
     };
     if (options.body !== undefined) headers['content-type'] = 'application/json';
-    if (options.auth !== false && this.config.apiKey) {
-      headers.authorization = `Bearer ${this.config.apiKey}`;
+
+    if (options.auth !== false) {
+      const token = (await this.config.tokenProvider?.get()) ?? this.config.apiKey;
+      if (token) headers.authorization = `Bearer ${token}`;
     }
     return headers;
   }
@@ -125,7 +133,7 @@ export class HermesClient {
     try {
       return await fetch(url, {
         method: options.method ?? 'GET',
-        headers: this.headers(options),
+        headers: await this.headers(options),
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: AbortSignal.any(signals),
       });
@@ -149,7 +157,14 @@ export class HermesClient {
 
   /** Request + validate. Throws UpstreamError for every failure mode. */
   async json<T>(schema: ZodType<T>, path: string, options: RequestOptions = {}): Promise<T> {
-    const response = await this.fetch(path, options);
+    let response = await this.fetch(path, options);
+
+    // A rotating token (the dashboard mints a new one on every restart) shows up
+    // as a sudden 401. Refresh once and retry, so a restart heals itself.
+    if (response.status === 401 && this.config.tokenProvider && options.auth !== false) {
+      this.config.tokenProvider.invalidate();
+      response = await this.fetch(path, options);
+    }
 
     if (!response.ok) {
       const detail = await this.readErrorDetail(response);

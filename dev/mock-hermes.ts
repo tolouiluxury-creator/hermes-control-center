@@ -1,14 +1,19 @@
 /**
  * Development fixture: a fake Hermes Agent.
  *
- * It serves both HTTP surfaces the control center talks to, with payload shapes
- * taken from the official Hermes documentation, so the UI and the upstream
- * clients can be developed and tested without a real agent installed.
+ * It serves both HTTP surfaces the control center talks to, so the UI and the
+ * upstream clients can be developed and tested without a real agent installed.
  *
  *   node --experimental-strip-types dev/mock-hermes.ts     (or: npm run mock:hermes)
  *
+ * Payload shapes are copied from a real Hermes 0.19.0, not from the docs — the
+ * two differ. In particular the dashboard guards its API with a session token
+ * injected into the HTML shell, which the mock reproduces so the bootstrap path
+ * is exercised locally rather than only against a live server.
+ *
  * This file is NOT part of the published package.
  */
+import { randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 
 const API_PORT = Number(process.env.MOCK_API_PORT ?? 8642);
@@ -115,34 +120,106 @@ const apiRoutes: Record<string, Handler> = {
 // Dashboard backend (default :9119)
 // --------------------------------------------------------------------------
 
+/**
+ * Regenerated on every mock start, exactly like the real dashboard does — that
+ * is what makes a stale token a realistic failure to develop against.
+ */
+const SESSION_TOKEN = randomBytes(32).toString('base64url');
+
+const DASHBOARD_SHELL = `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hermes Agent - Dashboard</title>
+<script>window.__HERMES_SESSION_TOKEN__="${SESSION_TOKEN}";window.__HERMES_BASE_PATH__="";window.__HERMES_AUTH_REQUIRED__=false;</script>
+</head><body><div id="root">Mock dashboard</div></body></html>`;
+
+/** The dashboard accepts its session token as a bearer or a custom header. */
+function dashboardAuthorized(request: IncomingMessage): boolean {
+  const header = request.headers.authorization;
+  if (header === `Bearer ${SESSION_TOKEN}`) return true;
+  return request.headers['x-hermes-session-token'] === SESSION_TOKEN;
+}
+
+function guarded(handler: Handler): Handler {
+  return (request, response, url) => {
+    if (!dashboardAuthorized(request)) {
+      return json(response, 401, { detail: 'Unauthorized' });
+    }
+    return handler(request, response, url);
+  };
+}
+
 const dashboardRoutes: Record<string, Handler> = {
+  'GET /': (_request, response) => {
+    response.writeHead(200, {
+      'content-type': 'text/html; charset=utf-8',
+      'cache-control': 'no-store',
+    });
+    response.end(DASHBOARD_SHELL);
+  },
+
+  // Open without a token, exactly like the real dashboard: this is what the
+  // reachability probe uses.
   'GET /api/status': (_request, response, url) =>
     json(response, 200, {
-      version: '0.7.4',
-      profile: url.searchParams.get('profile') ?? 'default',
-      gateway: { running: true, status: 'running', pid: 4242 },
-      platforms: {
-        telegram: { enabled: true, connected: true },
-        discord: { enabled: true, connected: true },
-        slack: { enabled: false, connected: false },
-      },
+      version: '0.19.0',
+      release_date: '2026.7.20',
+      config_version: 33,
+      latest_config_version: 33,
+      gateway_running: true,
+      gateway_state: 'running',
+      gateway_exit_reason: null,
+      gateway_platforms: {},
+      active_agents: 0,
       active_sessions: 3,
-      model: { provider: 'nous-portal', name: 'Hermes-4-405B' },
+      auth_required: false,
+      components: {
+        gateway: { status: 'ok', state: 'running' },
+        dashboard: { status: 'ok', recent_unhandled_errors: 0, selftest: 'ok' },
+        storage: { status: 'ok' },
+        platforms: { status: 'ok', configured: 2, connected: 2 },
+      },
+      overall: 'ok',
+      profiles: url.searchParams.get('profile')
+        ? [url.searchParams.get('profile') as string]
+        : ['default', 'sunrise'],
+      hermes_home: '/root/.hermes',
+      config_path: '/root/.hermes/config.yaml',
+      env_path: '/root/.hermes/.env',
     }),
 
-  'GET /api/system/stats': (_request, response) =>
+  'GET /api/system/stats': guarded((_request, response) => {
+    const memoryTotal = 8_267_022_336;
+    const memoryPercent = wobble(41, 8, 90_000);
+    return json(response, 200, {
+      os: 'Linux',
+      os_release: '6.8.0-136-generic',
+      arch: 'x86_64',
+      hostname: 'mock-host',
+      hermes_version: '0.19.0',
+      cpu_count: 6,
+      cpu_percent: wobble(17, 12, 60_000),
+      memory: {
+        total: memoryTotal,
+        available: Math.round(memoryTotal * (1 - memoryPercent / 100)),
+        used: Math.round(memoryTotal * (memoryPercent / 100)),
+        percent: memoryPercent,
+      },
+      disk: { total: 248_505_155_584, used: 19_128_717_312, free: 229_376_438_272, percent: 7.7 },
+      load_avg: [0.21, 0.2, 0.18],
+      uptime_seconds: Math.round((Date.now() - startedAt) / 1000) + 610_000,
+      process: { pid: process.pid, rss: 302_407_680, num_threads: 11 },
+      psutil: true,
+    });
+  }),
+
+  'GET /api/sessions/stats': guarded((_request, response) =>
     json(response, 200, {
-      os: 'Ubuntu 24.04 LTS',
-      cpu_percent: wobble(23, 12, 60_000),
-      cpu_count: 12,
-      memory_percent: wobble(46, 8, 90_000),
-      memory_total: 34_359_738_368,
-      memory_used: Math.round(34_359_738_368 * (wobble(46, 8, 90_000) / 100)),
-      disk_percent: 62,
-      disk_total: 2_199_023_255_552,
-      disk_used: 1_363_396_418_437,
-      uptime_seconds: Math.round((Date.now() - startedAt) / 1000) + 453_600,
+      total: 57,
+      active_store: 57,
+      archived: 0,
+      messages: 3287,
+      by_source: { cli: 21, webui: 14, cron: 10, telegram: 1 },
     }),
+  ),
 };
 
 // --------------------------------------------------------------------------
@@ -174,5 +251,6 @@ makeServer('api      ', apiRoutes).listen(API_PORT, '127.0.0.1', () => {
 });
 
 makeServer('dashboard', dashboardRoutes).listen(DASHBOARD_PORT, '127.0.0.1', () => {
-  process.stdout.write(`Mock Hermes dashboard    http://127.0.0.1:${DASHBOARD_PORT}\n\n`);
+  process.stdout.write(`Mock Hermes dashboard    http://127.0.0.1:${DASHBOARD_PORT}\n`);
+  process.stdout.write(`  session token served in the HTML shell at /\n\n`);
 });

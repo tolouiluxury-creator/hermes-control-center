@@ -1,6 +1,7 @@
 import type { CliOptions } from './options.js';
 import { loadControlCenterConfig } from './config.js';
 import { AuthService } from './auth/service.js';
+import { DashboardSessionToken } from './hermes/sessionToken.js';
 import { controlCenterDatabasePath } from './paths.js';
 import { discoverHermes, toPublicConnection, type HermesConnection } from './hermes/discovery.js';
 import { HermesClient } from './hermes/client.js';
@@ -60,6 +61,10 @@ export function createContext(
       name: 'dashboard',
       baseUrl: connection.dashboard.url,
       profile: connection.profile,
+      // The dashboard guards its API with a session token embedded in its HTML.
+      tokenProvider: new DashboardSessionToken(connection.dashboard.url, {
+        onWarn: (message) => log.warn(message),
+      }),
       defaultTimeoutMs: 15_000,
     }),
   );

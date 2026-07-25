@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   normalizeDashboardStatus,
+  normalizeComponentChecks,
   normalizeReadinessChecks,
   normalizeSystemStats,
   toNumber,
@@ -88,6 +89,108 @@ describe('normalizeSystemStats', () => {
     expect(result.memoryPercent).toBe(0);
     expect(result.diskPercent).toBeNull();
     expect(result.uptimeSeconds).toBeNull();
+  });
+});
+
+/**
+ * Captured verbatim from Hermes 0.19.0 (`GET /api/status`). Keeping the real
+ * shape here is what stops the normalisers from drifting back towards the
+ * documented-but-wrong payloads they were first written against.
+ */
+const REAL_STATUS_019 = {
+  version: '0.19.0',
+  release_date: '2026.7.20',
+  config_version: 33,
+  latest_config_version: 33,
+  can_update_hermes: true,
+  gateway_running: true,
+  gateway_state: 'running',
+  gateway_platforms: {},
+  gateway_exit_reason: null,
+  active_agents: 0,
+  gateway_busy: false,
+  active_sessions: 0,
+  auth_required: false,
+  components: {
+    gateway: { status: 'ok', state: 'running' },
+    dashboard: { status: 'ok', recent_unhandled_errors: 0, last_error_at: null, selftest: 'ok' },
+    storage: { status: 'ok' },
+    platforms: { status: 'ok', configured: 1, connected: 1 },
+  },
+  overall: 'ok',
+  profiles: ['default', 'sunrise'],
+  hermes_home: '/root/.hermes',
+  config_path: '/root/.hermes/config.yaml',
+};
+
+/** Captured verbatim from Hermes 0.19.0 (`GET /api/system/stats`). */
+const REAL_SYSTEM_STATS_019 = {
+  os: 'Linux',
+  os_release: '6.8.0-136-generic',
+  arch: 'x86_64',
+  hostname: 'ubuntu',
+  hermes_version: '0.19.0',
+  cpu_count: 6,
+  memory: { total: 8267022336, available: 5349269504, used: 2917752832, percent: 35.3 },
+  disk: { total: 248505155584, used: 19128717312, free: 229359661056, percent: 7.7 },
+  cpu_percent: 16.9,
+  load_avg: [0.21, 0.2, 0.18],
+  uptime_seconds: 610333,
+  process: { pid: 827459, rss: 302407680, num_threads: 11 },
+  psutil: true,
+};
+
+describe('real Hermes 0.19.0 payloads', () => {
+  it('normalises host metrics without losing or inventing values', () => {
+    expect(normalizeSystemStats(REAL_SYSTEM_STATS_019)).toEqual({
+      os: 'Linux',
+      cpuPercent: 16.9,
+      cpuCount: 6,
+      memoryPercent: 35.3,
+      memoryUsedBytes: 2917752832,
+      memoryTotalBytes: 8267022336,
+      diskPercent: 7.7,
+      diskUsedBytes: 19128717312,
+      diskTotalBytes: 248505155584,
+      uptimeSeconds: 610333,
+    });
+  });
+
+  it('reads the agent summary, including fields 0.19 renamed', () => {
+    const summary = normalizeDashboardStatus(REAL_STATUS_019);
+    expect(summary.version).toBe('0.19.0');
+    expect(summary.gatewayRunning).toBe(true);
+    expect(summary.gatewayState).toBe('running');
+    expect(summary.overall).toBe('ok');
+    expect(summary.profiles).toEqual(['default', 'sunrise']);
+    // 0.19 has no single `profile` field, and two candidates must not be guessed.
+    expect(summary.profile).toBeNull();
+  });
+
+  it('derives readiness from components, with details worth reading', () => {
+    expect(normalizeComponentChecks(REAL_STATUS_019)).toEqual([
+      { name: 'dashboard', ok: true, detail: 'selftest: ok' },
+      { name: 'gateway', ok: true, detail: 'state: running' },
+      { name: 'platforms', ok: true, detail: 'configured: 1, connected: 1' },
+      { name: 'storage', ok: true, detail: 'ok' },
+    ]);
+  });
+
+  it('flags a degraded component as a warning, never as healthy', () => {
+    const degraded = normalizeComponentChecks({
+      components: {
+        gateway: { status: 'degraded', state: 'stopped' },
+        storage: { status: 'error' },
+      },
+    });
+    expect(degraded).toEqual([
+      { name: 'gateway', ok: null, detail: 'state: stopped' },
+      { name: 'storage', ok: false, detail: 'error' },
+    ]);
+  });
+
+  it('returns nothing when components are absent', () => {
+    expect(normalizeComponentChecks({ version: '0.7.0' })).toEqual([]);
   });
 });
 

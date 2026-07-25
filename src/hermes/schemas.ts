@@ -44,10 +44,22 @@ export const dashboardStatusSchema = z.looseObject({
   hermes_version: z.string().nullish(),
   gateway: z.unknown().nullish(),
   gateway_running: z.boolean().nullish(),
+  /** 0.19: "running" | "stopped" | … alongside gateway_running. */
+  gateway_state: z.string().nullish(),
+  gateway_exit_reason: z.string().nullish(),
   platforms: z.unknown().nullish(),
   active_sessions: numeric,
+  active_agents: numeric,
   profile: z.string().nullish(),
+  /** 0.19 reports every known profile here instead of a single `profile`. */
+  profiles: z.array(z.string()).nullish(),
   model: z.unknown().nullish(),
+  /** 0.19: per-subsystem health, the dashboard's own readiness view. */
+  components: z.looseObject({}).nullish(),
+  overall: z.string().nullish(),
+  hermes_home: z.string().nullish(),
+  config_path: z.string().nullish(),
+  env_path: z.string().nullish(),
 });
 export type DashboardStatus = z.infer<typeof dashboardStatusSchema>;
 

@@ -3,6 +3,7 @@ import type { ApiServerClient } from './hermes/apiServer.js';
 import type { DashboardClient } from './hermes/dashboard.js';
 import {
   normalizeDashboardStatus,
+  normalizeComponentChecks,
   normalizeReadinessChecks,
   normalizeSystemStats,
   type AgentSummary,
@@ -130,10 +131,29 @@ export async function buildStatusSnapshot(sources: StatusSources): Promise<Statu
     dashboard: dashboardState,
     agent: dashboardStatus.value ? normalizeDashboardStatus(dashboardStatus.value) : null,
     host: systemStats.value ? normalizeSystemStats(systemStats.value) : null,
-    readiness: healthDetailed.value ? normalizeReadinessChecks(healthDetailed.value) : [],
+    // The dashboard's own component map is the primary source: it works even
+    // with the API server switched off, which is a common setup. Where the API
+    // server is up, its per-subsystem checks are merged in on top.
+    readiness: mergeReadiness(
+      dashboardStatus.value ? normalizeComponentChecks(dashboardStatus.value) : [],
+      healthDetailed.value ? normalizeReadinessChecks(healthDetailed.value) : [],
+    ),
     setupRequired: !apiReachable || !dashboardReachable || !api.hasKey,
     connection,
   };
+}
+
+/**
+ * Combines readiness from both upstreams. Names can overlap (both report a
+ * "gateway"), and the API server's view is the more detailed one, so it wins.
+ */
+function mergeReadiness(primary: ReadinessCheck[], override: ReadinessCheck[]): ReadinessCheck[] {
+  if (override.length === 0) return primary;
+
+  const byName = new Map(primary.map((check) => [check.name, check]));
+  for (const check of override) byName.set(check.name, check);
+
+  return [...byName.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Metric names recorded from a snapshot into the ring buffer. */
