@@ -2,6 +2,8 @@
 import pc from 'picocolors';
 import { HELP_TEXT, OptionsError, parseOptions, type CliOptions } from './options.js';
 import { buildServer } from './server.js';
+import { createContext } from './context.js';
+import { Poller, defaultPollTasks } from './poller.js';
 import { runDoctor } from './doctor.js';
 import { findFreePort } from './util/port.js';
 import { describeError, log, setLogLevel } from './log.js';
@@ -32,8 +34,12 @@ async function serve(options: CliOptions): Promise<number> {
     log.info(`Port ${options.port} is in use, using ${port} instead.`);
   }
 
-  const app = await buildServer({ ...options, port });
+  const ctx = createContext({ ...options, port });
+  const poller = new Poller(ctx, defaultPollTasks());
+
+  const app = await buildServer(ctx);
   await app.listen({ port, host: options.host });
+  poller.start();
 
   const displayHost = options.host === '0.0.0.0' ? '127.0.0.1' : options.host;
   const url = `http://${displayHost.includes(':') ? `[${displayHost}]` : displayHost}:${port}`;
@@ -52,7 +58,9 @@ async function serve(options: CliOptions): Promise<number> {
     log.plain();
     log.info(`Received ${signal}, shutting down.`);
     try {
+      poller.stop();
       await app.close();
+      ctx.close();
     } catch (error) {
       log.error(`Shutdown failed: ${describeError(error)}`);
     }

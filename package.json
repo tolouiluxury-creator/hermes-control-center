@@ -38,6 +38,7 @@
     "build:server": "tsc -p tsconfig.json",
     "start": "node dist/cli.js",
     "doctor": "tsx src/cli.ts --doctor",
+    "mock:hermes": "tsx dev/mock-hermes.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck --workspace web",
     "lint": "eslint .",
     "format": "prettier --write .",

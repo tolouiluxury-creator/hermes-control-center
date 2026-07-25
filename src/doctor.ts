@@ -1,14 +1,10 @@
-import { existsSync } from 'node:fs';
 import pc from 'picocolors';
 import type { CliOptions } from './options.js';
-import { controlCenterHome, hermesHome } from './paths.js';
-import { log, describeError } from './log.js';
-import {
-  API_HEALTH_PATH,
-  DASHBOARD_STATUS_PATH,
-  DEFAULT_API_SERVER_URL,
-  DEFAULT_DASHBOARD_URL,
-} from './hermes/endpoints.js';
+import { controlCenterHome } from './paths.js';
+import { log } from './log.js';
+import { discoverHermes, type HermesConnection, type ValueSource } from './hermes/discovery.js';
+import { API_HEALTH_PATH, DASHBOARD_STATUS_PATH } from './hermes/endpoints.js';
+import { describeError } from './log.js';
 
 export interface ProbeResult {
   name: string;
@@ -16,11 +12,21 @@ export interface ProbeResult {
   reachable: boolean;
   status: number | null;
   detail: string;
-  /** Fix instructions shown when the probe fails. */
   remedy: string[];
 }
 
 const PROBE_TIMEOUT_MS = 2500;
+
+const API_REMEDY = [
+  'Add to ~/.hermes/.env:  API_SERVER_ENABLED=true',
+  'Add to ~/.hermes/.env:  API_SERVER_KEY=<a-long-random-string>',
+  'Then start it:          hermes gateway',
+];
+
+const DASHBOARD_REMEDY = [
+  'Install the web extra:  cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"',
+  'Then start it:          hermes dashboard --no-open',
+];
 
 async function probe(name: string, url: string, remedy: string[]): Promise<ProbeResult> {
   try {
@@ -37,53 +43,87 @@ async function probe(name: string, url: string, remedy: string[]): Promise<Probe
       remedy: response.ok ? [] : remedy,
     };
   } catch (error) {
-    return {
-      name,
-      url,
-      reachable: false,
-      status: null,
-      detail: describeError(error),
-      remedy,
-    };
+    return { name, url, reachable: false, status: null, detail: describeError(error), remedy };
   }
 }
 
-export async function probeUpstreams(options: CliOptions): Promise<ProbeResult[]> {
-  const apiBase = options.hermesApiUrl ?? DEFAULT_API_SERVER_URL;
-  const dashboardBase = options.hermesDashboardUrl ?? DEFAULT_DASHBOARD_URL;
-
+export async function probeUpstreams(connection: HermesConnection): Promise<ProbeResult[]> {
   return Promise.all([
-    probe('Hermes API server', `${apiBase}${API_HEALTH_PATH}`, [
-      'Add to ~/.hermes/.env:  API_SERVER_ENABLED=true',
-      'Add to ~/.hermes/.env:  API_SERVER_KEY=<a-long-random-string>',
-      'Then start it:          hermes gateway',
-    ]),
-    probe('Hermes dashboard', `${dashboardBase}${DASHBOARD_STATUS_PATH}`, [
-      'Install the web extra:  cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"',
-      'Then start it:          hermes dashboard --no-open',
-    ]),
+    probe('Hermes API server', `${connection.apiServer.url}${API_HEALTH_PATH}`, API_REMEDY),
+    probe(
+      'Hermes dashboard',
+      `${connection.dashboard.url}${DASHBOARD_STATUS_PATH}`,
+      DASHBOARD_REMEDY,
+    ),
   ]);
+}
+
+function describeSource(source: ValueSource | null): string {
+  switch (source) {
+    case 'flag':
+      return 'from command line';
+    case 'env':
+      return 'from environment';
+    case 'profile-config':
+      return 'from profile config';
+    case 'config':
+      return 'from Hermes config';
+    case 'default':
+      return 'default';
+    default:
+      return 'not set';
+  }
 }
 
 /** Prints a human-readable report. Returns a process exit code. */
 export async function runDoctor(options: CliOptions): Promise<number> {
   log.plain();
-  log.heading('hermes-control-center doctor');
+  log.heading('  hermes-control-center doctor');
   log.plain();
 
-  const home = hermesHome();
-  const homeExists = existsSync(home);
-  if (homeExists) {
-    log.ok(`Hermes home: ${home}`);
+  const connection = discoverHermes(options);
+
+  if (connection.homeExists) {
+    log.ok(`Hermes home: ${connection.hermesHome}`);
   } else {
-    log.warn(`Hermes home not found: ${home}`);
-    log.plain(`     Set HERMES_HOME if your installation lives elsewhere.`);
+    log.error(`Hermes home not found: ${connection.hermesHome}`);
+    log.plain(`     ${pc.dim('Set HERMES_HOME if your installation lives elsewhere.')}`);
   }
   log.ok(`Control center state: ${controlCenterHome()}`);
-  if (options.profile) log.info(`Profile: ${options.profile}`);
+
+  if (connection.profiles.length > 0) {
+    log.info(`Profiles found: ${connection.profiles.join(', ')}`);
+  }
+  if (options.profile) {
+    log.info(`Using profile: ${options.profile}`);
+  }
+
+  log.plain();
+  log.plain(
+    `  ${pc.dim('API server URL')}   ${connection.apiServer.url} ${pc.dim(`(${describeSource(connection.apiServer.source)})`)}`,
+  );
+  log.plain(
+    `  ${pc.dim('Dashboard URL')}    ${connection.dashboard.url} ${pc.dim(`(${describeSource(connection.dashboard.source)})`)}`,
+  );
+  log.plain(
+    `  ${pc.dim('API key')}          ${
+      connection.apiServer.key
+        ? pc.green(`present ${pc.dim(`(${describeSource(connection.apiServer.keySource)})`)}`)
+        : pc.red('missing')
+    }`,
+  );
+  log.plain(
+    `  ${pc.dim('API enabled flag')} ${
+      connection.apiServer.enabled === null
+        ? pc.dim('unknown')
+        : connection.apiServer.enabled
+          ? pc.green('true')
+          : pc.red('false')
+    }`,
+  );
   log.plain();
 
-  const results = await probeUpstreams(options);
+  const results = await probeUpstreams(connection);
   for (const result of results) {
     if (result.reachable) {
       log.ok(`${result.name} — ${result.detail}  ${pc.dim(result.url)}`);
@@ -95,10 +135,18 @@ export async function runDoctor(options: CliOptions): Promise<number> {
   log.plain();
 
   const failures = results.filter((result) => !result.reachable);
-  if (failures.length === 0) {
-    log.ok('Both Hermes surfaces are reachable.');
+  const keyMissing = !connection.apiServer.key;
+
+  if (failures.length === 0 && !keyMissing) {
+    log.ok('Hermes is fully reachable.');
     log.plain();
     return 0;
+  }
+
+  if (keyMissing && failures.length === 0) {
+    log.warn('Both surfaces respond, but no API key was found — chat and sessions stay locked.');
+    log.plain();
+    return 1;
   }
 
   log.warn(

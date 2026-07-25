@@ -1,3 +1,5 @@
+import type { Meta, MetricSeries, PublicHermesConnection, StatusSnapshot } from './types';
+
 /**
  * Thin fetch wrapper for the control-center backend. The backend is the only
  * thing the browser talks to — Hermes credentials never reach this code.
@@ -18,7 +20,7 @@ interface ErrorBody {
   message?: string;
 }
 
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...init,
     headers: { accept: 'application/json', ...init?.headers },
@@ -41,15 +43,24 @@ export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-export interface Meta {
-  name: string;
-  version: string;
-  node: string;
-  platform: string;
-  profile: string | null;
-  hermesHome: string;
-  stateHome: string;
-  startedAt: string;
-}
+export const getMeta = (): Promise<Meta> => apiRequest<Meta>('/meta');
 
-export const getMeta = (): Promise<Meta> => apiGet<Meta>('/meta');
+export const getStatus = (fresh = false): Promise<StatusSnapshot> =>
+  apiRequest<StatusSnapshot>(`/status${fresh ? '?fresh=1' : ''}`);
+
+export const getConnection = (): Promise<PublicHermesConnection> =>
+  apiRequest<PublicHermesConnection>('/connection');
+
+export const getMetricSeries = (metric: string, windowMs?: number): Promise<MetricSeries> => {
+  const params = new URLSearchParams({ metric });
+  if (windowMs) params.set('windowMs', String(windowMs));
+  return apiRequest<MetricSeries>(`/metrics/series?${params.toString()}`);
+};
+
+/** Query keys used across the app, so invalidation stays consistent. */
+export const queryKeys = {
+  meta: ['meta'] as const,
+  status: ['status'] as const,
+  connection: ['connection'] as const,
+  metricSeries: (metric: string) => ['metrics', 'series', metric] as const,
+};
