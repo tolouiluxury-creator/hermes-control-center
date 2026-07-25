@@ -1,4 +1,4 @@
-import { HermesClient, type RequestOptions } from './client.js';
+import type { HermesClient, RequestOptions } from './client.js';
 import { API_CAPABILITIES_PATH, API_HEALTH_DETAILED_PATH, API_HEALTH_PATH } from './endpoints.js';
 import {
   capabilitiesSchema,

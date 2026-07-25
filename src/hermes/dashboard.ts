@@ -1,4 +1,4 @@
-import { HermesClient, type RequestOptions } from './client.js';
+import type { HermesClient, RequestOptions } from './client.js';
 import { DASHBOARD_STATUS_PATH } from './endpoints.js';
 import {
   dashboardStatusSchema,
