@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 import fastifyStatic from '@fastify/static';
 import { resolveSpaRequest } from './util/spa.js';
 import type { AppContext } from './context.js';
+import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
 import { registerMetaRoutes } from './routes/meta.js';
 import { registerStatusRoutes } from './routes/status.js';
 import { registerStreamRoutes } from './routes/stream.js';
@@ -40,6 +41,23 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
     trustProxy: false,
   });
 
+  /**
+   * Bodyless POSTs must not fail on content negotiation. Several clients send a
+   * default content type even with no body (PowerShell picks form-urlencoded),
+   * which Fastify answers with 415 — breaking side-effect-free calls such as
+   * /api/auth/logout. Empty bodies are accepted for any content type; a
+   * non-empty body with an unsupported type is still refused.
+   */
+  app.addContentTypeParser('*', { parseAs: 'buffer' }, (_request, body: Buffer, done) => {
+    if (body.length === 0) {
+      done(null, undefined);
+      return;
+    }
+    const error = new Error('Unsupported content type') as Error & { statusCode?: number };
+    error.statusCode = 415;
+    done(error, undefined);
+  });
+
   app.addHook('onSend', async (_request, reply, payload) => {
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('Referrer-Policy', 'no-referrer');
@@ -47,6 +65,10 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
     reply.header('Content-Security-Policy', CSP);
     return payload;
   });
+
+  // Registered before the routes so nothing can be reached without passing it.
+  registerAuthGuard(app, ctx.auth);
+  await registerAuthRoutes(app, ctx.auth);
 
   await registerMetaRoutes(app, ctx.options);
   await registerStatusRoutes(app, ctx);

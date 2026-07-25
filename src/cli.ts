@@ -3,7 +3,15 @@ import pc from 'picocolors';
 import { HELP_TEXT, OptionsError, parseOptions, type CliOptions } from './options.js';
 import { buildServer } from './server.js';
 import { createContext } from './context.js';
-import { initControlCenterConfig } from './config.js';
+import {
+  initControlCenterConfig,
+  loadControlCenterConfig,
+  updateControlCenterConfig,
+} from './config.js';
+import { hashPassword, validatePasswordStrength } from './auth/password.js';
+import { generateSessionSecret } from './auth/session.js';
+import { assertBindIsSafe } from './auth/service.js';
+import { readSecret } from './util/prompt.js';
 import { Poller, defaultPollTasks } from './poller.js';
 import { runDoctor } from './doctor.js';
 import { findFreePort } from './util/port.js';
@@ -22,11 +30,56 @@ function printBanner(url: string, options: CliOptions): void {
   log.plain();
 }
 
+async function setPassword(): Promise<number> {
+  const password = await readSecret('  New password: ');
+  const problem = validatePasswordStrength(password);
+  if (problem) {
+    log.error(problem);
+    return 2;
+  }
+
+  // Only ask twice interactively; a piped password cannot be mistyped twice.
+  if (process.stdin.isTTY) {
+    const again = await readSecret('  Repeat password: ');
+    if (again !== password) {
+      log.error('The two passwords do not match. Nothing was changed.');
+      return 2;
+    }
+  }
+
+  const existing = loadControlCenterConfig().config.auth;
+  const path = updateControlCenterConfig({
+    auth: {
+      passwordHash: hashPassword(password),
+      // Keep the existing secret so a password change does not log out other
+      // devices unexpectedly; generate one on first setup.
+      sessionSecret: existing?.sessionSecret ?? generateSessionSecret(),
+    },
+  });
+
+  log.plain();
+  log.ok(`Password set. Stored as a scrypt hash in ${path}`);
+  log.plain(`     ${pc.dim('The control center will now ask for it before showing any data.')}`);
+  log.plain();
+  return 0;
+}
+
 async function serve(options: CliOptions): Promise<number> {
+  const ctx = createContext(options);
+
+  // A control center that can restart the gateway and write env vars must never
+  // be reachable from outside without a password.
+  assertBindIsSafe(options.host, ctx.auth.required, ctx.connection.configPath);
+
   if (!LOOPBACK_HOSTS.has(options.host)) {
     log.warn(
-      `Binding to ${options.host} exposes the control center beyond this machine. ` +
-        'Only do this on a trusted network or behind a reverse proxy with authentication.',
+      `Listening on ${options.host}: reachable beyond this machine. ` +
+        'Password protection is active; prefer an authenticating reverse proxy in front as well.',
+    );
+  }
+  if (!ctx.auth.required) {
+    log.info(
+      'No password set — fine on localhost. Run --set-password before exposing this to a network.',
     );
   }
 
@@ -35,7 +88,6 @@ async function serve(options: CliOptions): Promise<number> {
     log.info(`Port ${options.port} is in use, using ${port} instead.`);
   }
 
-  const ctx = createContext({ ...options, port });
   const poller = new Poller(ctx, defaultPollTasks());
 
   const app = await buildServer(ctx);
@@ -110,6 +162,9 @@ async function main(): Promise<void> {
       log.plain();
       return;
     }
+    case 'set-password':
+      process.exitCode = await setPassword();
+      return;
     case 'doctor':
       process.exitCode = await runDoctor(options);
       return;

@@ -64,11 +64,46 @@ Control-center state lives in `~/.hermes-cc/` (override with `HERMES_CC_HOME`): 
 saved prompts, workflow definitions and a metrics ring buffer. Your Hermes directory is only written
 to when you explicitly confirm a change in the UI.
 
+## Remote Hermes, and exposing the control center
+
+If Hermes runs on a server rather than on your laptop, forward both ports over SSH and point the
+control center at localhost:
+
+```bash
+ssh -N -L 8642:127.0.0.1:8642 -L 9119:127.0.0.1:9119 you@your-server
+```
+
+Then create a local config file and put the server's `API_SERVER_KEY` into it, so no secret ever
+appears on a command line or in shell history:
+
+```bash
+npx hermes-control-center --init-config   # writes ~/.hermes-cc/config.json
+```
+
+### Password protection
+
+The control center can restart your gateway, write environment variables and chat as you. It
+therefore **refuses to listen on anything but localhost until a password is set**:
+
+```bash
+npx hermes-control-center --set-password
+```
+
+The password is stored as a salted scrypt hash; sessions are stateless, HMAC-signed, HttpOnly cookies
+with a 12-hour lifetime. Failed logins are throttled per client address with an exponential backoff.
+Changing the password keeps existing sessions valid; delete the `auth` block from
+`~/.hermes-cc/config.json` to invalidate everything and start over.
+
+Password protection is the minimum, not the whole story. For an internet-facing deployment, put an
+authenticating proxy in front as well — Cloudflare Access, Authelia, or your reverse proxy's own auth.
+
 ## Security
 
-- Binds to `127.0.0.1` by default. Exposing it further prints a warning; do that only behind an
-  authenticating reverse proxy.
-- The Hermes API key never reaches the browser. Secrets are redacted in every response.
+- Binds to `127.0.0.1` by default, and will not bind wider without a password.
+- The Hermes API key never reaches the browser. Secrets are redacted in every response, and the
+  connection payload the UI receives reports only *whether* a key exists.
+- Every `/api` route, including the SSE stream, sits behind one `onRequest` guard, so no new endpoint
+  can accidentally ship unauthenticated.
 - Strict CSP, no inline scripts, no external CDN requests, no telemetry.
 - Every write that touches your Hermes installation (config, env, gateway restart, memory reset, job
   deletion) is behind a confirmation dialog that spells out the consequence.

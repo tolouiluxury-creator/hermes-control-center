@@ -1,4 +1,6 @@
 import type { CliOptions } from './options.js';
+import { loadControlCenterConfig } from './config.js';
+import { AuthService } from './auth/service.js';
 import { controlCenterDatabasePath } from './paths.js';
 import { discoverHermes, toPublicConnection, type HermesConnection } from './hermes/discovery.js';
 import { HermesClient } from './hermes/client.js';
@@ -14,6 +16,7 @@ import { log } from './log.js';
 export interface AppContext {
   options: CliOptions;
   connection: HermesConnection;
+  auth: AuthService;
   api: ApiServerClient;
   dashboard: DashboardClient;
   store: Store;
@@ -34,8 +37,12 @@ export function createContext(
   options: CliOptions,
   env: NodeJS.ProcessEnv = process.env,
 ): AppContext {
-  const connection = discoverHermes(options, env);
+  // Loaded once and shared: discovery reads the connection details from it, and
+  // the auth service the password hash.
+  const loadedConfig = loadControlCenterConfig(env);
+  const connection = discoverHermes(options, env, loadedConfig);
   const publicConnection = toPublicConnection(connection);
+  const auth = new AuthService(loadedConfig.config.auth ?? null);
 
   for (const warning of connection.warnings) log.warn(warning);
 
@@ -79,6 +86,7 @@ export function createContext(
   return {
     options,
     connection,
+    auth,
     api,
     dashboard,
     store,

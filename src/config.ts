@@ -12,6 +12,13 @@ import { describeError, log } from './log.js';
  * to read the key and ports from. Putting them here means the user never has to
  * pass secrets on a command line, where they would land in shell history.
  */
+const authSchema = z.looseObject({
+  /** scrypt hash written by `--set-password`; never the password itself. */
+  passwordHash: z.string().min(1),
+  /** HMAC key for session cookies. Rotating it logs everyone out. */
+  sessionSecret: z.string().min(1),
+});
+
 const configSchema = z.looseObject({
   hermesApiUrl: z.string().url().nullish(),
   hermesDashboardUrl: z.string().url().nullish(),
@@ -19,7 +26,10 @@ const configSchema = z.looseObject({
   profile: z.string().min(1).nullish(),
   port: z.number().int().min(1).max(65535).nullish(),
   host: z.string().min(1).nullish(),
+  auth: authSchema.nullish(),
 });
+
+export type AuthConfig = z.infer<typeof authSchema>;
 
 export type ControlCenterConfig = z.infer<typeof configSchema>;
 
@@ -97,11 +107,46 @@ export function initControlCenterConfig(env: NodeJS.ProcessEnv = process.env): I
   const path = controlCenterConfigPath(env);
   if (existsSync(path)) return { path, created: false };
 
+  writeConfigFile(path, CONFIG_TEMPLATE);
+  return { path, created: true };
+}
+
+function writeConfigFile(path: string, value: unknown): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(CONFIG_TEMPLATE, null, 2)}\n`, {
+  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, {
     encoding: 'utf8',
     // Owner-only where the platform honours it; a no-op on Windows.
     mode: 0o600,
   });
-  return { path, created: true };
+}
+
+/**
+ * Merges a patch into the config file, preserving keys we do not know about.
+ * Reads the raw JSON rather than the validated shape so an unrelated invalid
+ * field cannot silently erase the user's other settings.
+ */
+export function updateControlCenterConfig(
+  patch: Record<string, unknown>,
+  env: NodeJS.ProcessEnv = process.env,
+): string {
+  const path = controlCenterConfigPath(env);
+
+  let current: Record<string, unknown> = {};
+  if (existsSync(path)) {
+    try {
+      const raw = JSON.parse(readFileSync(path, 'utf8')) as unknown;
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+        current = raw as Record<string, unknown>;
+      }
+    } catch (error) {
+      throw new Error(
+        `Refusing to overwrite ${path}: it is not valid JSON (${describeError(error)}). ` +
+          'Fix or delete the file, then try again.',
+        { cause: error },
+      );
+    }
+  }
+
+  writeConfigFile(path, { ...current, ...patch });
+  return path;
 }

@@ -45,6 +45,23 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 
 export const getMeta = (): Promise<Meta> => apiRequest<Meta>('/meta');
 
+export interface AuthStatus {
+  required: boolean;
+  authenticated: boolean;
+}
+
+export const getAuthStatus = (): Promise<AuthStatus> => apiRequest<AuthStatus>('/auth/status');
+
+export const login = (password: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/auth/login', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+
+export const logout = (): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/auth/logout', { method: 'POST' });
+
 export const getStatus = (fresh = false): Promise<StatusSnapshot> =>
   apiRequest<StatusSnapshot>(`/status${fresh ? '?fresh=1' : ''}`);
 
@@ -60,6 +77,7 @@ export const getMetricSeries = (metric: string, windowMs?: number): Promise<Metr
 /** Query keys used across the app, so invalidation stays consistent. */
 export const queryKeys = {
   meta: ['meta'] as const,
+  auth: ['auth'] as const,
   status: ['status'] as const,
   connection: ['connection'] as const,
   metricSeries: (metric: string) => ['metrics', 'series', metric] as const,

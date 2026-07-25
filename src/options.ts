@@ -10,7 +10,7 @@ export interface CliOptions {
   hermesDashboardUrl: string | null;
   apiKey: string | null;
   logLevel: LogLevel;
-  mode: 'serve' | 'doctor' | 'init-config' | 'help' | 'version';
+  mode: 'serve' | 'doctor' | 'init-config' | 'set-password' | 'help' | 'version';
 }
 
 export const DEFAULT_PORT = 7777;
@@ -75,6 +75,7 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
         'log-level': { type: 'string' },
         doctor: { type: 'boolean' },
         'init-config': { type: 'boolean' },
+        'set-password': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
         version: { type: 'boolean', short: 'v' },
       },
@@ -89,11 +90,13 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
     ? 'help'
     : values.version
       ? 'version'
-      : values['init-config']
-        ? 'init-config'
-        : values.doctor
-          ? 'doctor'
-          : 'serve';
+      : values['set-password']
+        ? 'set-password'
+        : values['init-config']
+          ? 'init-config'
+          : values.doctor
+            ? 'doctor'
+            : 'serve';
 
   const port =
     toPort(values.port, '--port') ?? toPort(env.HERMES_CC_PORT, 'HERMES_CC_PORT') ?? DEFAULT_PORT;
@@ -136,6 +139,7 @@ export const HELP_TEXT = `
     --log-level <level>      debug | info | warn | error (default info)
     --doctor                 Check the Hermes connection and exit
     --init-config            Create ~/.hermes-cc/config.json (for a remote Hermes) and exit
+    --set-password           Set the login password (required to bind beyond localhost) and exit
     -h, --help               Show this help
     -v, --version            Show version
 

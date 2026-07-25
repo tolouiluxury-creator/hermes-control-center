@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Activity, Cpu, HardDrive, MemoryStick, Wifi, WifiOff } from 'lucide-react';
-import { getStatus, queryKeys } from '@/lib/api';
+import { getAuthStatus, getStatus, queryKeys } from '@/lib/api';
 import { useControlCenterStream } from '@/lib/stream';
 import { formatBytes, formatDuration, formatLatency, formatPercent } from '@/lib/format';
+import { LoginScreen } from '@/components/LoginScreen';
 import { SetupScreen } from '@/components/SetupScreen';
 import type { StatusSnapshot } from '@/lib/types';
 
@@ -183,6 +184,43 @@ function StatusView({ snapshot, live }: { snapshot: StatusSnapshot; live: boolea
 }
 
 export default function App() {
+  const queryClient = useQueryClient();
+
+  const auth = useQuery({
+    queryKey: queryKeys.auth,
+    queryFn: getAuthStatus,
+    staleTime: 30_000,
+  });
+
+  const locked = auth.data?.required === true && !auth.data.authenticated;
+
+  if (auth.isPending) {
+    return (
+      <main className="grid min-h-full place-items-center">
+        <p className="text-sm text-[var(--color-ink-muted)]" role="status">
+          Verbinde …
+        </p>
+      </main>
+    );
+  }
+
+  if (locked) {
+    return (
+      <main className="min-h-full">
+        <LoginScreen
+          onSuccess={() => {
+            // Refetch everything: nothing was allowed to load while locked.
+            void queryClient.invalidateQueries();
+          }}
+        />
+      </main>
+    );
+  }
+
+  return <Cockpit />;
+}
+
+function Cockpit() {
   const queryClient = useQueryClient();
   const { state, snapshot: streamed } = useControlCenterStream();
 

@@ -31,7 +31,12 @@ export function useControlCenterStream(): UseControlCenterStreamResult {
     const source = new EventSource('/api/stream');
 
     source.onopen = () => setState('open');
-    source.onerror = () => setState('closed');
+    source.onerror = () => {
+      setState('closed');
+      // The stream is gated by the same session as everything else, so a drop
+      // may mean the session ended rather than a network blip.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth });
+    };
 
     const handle = (event: MessageEvent<string>): void => {
       let parsed: ControlCenterEvent;
