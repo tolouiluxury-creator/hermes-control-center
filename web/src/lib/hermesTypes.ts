@@ -131,9 +131,71 @@ export interface PromptInput {
   tags?: string[];
 }
 
+export interface MemoryProvider {
+  name: string;
+  description: string | null;
+  available: boolean;
+  configured: boolean;
+  status: string | null;
+}
+
 export interface MemorySummary {
   active: string | null;
   configured: { name: string; status: string | null }[];
   availableCount: number;
   files: { name: string; entries: number }[];
+  providers: MemoryProvider[];
+}
+
+export interface MessagingEnvVar {
+  key: string;
+  required: boolean;
+  isSet: boolean;
+  description: string | null;
+}
+
+export interface MessagingPlatform {
+  id: string;
+  name: string;
+  description: string | null;
+  docsUrl: string | null;
+  enabled: boolean;
+  configured: boolean;
+  state: string | null;
+  errorMessage: string | null;
+  homeChannel: string | null;
+  requiredTotal: number;
+  requiredMissing: number;
+  envVars: MessagingEnvVar[];
+}
+
+export interface MessagingOverview {
+  platforms: MessagingPlatform[];
+  configuredCount: number;
+  enabledCount: number;
+}
+
+export interface WebhookSubscription {
+  name: string | null;
+  url: string | null;
+  enabled: boolean;
+  events: string[];
+}
+
+export interface WebhooksOverview {
+  enabled: boolean;
+  baseUrl: string | null;
+  subscriptions: WebhookSubscription[];
+}
+
+export interface PairedUser {
+  platform: string | null;
+  userId: string | null;
+  userName: string | null;
+  at: number | null;
+}
+
+export interface PairingOverview {
+  pending: PairedUser[];
+  approved: PairedUser[];
 }

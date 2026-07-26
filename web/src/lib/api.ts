@@ -9,11 +9,14 @@ import type {
   PromptInput,
   McpServerSummary,
   MemorySummary,
+  MessagingOverview,
   ModelOptions,
   ModelSummary,
+  PairingOverview,
   SessionsResponse,
   SkillEntry,
   SkillSummary,
+  WebhooksOverview,
 } from './hermesTypes';
 
 /**
@@ -99,6 +102,15 @@ export const getAnalytics = (): Promise<AnalyticsSummary> =>
 
 export const getMemory = (): Promise<MemorySummary> => apiRequest<MemorySummary>('/hermes/memory');
 
+export const getMessaging = (): Promise<MessagingOverview> =>
+  apiRequest<MessagingOverview>('/hermes/messaging');
+
+export const getWebhooks = (): Promise<WebhooksOverview> =>
+  apiRequest<WebhooksOverview>('/hermes/webhooks');
+
+export const getPairing = (): Promise<PairingOverview> =>
+  apiRequest<PairingOverview>('/hermes/pairing');
+
 export const getLogs = (lines = 100): Promise<LogsResponse> =>
   apiRequest<LogsResponse>(`/hermes/logs?lines=${lines}`);
 
@@ -171,6 +183,9 @@ export const queryKeys = {
   model: ['hermes', 'model'] as const,
   analytics: ['hermes', 'analytics'] as const,
   memory: ['hermes', 'memory'] as const,
+  messaging: ['hermes', 'messaging'] as const,
+  webhooks: ['hermes', 'webhooks'] as const,
+  pairing: ['hermes', 'pairing'] as const,
   logs: (lines: number) => ['hermes', 'logs', lines] as const,
   sessions: (limit: number) => ['hermes', 'sessions', limit] as const,
   status: ['status'] as const,

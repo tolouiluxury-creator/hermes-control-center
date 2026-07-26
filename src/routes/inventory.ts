@@ -110,6 +110,18 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get('memory', () => ctx.dashboard.memory())),
   );
 
+  app.get('/api/hermes/messaging', async (_request, reply) =>
+    guard(reply, () => cache.get('messaging', () => ctx.dashboard.messagingPlatforms())),
+  );
+
+  app.get('/api/hermes/webhooks', async (_request, reply) =>
+    guard(reply, () => cache.get('webhooks', () => ctx.dashboard.webhooks())),
+  );
+
+  app.get('/api/hermes/pairing', async (_request, reply) =>
+    guard(reply, () => cache.get('pairing', () => ctx.dashboard.pairing())),
+  );
+
   app.get('/api/hermes/logs', async (request, reply) => {
     const query = request.query as { lines?: string } | undefined;
     const lines = readLimit(query?.lines, 100, 1000);

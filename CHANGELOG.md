@@ -15,9 +15,13 @@ Everything below has been verified against a live Hermes Agent 0.19.0, not again
   server-side per installation and survive a reload.
 - **Eleven widgets:** system performance with history sparklines, mission status, agent facts, live
   logs, scheduled jobs, skills, MCP servers, model, analytics, recent sessions, and knowledge.
-- **Six management pages:** skills (searchable and filterable across 100+ entries), MCP servers,
+- **Management pages:** skills (searchable and filterable across 100+ entries), MCP servers,
   models with per-provider authentication state, logs with level filters and follow mode, analytics
-  with per-day, per-model and per-tool breakdowns, and scheduled tasks.
+  with per-day, per-model and per-tool breakdowns, scheduled tasks, knowledge/RAG (memory providers
+  and built-in note files), and API & integrations (messaging platforms, incoming webhooks and
+  paired users).
+- **Prompt library** with variables and tags, and **rule-based insights** derived from real metrics
+  (no model involved).
 - **Password protection.** Salted scrypt hashing, stateless HMAC-signed session cookies, per-client
   exponential login throttling, and one request guard covering every API route including the SSE
   stream. The server refuses to bind beyond loopback until a password is set.
@@ -49,4 +53,4 @@ These are the details that took the most care, and the ones most likely to be wr
   default).
 - Write actions — switching models, pausing jobs, toggling skills. They change a running agent and
   will ship with confirmation dialogs rather than bare buttons.
-- Prompt library, workflows and AI insights.
+- Workflows and named agent presets.

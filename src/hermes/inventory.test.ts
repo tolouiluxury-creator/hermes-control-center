@@ -5,9 +5,12 @@ import {
   normalizeCronJobs,
   normalizeMcpServers,
   normalizeMemory,
+  normalizeMessagingPlatforms,
   normalizeModelInfo,
+  normalizePairing,
   normalizeSessions,
   normalizeSkills,
+  normalizeWebhooks,
   toEpochMs,
 } from './inventory.js';
 
@@ -219,6 +222,13 @@ describe('normalizeMemory', () => {
       { name: 'user', entries: 1106 },
     ]);
   });
+
+  it('lists every provider, usable ones first, and reports no active provider for an empty string', () => {
+    const summary = normalizeMemory(real);
+    expect(summary.active).toBeNull();
+    expect(summary.providers.map((p) => p.name)).toEqual(['holographic', 'byterover', 'other']);
+    expect(summary.providers[0]?.available).toBe(true);
+  });
 });
 
 describe('normalizeModelInfo and normalizeMcpServers', () => {
@@ -248,5 +258,108 @@ describe('normalizeModelInfo and normalizeMcpServers', () => {
     expect(server?.toolCount).toBe(2);
     expect(server?.transport).toBe('stdio');
     expect(server?.enabled).toBe(true);
+  });
+});
+
+describe('normalizeMessagingPlatforms', () => {
+  // Trimmed from a real /api/messaging/platforms on Hermes 0.19.0.
+  const real = {
+    env_path: '/root/.hermes/profiles/sunrise/.env',
+    platforms: [
+      {
+        id: 'discord',
+        name: 'Discord',
+        description: 'Run Hermes from Discord.',
+        docs_url: 'https://discord.com/developers',
+        enabled: false,
+        configured: false,
+        state: 'disabled',
+        env_vars: [{ key: 'DISCORD_BOT_TOKEN', required: true, is_set: false, is_password: true }],
+      },
+      {
+        id: 'telegram',
+        name: 'Telegram',
+        description: 'Run Hermes from Telegram DMs, groups, and topics.',
+        docs_url: 'https://core.telegram.org/bots',
+        enabled: false,
+        configured: true,
+        state: 'disabled',
+        // Hermes 0.19 returns an object here, not a bare id.
+        home_channel: { platform: 'telegram', chat_id: '170753950', name: 'Home' },
+        env_vars: [
+          {
+            key: 'TELEGRAM_BOT_TOKEN',
+            required: true,
+            is_set: true,
+            redacted_value: '8627...7lkE',
+            is_password: true,
+          },
+          { key: 'TELEGRAM_ALLOWED_USERS', required: false, is_set: false },
+        ],
+      },
+    ],
+  };
+
+  it('puts configured platforms ahead of the long tail', () => {
+    const { platforms } = normalizeMessagingPlatforms(real);
+    expect(platforms.map((p) => p.id)).toEqual(['telegram', 'discord']);
+  });
+
+  it('counts the required secrets that are still missing, without exposing any value', () => {
+    const { platforms } = normalizeMessagingPlatforms(real);
+    const telegram = platforms.find((p) => p.id === 'telegram');
+    expect(telegram?.requiredTotal).toBe(1);
+    expect(telegram?.requiredMissing).toBe(0);
+    // The redacted secret must never survive normalisation.
+    expect(JSON.stringify(telegram)).not.toContain('7lkE');
+  });
+
+  it('reports counts for the header', () => {
+    const overview = normalizeMessagingPlatforms(real);
+    expect(overview.configuredCount).toBe(1);
+    expect(overview.enabledCount).toBe(0);
+  });
+
+  it('reads a home channel from either a bare id or an object', () => {
+    const { platforms } = normalizeMessagingPlatforms(real);
+    expect(platforms.find((p) => p.id === 'telegram')?.homeChannel).toBe('Home');
+    const bare = normalizeMessagingPlatforms({
+      platforms: [{ id: 'x', home_channel: '@chan' }],
+    });
+    expect(bare.platforms[0]?.homeChannel).toBe('@chan');
+  });
+});
+
+describe('normalizeWebhooks', () => {
+  it('reads the enabled flag and base URL from a real payload', () => {
+    const overview = normalizeWebhooks({
+      enabled: false,
+      base_url: 'http://localhost:8644',
+      subscriptions: [],
+    });
+    expect(overview.enabled).toBe(false);
+    expect(overview.baseUrl).toBe('http://localhost:8644');
+    expect(overview.subscriptions).toEqual([]);
+  });
+});
+
+describe('normalizePairing', () => {
+  // Real /api/pairing: seconds timestamp, one approved Telegram user.
+  const real = {
+    pending: [],
+    approved: [
+      {
+        platform: 'telegram',
+        user_id: '170753950',
+        user_name: 'TestUser',
+        approved_at: 1784467966.31,
+      },
+    ],
+  };
+
+  it('scales the seconds timestamp to milliseconds', () => {
+    const { approved } = normalizePairing(real);
+    expect(approved[0]?.userName).toBe('TestUser');
+    expect(approved[0]?.at).toBe(Math.round(1784467966.31 * 1000));
   });
 });

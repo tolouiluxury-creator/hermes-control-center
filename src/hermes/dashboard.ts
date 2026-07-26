@@ -12,28 +12,37 @@ import {
   logsSchema,
   mcpServersSchema,
   memorySchema,
+  messagingPlatformsSchema,
   modelInfoSchema,
   normalizeAnalytics,
   normalizeCronJobs,
   normalizeLogs,
   normalizeMcpServers,
   normalizeMemory,
+  normalizeMessagingPlatforms,
   normalizeModelInfo,
   normalizeModelOptions,
+  normalizePairing,
   normalizeSessions,
   normalizeSkillList,
   normalizeSkills,
+  normalizeWebhooks,
   modelOptionsSchema,
+  pairingSchema,
   sessionsSchema,
   skillsSchema,
+  webhooksSchema,
   type AnalyticsSummary,
   type CronJobSummary,
   type McpServerSummary,
   type MemorySummary,
+  type MessagingOverview,
   type ModelOptions,
   type ModelSummary,
+  type PairingOverview,
   type SkillEntry,
   type SkillSummary,
+  type WebhooksOverview,
 } from './inventory.js';
 
 /**
@@ -107,6 +116,20 @@ export class DashboardClient {
 
   memory(options?: RequestOptions): Promise<MemorySummary> {
     return this.client.json(memorySchema, '/api/memory', options).then(normalizeMemory);
+  }
+
+  messagingPlatforms(options?: RequestOptions): Promise<MessagingOverview> {
+    return this.client
+      .json(messagingPlatformsSchema, '/api/messaging/platforms', options)
+      .then(normalizeMessagingPlatforms);
+  }
+
+  webhooks(options?: RequestOptions): Promise<WebhooksOverview> {
+    return this.client.json(webhooksSchema, '/api/webhooks', options).then(normalizeWebhooks);
+  }
+
+  pairing(options?: RequestOptions): Promise<PairingOverview> {
+    return this.client.json(pairingSchema, '/api/pairing', options).then(normalizePairing);
   }
 
   raw(path: string, options?: RequestOptions): Promise<Response> {

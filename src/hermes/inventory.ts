@@ -494,6 +494,7 @@ export const memorySchema = z.looseObject({
     .array(
       z.looseObject({
         name: z.string().nullish(),
+        description: z.string().nullish(),
         available: z.boolean().nullish(),
         configured: z.boolean().nullish(),
         status: z.string().nullish(),
@@ -503,18 +504,47 @@ export const memorySchema = z.looseObject({
   builtin_files: z.record(z.string(), numeric).nullish(),
 });
 
+export interface MemoryProvider {
+  name: string;
+  description: string | null;
+  available: boolean;
+  configured: boolean;
+  status: string | null;
+}
+
 export interface MemorySummary {
   active: string | null;
   configured: { name: string; status: string | null }[];
   availableCount: number;
   files: { name: string; entries: number }[];
+  /** Every provider Hermes knows about, for the full knowledge page. */
+  providers: MemoryProvider[];
+}
+
+/** Usable first (ready and available), then the rest, so the page leads with what works. */
+function memoryProviderRank(provider: MemoryProvider): number {
+  if (provider.available && provider.status === 'ready') return 0;
+  if (provider.available) return 1;
+  if (provider.configured) return 2;
+  return 3;
 }
 
 export function normalizeMemory(raw: z.infer<typeof memorySchema>): MemorySummary {
   const providers = raw.providers ?? [];
 
+  const all: MemoryProvider[] = providers
+    .map((provider) => ({
+      name: provider.name ?? 'unbekannt',
+      description: provider.description?.trim() || null,
+      available: provider.available === true,
+      configured: provider.configured === true,
+      status: provider.status ?? null,
+    }))
+    .sort((a, b) => memoryProviderRank(a) - memoryProviderRank(b) || a.name.localeCompare(b.name));
+
   return {
-    active: raw.active ?? null,
+    // Hermes reports an empty string when nothing is active; make that explicit.
+    active: raw.active?.trim() || null,
     configured: providers
       .filter((provider) => provider.configured === true)
       .map((provider) => ({ name: provider.name ?? 'unbekannt', status: provider.status ?? null })),
@@ -523,5 +553,213 @@ export function normalizeMemory(raw: z.infer<typeof memorySchema>): MemorySummar
       name,
       entries: toNumber(entries) ?? 0,
     })),
+    providers: all,
+  };
+}
+
+// --- Messaging platforms ----------------------------------------------------
+
+export const messagingPlatformsSchema = z.looseObject({
+  platforms: z
+    .array(
+      z.looseObject({
+        id: z.string().nullish(),
+        name: z.string().nullish(),
+        description: z.string().nullish(),
+        docs_url: z.string().nullish(),
+        enabled: z.boolean().nullish(),
+        configured: z.boolean().nullish(),
+        state: z.string().nullish(),
+        error_message: z.string().nullish(),
+        // Older Hermes returns a plain chat id; 0.19 returns an object. Accept both.
+        home_channel: z
+          .union([
+            z.string(),
+            z.looseObject({
+              platform: z.string().nullish(),
+              chat_id: z.string().nullish(),
+              name: z.string().nullish(),
+            }),
+          ])
+          .nullish(),
+        env_vars: z
+          .array(
+            z.looseObject({
+              key: z.string().nullish(),
+              required: z.boolean().nullish(),
+              is_set: z.boolean().nullish(),
+              description: z.string().nullish(),
+            }),
+          )
+          .nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface MessagingEnvVar {
+  key: string;
+  required: boolean;
+  isSet: boolean;
+  description: string | null;
+}
+
+export interface MessagingPlatform {
+  id: string;
+  name: string;
+  description: string | null;
+  docsUrl: string | null;
+  enabled: boolean;
+  configured: boolean;
+  state: string | null;
+  errorMessage: string | null;
+  homeChannel: string | null;
+  /** How many required secrets the platform still needs, so setup can be nudged. */
+  requiredTotal: number;
+  requiredMissing: number;
+  envVars: MessagingEnvVar[];
+}
+
+export interface MessagingOverview {
+  platforms: MessagingPlatform[];
+  configuredCount: number;
+  enabledCount: number;
+}
+
+/** Running first, then set up, then the long tail of possible platforms. */
+function messagingRank(platform: MessagingPlatform): number {
+  if (platform.enabled) return 0;
+  if (platform.configured) return 1;
+  return 2;
+}
+
+export function normalizeMessagingPlatforms(
+  raw: z.infer<typeof messagingPlatformsSchema>,
+): MessagingOverview {
+  const platforms: MessagingPlatform[] = (raw.platforms ?? [])
+    .map((platform, index) => {
+      // Never carry the redacted secret value into the UI — only whether it is set.
+      const envVars: MessagingEnvVar[] = (platform.env_vars ?? []).map((v) => ({
+        key: v.key ?? '',
+        required: v.required === true,
+        isSet: v.is_set === true,
+        description: v.description?.trim() || null,
+      }));
+      const required = envVars.filter((v) => v.required);
+
+      // home_channel is either a bare id or an object; show a human label for both.
+      const homeChannel =
+        typeof platform.home_channel === 'string'
+          ? platform.home_channel.trim() || null
+          : platform.home_channel?.name?.trim() || platform.home_channel?.chat_id?.trim() || null;
+
+      return {
+        id: platform.id ?? `platform-${index}`,
+        name: platform.name ?? platform.id ?? `Plattform ${index + 1}`,
+        description: platform.description?.trim() || null,
+        docsUrl: platform.docs_url?.trim() || null,
+        enabled: platform.enabled === true,
+        configured: platform.configured === true,
+        state: platform.state ?? null,
+        errorMessage: platform.error_message?.trim() || null,
+        homeChannel,
+        requiredTotal: required.length,
+        requiredMissing: required.filter((v) => !v.isSet).length,
+        envVars,
+      };
+    })
+    .sort((a, b) => messagingRank(a) - messagingRank(b) || a.name.localeCompare(b.name));
+
+  return {
+    platforms,
+    configuredCount: platforms.filter((p) => p.configured).length,
+    enabledCount: platforms.filter((p) => p.enabled).length,
+  };
+}
+
+// --- Webhooks ---------------------------------------------------------------
+
+export const webhooksSchema = z.looseObject({
+  enabled: z.boolean().nullish(),
+  base_url: z.string().nullish(),
+  subscriptions: z
+    .array(
+      z.looseObject({
+        name: z.string().nullish(),
+        url: z.string().nullish(),
+        enabled: z.boolean().nullish(),
+        events: z.array(z.string()).nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface WebhookSubscription {
+  name: string | null;
+  url: string | null;
+  enabled: boolean;
+  events: string[];
+}
+
+export interface WebhooksOverview {
+  enabled: boolean;
+  baseUrl: string | null;
+  subscriptions: WebhookSubscription[];
+}
+
+export function normalizeWebhooks(raw: z.infer<typeof webhooksSchema>): WebhooksOverview {
+  return {
+    enabled: raw.enabled === true,
+    baseUrl: raw.base_url?.trim() || null,
+    subscriptions: (raw.subscriptions ?? []).map((sub) => ({
+      name: sub.name?.trim() || null,
+      url: sub.url?.trim() || null,
+      enabled: sub.enabled !== false,
+      events: sub.events ?? [],
+    })),
+  };
+}
+
+// --- Pairing ----------------------------------------------------------------
+
+const pairedUserSchema = z.looseObject({
+  platform: z.string().nullish(),
+  user_id: z.string().nullish(),
+  user_name: z.string().nullish(),
+  approved_at: numeric,
+  requested_at: numeric,
+});
+
+export const pairingSchema = z.looseObject({
+  pending: z.array(pairedUserSchema).nullish(),
+  approved: z.array(pairedUserSchema).nullish(),
+});
+
+export interface PairedUser {
+  platform: string | null;
+  userId: string | null;
+  userName: string | null;
+  /** Epoch milliseconds; Hermes reports seconds. */
+  at: number | null;
+}
+
+export interface PairingOverview {
+  pending: PairedUser[];
+  approved: PairedUser[];
+}
+
+function normalizePairedUser(user: z.infer<typeof pairedUserSchema>): PairedUser {
+  return {
+    platform: user.platform ?? null,
+    userId: user.user_id ?? null,
+    userName: user.user_name?.trim() || null,
+    at: toEpochMs(user.approved_at ?? user.requested_at),
+  };
+}
+
+export function normalizePairing(raw: z.infer<typeof pairingSchema>): PairingOverview {
+  return {
+    pending: (raw.pending ?? []).map(normalizePairedUser),
+    approved: (raw.approved ?? []).map(normalizePairedUser),
   };
 }
