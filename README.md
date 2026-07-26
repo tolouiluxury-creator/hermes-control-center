@@ -1,5 +1,9 @@
 # Hermes Control Center
 
+[![CI](https://github.com/tolouiluxury-creator/hermes-control-center/actions/workflows/ci.yml/badge.svg)](https://github.com/tolouiluxury-creator/hermes-control-center/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.5-brightgreen.svg)](https://nodejs.org)
+
 A dashboard-first web cockpit for [Hermes Agent](https://github.com/NousResearch/hermes-agent).
 
 Most Hermes web UIs are chat clients with management bolted on. This one is the other way round: a
@@ -131,10 +135,16 @@ authenticating proxy in front as well — Cloudflare Access, Authelia, or your r
 ## Development
 
 ```bash
-git clone https://github.com/<owner>/hermes-control-center.git
+git clone https://github.com/tolouiluxury-creator/hermes-control-center.git
 cd hermes-control-center
 npm install
 npm run dev          # server on :7777, Vite on :5174 (open this one)
+```
+
+To run the real thing from a clone rather than the dev server:
+
+```bash
+npm run build && npm start
 ```
 
 | Script | Purpose |

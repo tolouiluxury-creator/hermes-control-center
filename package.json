@@ -12,6 +12,15 @@
     "webui"
   ],
   "license": "MIT",
+  "author": "tolouiluxury-creator (https://github.com/tolouiluxury-creator)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tolouiluxury-creator/hermes-control-center.git"
+  },
+  "homepage": "https://github.com/tolouiluxury-creator/hermes-control-center#readme",
+  "bugs": {
+    "url": "https://github.com/tolouiluxury-creator/hermes-control-center/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22.5.0"
