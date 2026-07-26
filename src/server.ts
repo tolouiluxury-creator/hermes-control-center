@@ -6,6 +6,8 @@ import type { AppContext } from './context.js';
 import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerInventoryRoutes } from './routes/inventory.js';
+import { registerActionRoutes } from './routes/actions.js';
+import { ResponseCache, CACHE_TTL_MS } from './routes/cache.js';
 import { registerWorkspaceRoutes } from './routes/workspace.js';
 import { registerMetaRoutes } from './routes/meta.js';
 import { registerStatusRoutes } from './routes/status.js';
@@ -73,10 +75,15 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   registerAuthGuard(app, ctx.auth);
   await registerAuthRoutes(app, ctx.auth);
 
+  // One cache shared by the read routes (which populate it) and the action
+  // routes (which invalidate the keys a write touches).
+  const cache = new ResponseCache(CACHE_TTL_MS);
+
   await registerMetaRoutes(app, ctx.options);
   await registerStatusRoutes(app, ctx);
   await registerDashboardRoutes(app, ctx);
-  await registerInventoryRoutes(app, ctx);
+  await registerInventoryRoutes(app, ctx, cache);
+  await registerActionRoutes(app, ctx, cache);
   await registerWorkspaceRoutes(app, ctx);
   await registerStreamRoutes(app, ctx);
 

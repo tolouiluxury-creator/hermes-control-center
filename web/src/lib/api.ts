@@ -86,6 +86,13 @@ export const getSkills = (): Promise<SkillSummary> => apiRequest<SkillSummary>('
 export const getSkillList = (): Promise<SkillEntry[]> =>
   apiRequest<SkillEntry[]>('/hermes/skills/list');
 
+/** Enable or disable a skill on the agent. Returns once Hermes confirms. */
+export const toggleSkill = (name: string, enabled: boolean): Promise<{ ok?: boolean }> =>
+  apiRequest<{ ok?: boolean }>('/hermes/skills/toggle', {
+    method: 'PUT',
+    ...jsonBody({ name, enabled }),
+  });
+
 export const getModelOptions = (): Promise<ModelOptions> =>
   apiRequest<ModelOptions>('/hermes/models');
 

@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { AppContext } from '../context.js';
 import { UpstreamError } from '../hermes/client.js';
+import { CACHE_KEYS, type ResponseCache } from './cache.js';
 
 /**
  * Read-only projections of the Hermes dashboard's inventory and telemetry.
@@ -9,47 +10,11 @@ import { UpstreamError } from '../hermes/client.js';
  * the browser never sees a raw Hermes payload and a version difference is
  * absorbed here rather than in a component.
  *
- * Responses are cached briefly: several widgets on one dashboard ask for the
- * same thing, and a page load should not become a burst of upstream requests.
+ * Responses are cached briefly (see {@link ResponseCache}): several widgets on
+ * one dashboard ask for the same thing, and a page load should not become a
+ * burst of upstream requests. The cache is shared with the action routes, which
+ * invalidate the keys a write touches.
  */
-
-interface CacheEntry {
-  value: unknown;
-  expiresAt: number;
-}
-
-class ResponseCache {
-  private readonly entries = new Map<string, CacheEntry>();
-  private readonly inflight = new Map<string, Promise<unknown>>();
-
-  constructor(private readonly ttlMs: number) {}
-
-  async get<T>(key: string, load: () => Promise<T>): Promise<T> {
-    const now = Date.now();
-    const cached = this.entries.get(key);
-    if (cached && cached.expiresAt > now) return cached.value as T;
-
-    // Single-flight: three widgets mounting at once must cause one upstream call.
-    const existing = this.inflight.get(key);
-    if (existing) return existing as Promise<T>;
-
-    const promise = load()
-      .then((value) => {
-        this.entries.set(key, { value, expiresAt: Date.now() + this.ttlMs });
-        return value;
-      })
-      .finally(() => this.inflight.delete(key));
-
-    this.inflight.set(key, promise);
-    return promise;
-  }
-
-  clear(): void {
-    this.entries.clear();
-  }
-}
-
-const CACHE_TTL_MS = 5000;
 
 function readLimit(value: unknown, fallback: number, max: number): number {
   const parsed =
@@ -61,9 +26,8 @@ function readLimit(value: unknown, fallback: number, max: number): number {
 export async function registerInventoryRoutes(
   app: FastifyInstance,
   ctx: AppContext,
+  cache: ResponseCache,
 ): Promise<void> {
-  const cache = new ResponseCache(CACHE_TTL_MS);
-
   /** Turns an upstream failure into an honest status instead of a blank 500. */
   const guard = async <T>(reply: FastifyReply, work: () => Promise<T>): Promise<T | undefined> => {
     try {
@@ -78,48 +42,48 @@ export async function registerInventoryRoutes(
   };
 
   app.get('/api/hermes/skills', async (_request, reply) =>
-    guard(reply, () => cache.get('skills', () => ctx.dashboard.skills())),
+    guard(reply, () => cache.get(CACHE_KEYS.skills, () => ctx.dashboard.skills())),
   );
 
   /** The full list backing the skills page; the widget uses the summary above. */
   app.get('/api/hermes/skills/list', async (_request, reply) =>
-    guard(reply, () => cache.get('skills:list', () => ctx.dashboard.skillList())),
+    guard(reply, () => cache.get(CACHE_KEYS.skillList, () => ctx.dashboard.skillList())),
   );
 
   app.get('/api/hermes/models', async (_request, reply) =>
-    guard(reply, () => cache.get('models', () => ctx.dashboard.modelOptions())),
+    guard(reply, () => cache.get(CACHE_KEYS.models, () => ctx.dashboard.modelOptions())),
   );
 
   app.get('/api/hermes/mcp', async (_request, reply) =>
-    guard(reply, () => cache.get('mcp', () => ctx.dashboard.mcpServers())),
+    guard(reply, () => cache.get(CACHE_KEYS.mcp, () => ctx.dashboard.mcpServers())),
   );
 
   app.get('/api/hermes/cron', async (_request, reply) =>
-    guard(reply, () => cache.get('cron', () => ctx.dashboard.cronJobs())),
+    guard(reply, () => cache.get(CACHE_KEYS.cron, () => ctx.dashboard.cronJobs())),
   );
 
   app.get('/api/hermes/model', async (_request, reply) =>
-    guard(reply, () => cache.get('model', () => ctx.dashboard.modelInfo())),
+    guard(reply, () => cache.get(CACHE_KEYS.model, () => ctx.dashboard.modelInfo())),
   );
 
   app.get('/api/hermes/analytics', async (_request, reply) =>
-    guard(reply, () => cache.get('analytics', () => ctx.dashboard.analytics())),
+    guard(reply, () => cache.get(CACHE_KEYS.analytics, () => ctx.dashboard.analytics())),
   );
 
   app.get('/api/hermes/memory', async (_request, reply) =>
-    guard(reply, () => cache.get('memory', () => ctx.dashboard.memory())),
+    guard(reply, () => cache.get(CACHE_KEYS.memory, () => ctx.dashboard.memory())),
   );
 
   app.get('/api/hermes/messaging', async (_request, reply) =>
-    guard(reply, () => cache.get('messaging', () => ctx.dashboard.messagingPlatforms())),
+    guard(reply, () => cache.get(CACHE_KEYS.messaging, () => ctx.dashboard.messagingPlatforms())),
   );
 
   app.get('/api/hermes/webhooks', async (_request, reply) =>
-    guard(reply, () => cache.get('webhooks', () => ctx.dashboard.webhooks())),
+    guard(reply, () => cache.get(CACHE_KEYS.webhooks, () => ctx.dashboard.webhooks())),
   );
 
   app.get('/api/hermes/pairing', async (_request, reply) =>
-    guard(reply, () => cache.get('pairing', () => ctx.dashboard.pairing())),
+    guard(reply, () => cache.get(CACHE_KEYS.pairing, () => ctx.dashboard.pairing())),
   );
 
   app.get('/api/hermes/logs', async (request, reply) => {

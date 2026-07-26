@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { HermesClient, RequestOptions } from './client.js';
 import { DASHBOARD_STATUS_PATH } from './endpoints.js';
 import {
@@ -44,6 +45,14 @@ import {
   type SkillSummary,
   type WebhooksOverview,
 } from './inventory.js';
+
+/**
+ * Loose result shape for dashboard writes. Hermes replies with an object that
+ * usually carries `ok`, sometimes the affected entity too; we only care that
+ * the request succeeded, and unknown keys survive.
+ */
+const actionResultSchema = z.looseObject({ ok: z.boolean().nullish() });
+export type ActionResult = z.infer<typeof actionResultSchema>;
 
 /**
  * Hermes dashboard backend (default :9119). Owns configuration, inventory
@@ -130,6 +139,19 @@ export class DashboardClient {
 
   pairing(options?: RequestOptions): Promise<PairingOverview> {
     return this.client.json(pairingSchema, '/api/pairing', options).then(normalizePairing);
+  }
+
+  // --- Writes ---------------------------------------------------------------
+  // Body shapes are taken from Hermes' own dashboard client, not guessed. The
+  // profile is appended as a query parameter by the underlying client.
+
+  /** Enable or disable a skill for the agent. */
+  toggleSkill(name: string, enabled: boolean, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/skills/toggle', {
+      ...options,
+      method: 'PUT',
+      body: { name, enabled },
+    });
   }
 
   raw(path: string, options?: RequestOptions): Promise<Response> {

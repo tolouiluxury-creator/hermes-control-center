@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Package, Sparkles, Store } from 'lucide-react';
-import { getSkillList, queryKeys } from '@/lib/api';
+import { getSkillList, queryKeys, toggleSkill } from '@/lib/api';
 import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ConfirmInline } from '@/components/ConfirmInline';
+import { useToast } from '@/components/Toast';
 import type { SkillEntry } from '@/lib/hermesTypes';
 
 type Provenance = 'alle' | 'bundled' | 'hub' | 'agent';
@@ -14,50 +16,122 @@ const PROVENANCE_LABEL: Record<string, { label: string; icon: typeof Package; hi
   agent: { label: 'selbst erstellt', icon: Sparkles, hint: 'Vom Agenten angelegt' },
 };
 
-function SkillRow({ skill }: { skill: SkillEntry }) {
+function ToggleSwitch({
+  enabled,
+  onClick,
+  disabled,
+  label,
+}: {
+  enabled: boolean;
+  onClick: () => void;
+  disabled: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      onClick={onClick}
+      disabled={disabled}
+      className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50"
+      style={{ background: enabled ? 'var(--color-ok)' : 'var(--color-raised)' }}
+    >
+      <span
+        className="absolute top-0.5 size-4 rounded-full bg-white transition-all"
+        style={{ left: enabled ? 'calc(100% - 1.125rem)' : '0.125rem' }}
+        aria-hidden
+      />
+    </button>
+  );
+}
+
+function SkillRow({
+  skill,
+  confirming,
+  pending,
+  onToggle,
+  onConfirmDisable,
+  onCancel,
+}: {
+  skill: SkillEntry;
+  confirming: boolean;
+  pending: boolean;
+  onToggle: (skill: SkillEntry) => void;
+  onConfirmDisable: (skill: SkillEntry) => void;
+  onCancel: () => void;
+}) {
   const provenance = skill.provenance ? PROVENANCE_LABEL[skill.provenance] : undefined;
   const Icon = provenance?.icon;
 
   return (
-    <li className="flex items-start gap-3 border-b border-[var(--color-hairline)] px-3 py-2.5 last:border-b-0">
-      <span
-        className={`mt-1.5 size-1.5 shrink-0 rounded-full ${
-          skill.enabled ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-ink-faint)]'
-        }`}
-        aria-hidden
-      />
-      <span className="sr-only">{skill.enabled ? 'aktiv' : 'inaktiv'}</span>
+    <li className="border-b border-[var(--color-hairline)] px-3 py-2.5 last:border-b-0">
+      <div className="flex items-start gap-3">
+        <span
+          className={`mt-1.5 size-1.5 shrink-0 rounded-full ${
+            skill.enabled ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-ink-faint)]'
+          }`}
+          aria-hidden
+        />
+        <span className="sr-only">{skill.enabled ? 'aktiv' : 'inaktiv'}</span>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="font-mono text-sm">{skill.name}</span>
-          {skill.category && (
-            <span className="text-[0.7rem] text-[var(--color-ink-faint)]">{skill.category}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-mono text-sm">{skill.name}</span>
+            {skill.category && (
+              <span className="text-[0.7rem] text-[var(--color-ink-faint)]">{skill.category}</span>
+            )}
+          </div>
+          {skill.description && (
+            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{skill.description}</p>
           )}
         </div>
-        {skill.description && (
-          <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{skill.description}</p>
+
+        {Icon && (
+          <span
+            className="mt-0.5 flex shrink-0 items-center gap-1 text-[0.65rem] text-[var(--color-ink-faint)]"
+            title={provenance?.hint}
+          >
+            <Icon size={11} aria-hidden />
+            {provenance?.label}
+          </span>
         )}
+
+        <span className="mt-0.5 w-10 shrink-0 text-right font-mono text-xs text-[var(--color-ink-faint)]">
+          {skill.usage > 0 ? `${skill.usage}×` : '—'}
+        </span>
+
+        <ToggleSwitch
+          enabled={skill.enabled}
+          disabled={pending}
+          onClick={() => onToggle(skill)}
+          label={`${skill.name} ${skill.enabled ? 'deaktivieren' : 'aktivieren'}`}
+        />
       </div>
 
-      {Icon && (
-        <span
-          className="mt-0.5 flex shrink-0 items-center gap-1 text-[0.65rem] text-[var(--color-ink-faint)]"
-          title={provenance?.hint}
-        >
-          <Icon size={11} aria-hidden />
-          {provenance?.label}
-        </span>
+      {confirming && (
+        <ConfirmInline
+          tone="warn"
+          message={
+            <>
+              „{skill.name}" deaktivieren? Dein Agent kann diese Fähigkeit dann nicht mehr nutzen.
+            </>
+          }
+          confirmLabel="Deaktivieren"
+          pending={pending}
+          onConfirm={() => onConfirmDisable(skill)}
+          onCancel={onCancel}
+        />
       )}
-
-      <span className="mt-0.5 w-12 shrink-0 text-right font-mono text-xs text-[var(--color-ink-faint)]">
-        {skill.usage > 0 ? `${skill.usage}×` : '—'}
-      </span>
     </li>
   );
 }
 
 export function SkillsPage() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.skillList,
     queryFn: getSkillList,
@@ -67,6 +141,34 @@ export function SkillsPage() {
   const [search, setSearch] = useState('');
   const [provenance, setProvenance] = useState<Provenance>('alle');
   const [category, setCategory] = useState<string>('alle');
+  /** The skill whose disable is awaiting confirmation, if any. */
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const toggle = useMutation({
+    mutationFn: (skill: SkillEntry) => toggleSkill(skill.name, !skill.enabled),
+    onSuccess: async (_result, skill) => {
+      setConfirming(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+      toast.push({
+        tone: 'success',
+        title: skill.enabled ? `„${skill.name}" deaktiviert` : `„${skill.name}" aktiviert`,
+      });
+    },
+    onError: (mutationError: Error) =>
+      toast.push({
+        tone: 'error',
+        title: 'Umschalten fehlgeschlagen',
+        description: mutationError.message,
+      }),
+  });
+
+  // Enabling is safe and immediate; disabling removes a capability from the
+  // running agent, so it asks first.
+  const onToggle = (skill: SkillEntry) => {
+    if (skill.enabled) setConfirming(skill.name);
+    else toggle.mutate(skill);
+  };
 
   const skills = useMemo(() => data ?? [], [data]);
 
@@ -153,7 +255,15 @@ export function SkillsPage() {
           ) : (
             <ul className="card overflow-hidden p-0">
               {visible.map((skill) => (
-                <SkillRow key={skill.name} skill={skill} />
+                <SkillRow
+                  key={skill.name}
+                  skill={skill}
+                  confirming={confirming === skill.name}
+                  pending={toggle.isPending && toggle.variables?.name === skill.name}
+                  onToggle={onToggle}
+                  onConfirmDisable={(target) => toggle.mutate(target)}
+                  onCancel={() => setConfirming(null)}
+                />
               ))}
             </ul>
           )}
