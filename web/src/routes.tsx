@@ -35,9 +35,6 @@ const PLANNED: Record<string, string> = {
   chats: 'Unterhaltungen mit deinem Agenten, live gestreamt, mit Sitzungsverlauf und Suche.',
   agenten: 'Deine Agenten mit Auslastung, Modellzuordnung und laufenden Aufträgen.',
   workflows: 'Wiederkehrende Abläufe: anlegen, planen, pausieren und Verlauf einsehen.',
-  dokumente: 'Hochgeladene Dokumente mit Vorschau, Verschlagwortung und Verwendung.',
-  browser: 'Browser-Automatisierung: Sitzungen beobachten, Abläufe starten, Ergebnisse ansehen.',
-  dateien: 'Dateibrowser deines Hermes-Verzeichnisses mit Vorschau und Upload.',
   einstellungen: 'Konfiguration, Profile, Passwort und Erscheinungsbild.',
 };
 
