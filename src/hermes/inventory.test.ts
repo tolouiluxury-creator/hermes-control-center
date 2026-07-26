@@ -1,0 +1,252 @@
+import { describe, expect, it } from 'vitest';
+import {
+  classifyLogLine,
+  normalizeAnalytics,
+  normalizeCronJobs,
+  normalizeMcpServers,
+  normalizeMemory,
+  normalizeModelInfo,
+  normalizeSessions,
+  normalizeSkills,
+  toEpochMs,
+} from './inventory.js';
+
+/**
+ * The payloads below are copied from a real Hermes 0.19.0. Keeping them here is
+ * what stops these normalisers from drifting back to assumptions.
+ */
+
+describe('normalizeSkills', () => {
+  const real = [
+    { name: 'pdf', description: 'PDF', category: 'productivity', enabled: true, usage: 12 },
+    { name: 'canvas-design', description: '', category: 'creative', enabled: true, usage: 3 },
+    { name: 'legacy', description: '', category: null, enabled: false, usage: 0 },
+  ];
+
+  it('counts totals and enabled skills', () => {
+    const summary = normalizeSkills(real);
+    expect(summary.total).toBe(3);
+    expect(summary.enabled).toBe(2);
+  });
+
+  it('groups categories, largest first, and names the missing one', () => {
+    const summary = normalizeSkills(real);
+    expect(summary.categories.map((entry) => entry.name)).toContain('Ohne Kategorie');
+    expect(summary.categories[0]?.count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ranks by usage, not alphabetically', () => {
+    expect(normalizeSkills(real).top[0]?.name).toBe('pdf');
+  });
+
+  it('treats a missing enabled flag as enabled, matching the dashboard', () => {
+    expect(normalizeSkills([{ name: 'x' }]).enabled).toBe(1);
+  });
+});
+
+describe('normalizeCronJobs', () => {
+  const real = [
+    {
+      id: '235f3731da4b',
+      name: 'Finanzbericht Morgenroutine',
+      prompt: 'Erstelle den Bericht',
+      schedule: { kind: 'cron', expr: '0 7 * * *', display: '0 7 * * *' },
+      schedule_display: '0 7 * * *',
+    },
+  ];
+
+  it('reads the schedule out of the nested object', () => {
+    expect(normalizeCronJobs(real)[0]?.schedule).toBe('0 7 * * *');
+  });
+
+  it('falls back to the prompt when a job has no name', () => {
+    const [job] = normalizeCronJobs([{ id: 'a', prompt: 'Sende die Zusammenfassung' }]);
+    expect(job?.name).toBe('Sende die Zusammenfassung');
+  });
+
+  /** Versions disagree on which flag pauses a job; either one must count. */
+  it('treats both paused and enabled=false as paused', () => {
+    expect(normalizeCronJobs([{ id: 'a', paused: true }])[0]?.paused).toBe(true);
+    expect(normalizeCronJobs([{ id: 'b', enabled: false }])[0]?.paused).toBe(true);
+    expect(normalizeCronJobs([{ id: 'c' }])[0]?.paused).toBe(false);
+  });
+});
+
+describe('classifyLogLine', () => {
+  it('recognises the levels Hermes actually writes', () => {
+    expect(classifyLogLine('2026-07-26 10:23:21,968 WARNING hermes_cli.gateway: x')).toBe('warn');
+    expect(classifyLogLine('2026-07-26 10:23:20,110 INFO hermes_cli.plugins: y')).toBe('info');
+    expect(classifyLogLine('2026-07-26 10:23:20,110 ERROR boom')).toBe('error');
+    expect(classifyLogLine('Traceback (most recent call last):')).toBe('error');
+  });
+
+  it('leaves ordinary output unmarked rather than colouring everything', () => {
+    expect(classifyLogLine('  File "main.py", line 3')).toBe('plain');
+    expect(classifyLogLine('Starting up')).toBe('plain');
+  });
+
+  /** "error" late in a message is not a level, and must not raise an alarm. */
+  it('only looks at the head of the line', () => {
+    const long = `${'x'.repeat(200)} ERROR`;
+    expect(classifyLogLine(long)).toBe('plain');
+  });
+});
+
+describe('toEpochMs', () => {
+  /** Hermes reports seconds; passing them through would render 1970. */
+  it('scales seconds up to milliseconds', () => {
+    expect(toEpochMs(1784312971)).toBe(1784312971000);
+  });
+
+  it('leaves millisecond timestamps alone', () => {
+    expect(toEpochMs(1784312971425)).toBe(1784312971425);
+  });
+
+  it('rejects absent and nonsensical values', () => {
+    expect(toEpochMs(null)).toBeNull();
+    expect(toEpochMs(0)).toBeNull();
+    expect(toEpochMs('nope')).toBeNull();
+  });
+});
+
+describe('normalizeSessions', () => {
+  it('maps the real payload, converting timestamps', () => {
+    const result = normalizeSessions({
+      total: 25,
+      sessions: [
+        {
+          id: '20260717_182929_d71e4d',
+          source: 'cli',
+          model: 'hermes-free',
+          started_at: 1784312971.425,
+          message_count: 12,
+          end_reason: null,
+        },
+      ],
+    });
+
+    expect(result.total).toBe(25);
+    expect(result.sessions[0]?.startedAt).toBe(1784312971425);
+    expect(result.sessions[0]?.messages).toBe(12);
+    expect(result.sessions[0]?.title).toBeNull();
+  });
+});
+
+describe('normalizeAnalytics', () => {
+  const real = {
+    daily: [
+      { day: '2026-07-12', input_tokens: 26018455, output_tokens: 143220, estimated_cost: 0 },
+    ],
+    by_model: [
+      {
+        model: 'hermes-free',
+        input_tokens: 100,
+        output_tokens: 50,
+        estimated_cost: 0.5,
+        api_calls: 7,
+      },
+    ],
+    totals: {
+      total_input: 30073124,
+      total_output: 208554,
+      total_estimated_cost: 1.25,
+      total_actual_cost: 0,
+      total_sessions: 28,
+      total_api_calls: 620,
+    },
+    tools: [
+      { tool: 'bash', count: 40 },
+      { tool: 'read', count: 90 },
+    ],
+    period_days: 30,
+  };
+
+  it('reads totals from the real shape', () => {
+    const summary = normalizeAnalytics(real);
+    expect(summary.totals.inputTokens).toBe(30073124);
+    expect(summary.totals.apiCalls).toBe(620);
+    expect(summary.periodDays).toBe(30);
+  });
+
+  /**
+   * Only some providers report a billed amount. Presenting an estimate as if it
+   * were the invoice is the kind of small lie that costs trust.
+   */
+  it('marks the cost as an estimate when no actual cost is reported', () => {
+    expect(normalizeAnalytics(real).totals.cost).toBe(1.25);
+    expect(normalizeAnalytics(real).totals.costIsEstimate).toBe(true);
+
+    const billed = normalizeAnalytics({
+      ...real,
+      totals: { ...real.totals, total_actual_cost: 3.5 },
+    });
+    expect(billed.totals.cost).toBe(3.5);
+    expect(billed.totals.costIsEstimate).toBe(false);
+  });
+
+  it('sorts tools and models by size', () => {
+    expect(normalizeAnalytics(real).topTools[0]?.tool).toBe('read');
+    expect(normalizeAnalytics(real).byModel[0]?.tokens).toBe(150);
+  });
+
+  it('survives a payload with nothing in it', () => {
+    const empty = normalizeAnalytics({});
+    expect(empty.daily).toEqual([]);
+    expect(empty.totals.cost).toBeNull();
+  });
+});
+
+describe('normalizeMemory', () => {
+  const real = {
+    active: '',
+    providers: [
+      { name: 'holographic', available: true, configured: true, status: 'ready' },
+      { name: 'byterover', available: false, configured: true, status: 'unavailable' },
+      { name: 'other', available: false, configured: false, status: 'unavailable' },
+    ],
+    builtin_files: { memory: 879, user: 1106 },
+  };
+
+  it('keeps only configured providers and counts the available ones', () => {
+    const summary = normalizeMemory(real);
+    expect(summary.configured.map((entry) => entry.name)).toEqual(['holographic', 'byterover']);
+    expect(summary.availableCount).toBe(1);
+  });
+
+  it('reads the built-in file counts', () => {
+    expect(normalizeMemory(real).files).toEqual([
+      { name: 'memory', entries: 879 },
+      { name: 'user', entries: 1106 },
+    ]);
+  });
+});
+
+describe('normalizeModelInfo and normalizeMcpServers', () => {
+  it('prefers the effective context length', () => {
+    const summary = normalizeModelInfo({
+      model: 'hermes-free',
+      provider: 'custom',
+      auto_context_length: 128000,
+      config_context_length: 200000,
+      effective_context_length: 256000,
+      capabilities: { vision: true, audio: false },
+    });
+
+    expect(summary.contextLength).toBe(256000);
+    expect(summary.capabilities).toEqual(['vision']);
+  });
+
+  it('returns an empty list when no MCP servers are configured', () => {
+    expect(normalizeMcpServers({ servers: [] })).toEqual([]);
+    expect(normalizeMcpServers({})).toEqual([]);
+  });
+
+  it('derives the transport and tool count', () => {
+    const [server] = normalizeMcpServers({
+      servers: [{ name: 'files', tools: [{}, {}], command: 'npx' }],
+    });
+    expect(server?.toolCount).toBe(2);
+    expect(server?.transport).toBe('stdio');
+    expect(server?.enabled).toBe(true);
+  });
+});

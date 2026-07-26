@@ -1,5 +1,15 @@
 import type { Meta, MetricSeries, PublicHermesConnection, StatusSnapshot } from './types';
 import type { DashboardLayout } from '@/widgets/types';
+import type {
+  AnalyticsSummary,
+  CronJobSummary,
+  LogsResponse,
+  McpServerSummary,
+  MemorySummary,
+  ModelSummary,
+  SessionsResponse,
+  SkillSummary,
+} from './hermesTypes';
 
 /**
  * Thin fetch wrapper for the control-center backend. The backend is the only
@@ -63,6 +73,27 @@ export const login = (password: string): Promise<{ ok: boolean }> =>
 export const logout = (): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/auth/logout', { method: 'POST' });
 
+export const getSkills = (): Promise<SkillSummary> => apiRequest<SkillSummary>('/hermes/skills');
+
+export const getMcpServers = (): Promise<McpServerSummary[]> =>
+  apiRequest<McpServerSummary[]>('/hermes/mcp');
+
+export const getCronJobs = (): Promise<CronJobSummary[]> =>
+  apiRequest<CronJobSummary[]>('/hermes/cron');
+
+export const getModelInfo = (): Promise<ModelSummary> => apiRequest<ModelSummary>('/hermes/model');
+
+export const getAnalytics = (): Promise<AnalyticsSummary> =>
+  apiRequest<AnalyticsSummary>('/hermes/analytics');
+
+export const getMemory = (): Promise<MemorySummary> => apiRequest<MemorySummary>('/hermes/memory');
+
+export const getLogs = (lines = 100): Promise<LogsResponse> =>
+  apiRequest<LogsResponse>(`/hermes/logs?lines=${lines}`);
+
+export const getSessions = (limit = 10): Promise<SessionsResponse> =>
+  apiRequest<SessionsResponse>(`/hermes/sessions?limit=${limit}`);
+
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
 
@@ -93,6 +124,14 @@ export const queryKeys = {
   meta: ['meta'] as const,
   auth: ['auth'] as const,
   dashboardLayout: ['dashboard', 'layout'] as const,
+  skills: ['hermes', 'skills'] as const,
+  mcp: ['hermes', 'mcp'] as const,
+  cron: ['hermes', 'cron'] as const,
+  model: ['hermes', 'model'] as const,
+  analytics: ['hermes', 'analytics'] as const,
+  memory: ['hermes', 'memory'] as const,
+  logs: (lines: number) => ['hermes', 'logs', lines] as const,
+  sessions: (limit: number) => ['hermes', 'sessions', limit] as const,
   status: ['status'] as const,
   connection: ['connection'] as const,
   metricSeries: (metric: string) => ['metrics', 'series', metric] as const,
