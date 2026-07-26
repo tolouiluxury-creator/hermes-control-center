@@ -72,6 +72,98 @@ export function normalizeSkills(raw: z.infer<typeof skillsSchema>): SkillSummary
   };
 }
 
+export interface SkillEntry {
+  name: string;
+  description: string | null;
+  category: string | null;
+  enabled: boolean;
+  usage: number;
+  /** Where the skill came from: bundled with Hermes, added by the agent, or installed from the hub. */
+  provenance: string | null;
+}
+
+/** The full list, for the management page. The widget uses the summary above. */
+export function normalizeSkillList(raw: z.infer<typeof skillsSchema>): SkillEntry[] {
+  return raw
+    .map((skill) => ({
+      name: skill.name,
+      description: skill.description?.trim() || null,
+      category: skill.category?.trim() || null,
+      enabled: skill.enabled !== false,
+      usage: toNumber(skill.usage) ?? 0,
+      provenance: skill.provenance ?? null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// --- Model options ----------------------------------------------------------
+
+export const modelOptionsSchema = z.looseObject({
+  model: z.string().nullish(),
+  provider: z.string().nullish(),
+  providers: z
+    .array(
+      z.looseObject({
+        slug: z.string().nullish(),
+        name: z.string().nullish(),
+        is_current: z.boolean().nullish(),
+        is_user_defined: z.boolean().nullish(),
+        models: z.array(z.string()).nullish(),
+        total_models: numeric,
+        source: z.string().nullish(),
+        authenticated: z.boolean().nullish(),
+        auth_type: z.string().nullish(),
+        warning: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface ProviderSummary {
+  slug: string;
+  name: string;
+  isCurrent: boolean;
+  authenticated: boolean | null;
+  authType: string | null;
+  source: string | null;
+  models: string[];
+  totalModels: number | null;
+  warning: string | null;
+  userDefined: boolean;
+}
+
+export interface ModelOptions {
+  currentModel: string | null;
+  currentProvider: string | null;
+  providers: ProviderSummary[];
+}
+
+export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): ModelOptions {
+  return {
+    currentModel: raw.model ?? null,
+    currentProvider: raw.provider ?? null,
+    providers: (raw.providers ?? [])
+      .map((provider, index) => ({
+        slug: provider.slug ?? `provider-${index}`,
+        name: provider.name ?? provider.slug ?? `Anbieter ${index + 1}`,
+        isCurrent: provider.is_current === true,
+        authenticated: provider.authenticated ?? null,
+        authType: provider.auth_type ?? null,
+        source: provider.source ?? null,
+        models: provider.models ?? [],
+        totalModels: toNumber(provider.total_models),
+        warning: provider.warning?.trim() || null,
+        userDefined: provider.is_user_defined === true,
+      }))
+      // The one in use first, then the ones that could be used.
+      .sort((a, b) => {
+        if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
+        if (a.authenticated !== b.authenticated) return a.authenticated ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      }),
+  };
+}
+
 // --- MCP servers ------------------------------------------------------------
 
 export const mcpServersSchema = z.looseObject({

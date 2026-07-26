@@ -19,15 +19,20 @@ import {
   normalizeMcpServers,
   normalizeMemory,
   normalizeModelInfo,
+  normalizeModelOptions,
   normalizeSessions,
+  normalizeSkillList,
   normalizeSkills,
+  modelOptionsSchema,
   sessionsSchema,
   skillsSchema,
   type AnalyticsSummary,
   type CronJobSummary,
   type McpServerSummary,
   type MemorySummary,
+  type ModelOptions,
   type ModelSummary,
+  type SkillEntry,
   type SkillSummary,
 } from './inventory.js';
 
@@ -53,6 +58,16 @@ export class DashboardClient {
 
   skills(options?: RequestOptions): Promise<SkillSummary> {
     return this.client.json(skillsSchema, '/api/skills', options).then(normalizeSkills);
+  }
+
+  skillList(options?: RequestOptions): Promise<SkillEntry[]> {
+    return this.client.json(skillsSchema, '/api/skills', options).then(normalizeSkillList);
+  }
+
+  modelOptions(options?: RequestOptions): Promise<ModelOptions> {
+    return this.client
+      .json(modelOptionsSchema, '/api/model/options', options)
+      .then(normalizeModelOptions);
   }
 
   mcpServers(options?: RequestOptions): Promise<McpServerSummary[]> {

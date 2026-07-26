@@ -6,8 +6,10 @@ import type {
   LogsResponse,
   McpServerSummary,
   MemorySummary,
+  ModelOptions,
   ModelSummary,
   SessionsResponse,
+  SkillEntry,
   SkillSummary,
 } from './hermesTypes';
 
@@ -75,6 +77,12 @@ export const logout = (): Promise<{ ok: boolean }> =>
 
 export const getSkills = (): Promise<SkillSummary> => apiRequest<SkillSummary>('/hermes/skills');
 
+export const getSkillList = (): Promise<SkillEntry[]> =>
+  apiRequest<SkillEntry[]>('/hermes/skills/list');
+
+export const getModelOptions = (): Promise<ModelOptions> =>
+  apiRequest<ModelOptions>('/hermes/models');
+
 export const getMcpServers = (): Promise<McpServerSummary[]> =>
   apiRequest<McpServerSummary[]>('/hermes/mcp');
 
@@ -125,6 +133,8 @@ export const queryKeys = {
   auth: ['auth'] as const,
   dashboardLayout: ['dashboard', 'layout'] as const,
   skills: ['hermes', 'skills'] as const,
+  skillList: ['hermes', 'skills', 'list'] as const,
+  models: ['hermes', 'models'] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,
   model: ['hermes', 'model'] as const,

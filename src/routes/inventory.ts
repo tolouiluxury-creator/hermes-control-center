@@ -81,6 +81,15 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get('skills', () => ctx.dashboard.skills())),
   );
 
+  /** The full list backing the skills page; the widget uses the summary above. */
+  app.get('/api/hermes/skills/list', async (_request, reply) =>
+    guard(reply, () => cache.get('skills:list', () => ctx.dashboard.skillList())),
+  );
+
+  app.get('/api/hermes/models', async (_request, reply) =>
+    guard(reply, () => cache.get('models', () => ctx.dashboard.modelOptions())),
+  );
+
   app.get('/api/hermes/mcp', async (_request, reply) =>
     guard(reply, () => cache.get('mcp', () => ctx.dashboard.mcpServers())),
   );

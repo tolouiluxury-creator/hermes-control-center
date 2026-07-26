@@ -14,6 +14,34 @@ export interface SkillSummary {
   top: { name: string; usage: number; enabled: boolean; category: string | null }[];
 }
 
+export interface SkillEntry {
+  name: string;
+  description: string | null;
+  category: string | null;
+  enabled: boolean;
+  usage: number;
+  provenance: string | null;
+}
+
+export interface ProviderSummary {
+  slug: string;
+  name: string;
+  isCurrent: boolean;
+  authenticated: boolean | null;
+  authType: string | null;
+  source: string | null;
+  models: string[];
+  totalModels: number | null;
+  warning: string | null;
+  userDefined: boolean;
+}
+
+export interface ModelOptions {
+  currentModel: string | null;
+  currentProvider: string | null;
+  providers: ProviderSummary[];
+}
+
 export interface McpServerSummary {
   name: string;
   enabled: boolean;
