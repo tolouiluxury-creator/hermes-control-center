@@ -14,26 +14,46 @@ npx hermes-control-center
 That is the whole install. No build step, no Python extra, no native compilation, no API key in your
 browser.
 
-> **Status: early development.** Milestones M0 (scaffold) and M1 (Hermes integration layer) are the
-> current focus. The widget grid and pages land in M2–M7. Nothing here fakes data: a panel with no
-> real source shows an explicit empty state instead of a plausible-looking number.
+> Not on npm yet. Until the first release is published, install from a clone — see
+> [Development](#development).
+
+> **Status: usable, incomplete.** The dashboard, the widget grid and six management pages work
+> against a live agent — everything shown below has been verified against Hermes 0.19.0. Chat and
+> write actions are not built yet; see [CHANGELOG.md](./CHANGELOG.md) for the exact line between the
+> two. Nothing here fakes data: a panel with no real source shows an explicit empty state instead of
+> a plausible-looking number.
+
+## What you get
+
+- **An arrangeable dashboard.** Eleven widgets — system load with history, agent health, live logs,
+  scheduled jobs, skills, MCP servers, model, token and cost analytics, recent sessions, knowledge.
+  Drag them, resize them, or move them with the keyboard; the layout is saved.
+- **Management pages** for skills (searchable across a hundred or more), models with per-provider
+  authentication state, logs with level filters and a follow toggle, analytics broken down by day,
+  model and tool, scheduled tasks, and MCP servers.
+- **A command palette** (`Ctrl`/`Cmd` + `K`) that reaches every page, with fuzzy matching.
+- **Light and dark themes**, keyboard shortcuts, and a layout that works on a phone.
 
 ## Requirements
 
 - **Node.js ≥ 22.5** — the built-in `node:sqlite` module is used for local state, so there is
   nothing to compile at install time.
-- **A local Hermes Agent installation.** Hermes exposes two HTTP surfaces and the control center
-  uses both:
+- **A Hermes Agent installation**, local or on a server. Hermes exposes two HTTP surfaces:
 
   | Surface | Start it with | Default | Provides |
   | --- | --- | --- | --- |
-  | API server | `hermes gateway` (with `API_SERVER_ENABLED=true`) | `127.0.0.1:8642` | chat, sessions, runs, jobs |
-  | Dashboard backend | `hermes dashboard --no-open` | `127.0.0.1:9119` | config, skills, MCP, models, cron, logs, metrics |
+  | Dashboard backend | `hermes dashboard --no-open` | `127.0.0.1:9119` | config, skills, MCP, models, cron, logs, metrics, sessions |
+  | API server | `hermes gateway` (with `API_SERVER_ENABLED=true`) | `127.0.0.1:8642` | chat, runs, jobs |
 
-  Neither is required to *start* the control center — it will show a setup screen telling you exactly
-  what is missing and how to enable it.
+  **Only the dashboard backend is load-bearing.** It powers the widgets and every page listed above.
+  Running without the API server is a perfectly normal setup: you get a dismissible banner naming
+  what is unavailable, not a wall in front of a working cockpit.
 
-To enable the API server, add this to `~/.hermes/.env` (`%LOCALAPPDATA%\hermes\.env` on Windows):
+  Neither is required to *start* the control center — `--doctor` and the setup screen tell you
+  exactly what is missing and which command fixes it.
+
+To enable the API server as well, add this to `~/.hermes/.env` (`%LOCALAPPDATA%\hermes\.env` on
+Windows) and restart the gateway:
 
 ```
 API_SERVER_ENABLED=true
@@ -132,9 +152,10 @@ Architecture, the widget catalogue and the full Hermes endpoint map are document
 
 ### Known advisory noise
 
-`npm audit` reports a DoS advisory in `brace-expansion`, reached only through ESLint's glob handling.
-It is a lint-time dev dependency and is not part of the published package — `npm audit --omit=dev`
-is clean.
+`npm audit` reports six high-severity entries. All of them trace to one `brace-expansion` advisory
+reached through `minimatch` in ESLint's glob handling. ESLint is a lint-time dev dependency and is
+not part of the published package: `npm audit --omit=dev` reports zero vulnerabilities, and the
+published tarball contains no ESLint code.
 
 ## Not affiliated with Nous Research
 
