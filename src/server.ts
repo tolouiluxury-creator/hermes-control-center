@@ -6,6 +6,7 @@ import type { AppContext } from './context.js';
 import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerInventoryRoutes } from './routes/inventory.js';
+import { registerWorkspaceRoutes } from './routes/workspace.js';
 import { registerMetaRoutes } from './routes/meta.js';
 import { registerStatusRoutes } from './routes/status.js';
 import { registerStreamRoutes } from './routes/stream.js';
@@ -76,6 +77,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerStatusRoutes(app, ctx);
   await registerDashboardRoutes(app, ctx);
   await registerInventoryRoutes(app, ctx);
+  await registerWorkspaceRoutes(app, ctx);
   await registerStreamRoutes(app, ctx);
 
   const webRoot = resolveWebRoot();

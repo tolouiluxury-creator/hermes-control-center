@@ -103,6 +103,34 @@ export interface SessionsResponse {
   sessions: SessionSummary[];
 }
 
+export type InsightSeverity = 'info' | 'warn' | 'critical';
+
+export interface Insight {
+  id: string;
+  severity: InsightSeverity;
+  title: string;
+  body: string;
+  evidence: Record<string, string | number>;
+  action?: string;
+}
+
+export interface Prompt {
+  id: string;
+  title: string;
+  body: string;
+  variables: string[];
+  tags: string[];
+  uses: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface PromptInput {
+  title: string;
+  body: string;
+  tags?: string[];
+}
+
 export interface MemorySummary {
   active: string | null;
   configured: { name: string; status: string | null }[];

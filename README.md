@@ -35,6 +35,11 @@ browser.
 - **Management pages** for skills (searchable across a hundred or more), models with per-provider
   authentication state, logs with level filters and a follow toggle, analytics broken down by day,
   model and tool, scheduled tasks, and MCP servers.
+- **A prompt library** — your own reusable prompts with `{{placeholders}}`, tags and a use counter.
+  Hermes has no such thing, so this lives in the control center's database.
+- **Rule-based insights**, not a chatbot: deterministic checks over your metrics, logs and
+  configuration, each shown with the numbers that triggered it. It found a gateway restart loop on
+  the first server it ran against.
 - **A command palette** (`Ctrl`/`Cmd` + `K`) that reaches every page, with fuzzy matching.
 - **Light and dark themes**, keyboard shortcuts, and a layout that works on a phone.
 

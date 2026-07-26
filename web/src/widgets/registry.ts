@@ -8,6 +8,7 @@ import {
   Gauge,
   History,
   Layers,
+  Lightbulb,
   ScrollText,
   Server,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import { ModelWidget } from './ModelWidget';
 import { AnalyticsWidget } from './AnalyticsWidget';
 import { SessionsWidget } from './SessionsWidget';
 import { KnowledgeWidget } from './KnowledgeWidget';
+import { InsightsWidget } from './InsightsWidget';
 
 /**
  * Every widget the dashboard can show.
@@ -132,6 +134,16 @@ export const WIDGETS: WidgetDefinition[] = [
     component: SessionsWidget,
   },
   {
+    id: 'insights',
+    title: 'Hinweise',
+    description: 'Regelbasierte Prüfungen deiner Messwerte, Logs und Konfiguration.',
+    icon: Lightbulb,
+    category: 'Betrieb',
+    defaultSize: { w: 6, h: 5 },
+    minSize: { w: 4, h: 3 },
+    component: InsightsWidget,
+  },
+  {
     id: 'knowledge',
     title: 'Wissen',
     description: 'Gespeicherte Erinnerungen und eingerichtete Speicher-Anbieter.',
@@ -162,9 +174,11 @@ export const DEFAULT_LAYOUT: DashboardLayout = {
     { i: 'mission-status-1', widget: 'mission-status', x: 6, y: 0, w: 6, h: 4 },
     { i: 'sessions-1', widget: 'sessions', x: 0, y: 4, w: 6, h: 5 },
     { i: 'analytics-1', widget: 'analytics', x: 6, y: 4, w: 6, h: 5 },
-    { i: 'logs-1', widget: 'logs', x: 0, y: 9, w: 8, h: 6 },
-    { i: 'scheduler-1', widget: 'scheduler', x: 8, y: 9, w: 4, h: 3 },
-    { i: 'agent-1', widget: 'agent', x: 8, y: 12, w: 4, h: 3 },
+    { i: 'insights-1', widget: 'insights', x: 0, y: 9, w: 6, h: 5 },
+    { i: 'logs-1', widget: 'logs', x: 6, y: 9, w: 6, h: 5 },
+    { i: 'scheduler-1', widget: 'scheduler', x: 0, y: 14, w: 4, h: 3 },
+    { i: 'agent-1', widget: 'agent', x: 4, y: 14, w: 4, h: 3 },
+    { i: 'skills-1', widget: 'skills', x: 8, y: 14, w: 4, h: 3 },
   ],
 };
 

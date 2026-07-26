@@ -3,7 +3,10 @@ import type { DashboardLayout } from '@/widgets/types';
 import type {
   AnalyticsSummary,
   CronJobSummary,
+  Insight,
   LogsResponse,
+  Prompt,
+  PromptInput,
   McpServerSummary,
   MemorySummary,
   ModelOptions,
@@ -102,6 +105,32 @@ export const getLogs = (lines = 100): Promise<LogsResponse> =>
 export const getSessions = (limit = 10): Promise<SessionsResponse> =>
   apiRequest<SessionsResponse>(`/hermes/sessions?limit=${limit}`);
 
+export const getInsights = (): Promise<{ insights: Insight[]; generatedAt: number }> =>
+  apiRequest<{ insights: Insight[]; generatedAt: number }>('/insights');
+
+export const getPrompts = (): Promise<{ prompts: Prompt[] }> =>
+  apiRequest<{ prompts: Prompt[] }>('/prompts');
+
+const jsonBody = (value: unknown) => ({
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify(value),
+});
+
+export const createPrompt = (input: PromptInput): Promise<{ prompt: Prompt }> =>
+  apiRequest<{ prompt: Prompt }>('/prompts', { method: 'POST', ...jsonBody(input) });
+
+export const updatePrompt = (id: string, input: PromptInput): Promise<{ prompt: Prompt }> =>
+  apiRequest<{ prompt: Prompt }>(`/prompts/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    ...jsonBody(input),
+  });
+
+export const deletePrompt = (id: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/prompts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const recordPromptUse = (id: string): Promise<{ uses: number }> =>
+  apiRequest<{ uses: number }>(`/prompts/${encodeURIComponent(id)}/use`, { method: 'POST' });
+
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
 
@@ -132,6 +161,8 @@ export const queryKeys = {
   meta: ['meta'] as const,
   auth: ['auth'] as const,
   dashboardLayout: ['dashboard', 'layout'] as const,
+  insights: ['insights'] as const,
+  prompts: ['prompts'] as const,
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,

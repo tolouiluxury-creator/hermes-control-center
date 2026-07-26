@@ -8,6 +8,7 @@ import { ModelsPage } from '@/pages/ModelsPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { AnalyticsPage } from '@/pages/AnalyticsPage';
 import { TasksPage } from '@/pages/TasksPage';
+import { PromptsPage } from '@/pages/PromptsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import type { ComponentType } from 'react';
 
@@ -19,6 +20,7 @@ const PAGES: Record<string, ComponentType> = {
   logs: LogsPage,
   analytics: AnalyticsPage,
   aufgaben: TasksPage,
+  prompts: PromptsPage,
 };
 
 /**
@@ -33,7 +35,6 @@ const PLANNED: Record<string, string> = {
   dokumente: 'Hochgeladene Dokumente mit Vorschau, Verschlagwortung und Verwendung.',
   browser: 'Browser-Automatisierung: Sitzungen beobachten, Abläufe starten, Ergebnisse ansehen.',
   dateien: 'Dateibrowser deines Hermes-Verzeichnisses mit Vorschau und Upload.',
-  prompts: 'Prompt-Bibliothek: Vorlagen sammeln, versionieren und wiederverwenden.',
   integrationen: 'Telegram, Discord, Webhooks und API-Zugänge einrichten und prüfen.',
   einstellungen: 'Konfiguration, Profile, Passwort und Erscheinungsbild.',
 };
