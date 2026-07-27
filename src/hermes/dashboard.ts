@@ -2,6 +2,23 @@ import { z } from 'zod';
 import type { HermesClient, RequestOptions } from './client.js';
 import { DASHBOARD_STATUS_PATH } from './endpoints.js';
 import {
+  configRawSchema,
+  curatorSchema,
+  envSchema,
+  normalizeConfigRaw,
+  normalizeCurator,
+  normalizeEnv,
+  normalizeToolsets,
+  normalizeUpdate,
+  toolsetsSchema,
+  updateSchema,
+  type ConfigRaw,
+  type CuratorStatus,
+  type EnvVar,
+  type Toolset,
+  type UpdateStatus,
+} from './settings.js';
+import {
   dashboardStatusSchema,
   systemStatsSchema,
   type DashboardStatus,
@@ -239,6 +256,76 @@ export class DashboardClient {
       `/api/messaging/platforms/${encodeURIComponent(id)}/test`,
       { ...options, method: 'POST' },
     );
+  }
+
+  // --- Settings: reads ------------------------------------------------------
+
+  env(options?: RequestOptions): Promise<EnvVar[]> {
+    return this.client.json(envSchema, '/api/env', options).then(normalizeEnv);
+  }
+
+  configRaw(options?: RequestOptions): Promise<ConfigRaw> {
+    return this.client.json(configRawSchema, '/api/config/raw', options).then(normalizeConfigRaw);
+  }
+
+  curator(options?: RequestOptions): Promise<CuratorStatus> {
+    return this.client.json(curatorSchema, '/api/curator', options).then(normalizeCurator);
+  }
+
+  updateCheck(options?: RequestOptions): Promise<UpdateStatus> {
+    return this.client
+      .json(updateSchema, '/api/hermes/update/check', options)
+      .then(normalizeUpdate);
+  }
+
+  toolsets(options?: RequestOptions): Promise<Toolset[]> {
+    return this.client.json(toolsetsSchema, '/api/tools/toolsets', options).then(normalizeToolsets);
+  }
+
+  // --- Settings: writes -----------------------------------------------------
+
+  setEnv(key: string, value: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/env', {
+      ...options,
+      method: 'PUT',
+      body: { key, value },
+    });
+  }
+
+  deleteEnv(key: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/env', {
+      ...options,
+      method: 'DELETE',
+      body: { key },
+    });
+  }
+
+  saveConfigRaw(yamlText: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/config/raw', {
+      ...options,
+      method: 'PUT',
+      body: { yaml_text: yamlText },
+    });
+  }
+
+  setCuratorPaused(paused: boolean, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/curator/paused', {
+      ...options,
+      method: 'PUT',
+      body: { paused },
+    });
+  }
+
+  runCurator(options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/curator/run', { ...options, method: 'POST' });
+  }
+
+  toggleToolset(name: string, enabled: boolean, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/tools/toolsets/${encodeURIComponent(name)}`, {
+      ...options,
+      method: 'PUT',
+      body: { enabled },
+    });
   }
 
   raw(path: string, options?: RequestOptions): Promise<Response> {

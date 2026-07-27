@@ -7,6 +7,9 @@ import type {
   LogsResponse,
   Prompt,
   PromptInput,
+  ConfigRaw,
+  CuratorStatus,
+  EnvVar,
   McpServerSummary,
   MemorySummary,
   MessagingOverview,
@@ -16,6 +19,8 @@ import type {
   SessionsResponse,
   SkillEntry,
   SkillSummary,
+  Toolset,
+  UpdateStatus,
   WebhooksOverview,
 } from './hermesTypes';
 
@@ -142,6 +147,36 @@ export const setPlatformEnabled = (id: string, enabled: boolean): Promise<Action
 export const testPlatform = (id: string): Promise<TestResult> =>
   apiRequest<TestResult>(`/hermes/messaging/${encodeURIComponent(id)}/test`, { method: 'POST' });
 
+// --- Settings ---------------------------------------------------------------
+
+export const getEnv = (): Promise<EnvVar[]> => apiRequest<EnvVar[]>('/hermes/env');
+export const getConfigRaw = (): Promise<ConfigRaw> => apiRequest<ConfigRaw>('/hermes/config/raw');
+export const getCurator = (): Promise<CuratorStatus> =>
+  apiRequest<CuratorStatus>('/hermes/curator');
+export const getUpdate = (): Promise<UpdateStatus> => apiRequest<UpdateStatus>('/hermes/update');
+export const getToolsets = (): Promise<Toolset[]> => apiRequest<Toolset[]>('/hermes/toolsets');
+
+export const setEnv = (key: string, value: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/env', { method: 'PUT', ...jsonBody({ key, value }) });
+
+export const deleteEnv = (key: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/env', { method: 'DELETE', ...jsonBody({ key }) });
+
+export const saveConfigRaw = (yaml: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/config/raw', { method: 'PUT', ...jsonBody({ yaml }) });
+
+export const setCuratorPaused = (paused: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/curator/paused', { method: 'PUT', ...jsonBody({ paused }) });
+
+export const runCurator = (): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/curator/run', { method: 'POST' });
+
+export const toggleToolset = (name: string, enabled: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/toolsets/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    ...jsonBody({ enabled }),
+  });
+
 export const getModelOptions = (): Promise<ModelOptions> =>
   apiRequest<ModelOptions>('/hermes/models');
 
@@ -242,6 +277,11 @@ export const queryKeys = {
   messaging: ['hermes', 'messaging'] as const,
   webhooks: ['hermes', 'webhooks'] as const,
   pairing: ['hermes', 'pairing'] as const,
+  env: ['hermes', 'env'] as const,
+  configRaw: ['hermes', 'config', 'raw'] as const,
+  curator: ['hermes', 'curator'] as const,
+  update: ['hermes', 'update'] as const,
+  toolsets: ['hermes', 'toolsets'] as const,
   logs: (lines: number) => ['hermes', 'logs', lines] as const,
   sessions: (limit: number) => ['hermes', 'sessions', limit] as const,
   status: ['status'] as const,

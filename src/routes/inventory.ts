@@ -86,6 +86,26 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.pairing, () => ctx.dashboard.pairing())),
   );
 
+  app.get('/api/hermes/env', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.env, () => ctx.dashboard.env())),
+  );
+
+  app.get('/api/hermes/config/raw', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.configRaw, () => ctx.dashboard.configRaw())),
+  );
+
+  app.get('/api/hermes/curator', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.curator, () => ctx.dashboard.curator())),
+  );
+
+  app.get('/api/hermes/update', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.update, () => ctx.dashboard.updateCheck())),
+  );
+
+  app.get('/api/hermes/toolsets', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.toolsets, () => ctx.dashboard.toolsets())),
+  );
+
   app.get('/api/hermes/logs', async (request, reply) => {
     const query = request.query as { lines?: string } | undefined;
     const lines = readLimit(query?.lines, 100, 1000);

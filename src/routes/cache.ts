@@ -68,4 +68,9 @@ export const CACHE_KEYS = {
   messaging: 'messaging',
   webhooks: 'webhooks',
   pairing: 'pairing',
+  env: 'env',
+  configRaw: 'config:raw',
+  curator: 'curator',
+  update: 'update',
+  toolsets: 'toolsets',
 } as const;

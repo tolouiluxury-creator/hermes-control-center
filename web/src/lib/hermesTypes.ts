@@ -199,3 +199,50 @@ export interface PairingOverview {
   pending: PairedUser[];
   approved: PairedUser[];
 }
+
+export interface EnvVar {
+  key: string;
+  isSet: boolean;
+  redactedValue: string | null;
+  description: string | null;
+  url: string | null;
+  category: string;
+  isPassword: boolean;
+  advanced: boolean;
+  providerLabel: string | null;
+}
+
+export interface ConfigRaw {
+  yaml: string;
+  path: string | null;
+}
+
+export interface CuratorStatus {
+  enabled: boolean;
+  paused: boolean;
+  intervalHours: number | null;
+  lastRunAt: number | null;
+  staleAfterDays: number | null;
+  archiveAfterDays: number | null;
+}
+
+export interface UpdateStatus {
+  installMethod: string | null;
+  currentVersion: string | null;
+  behind: number | null;
+  updateAvailable: boolean;
+  canApply: boolean;
+  updateCommand: string | null;
+  message: string | null;
+}
+
+export interface Toolset {
+  name: string;
+  label: string;
+  description: string | null;
+  platformLabel: string | null;
+  enabled: boolean;
+  available: boolean;
+  configured: boolean;
+  tools: string[];
+}

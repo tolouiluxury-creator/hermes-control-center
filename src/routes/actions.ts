@@ -28,6 +28,14 @@ const providerSchema = z.object({ provider: z.string().trim().min(1) });
 
 const cronActions = new Set(['pause', 'resume', 'trigger']);
 
+const envSetSchema = z.object({
+  key: z.string().trim().min(1),
+  value: z.string(),
+});
+const envDeleteSchema = z.object({ key: z.string().trim().min(1) });
+const configRawSchema = z.object({ yaml: z.string() });
+const pausedSchema = z.object({ paused: z.boolean() });
+
 export async function registerActionRoutes(
   app: FastifyInstance,
   ctx: AppContext,
@@ -158,5 +166,73 @@ export async function registerActionRoutes(
   app.post('/api/hermes/messaging/:id/test', async (request, reply) => {
     const { id } = request.params as { id: string };
     return guard(reply, () => ctx.dashboard.testPlatform(id));
+  });
+
+  // --- Environment variables and secrets ------------------------------------
+
+  app.put('/api/hermes/env', async (request, reply) => {
+    const input = parse(reply, envSetSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setEnv(input.key, input.value);
+      cache.invalidate(CACHE_KEYS.env);
+      return result;
+    });
+  });
+
+  app.delete('/api/hermes/env', async (request, reply) => {
+    const input = parse(reply, envDeleteSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.deleteEnv(input.key);
+      cache.invalidate(CACHE_KEYS.env);
+      return result;
+    });
+  });
+
+  // --- Raw config -----------------------------------------------------------
+
+  app.put('/api/hermes/config/raw', async (request, reply) => {
+    const input = parse(reply, configRawSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.saveConfigRaw(input.yaml);
+      // A config change can ripple into almost anything the dashboard reports.
+      cache.clear();
+      return result;
+    });
+  });
+
+  // --- Memory curator -------------------------------------------------------
+
+  app.put('/api/hermes/curator/paused', async (request, reply) => {
+    const input = parse(reply, pausedSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setCuratorPaused(input.paused);
+      cache.invalidate(CACHE_KEYS.curator);
+      return result;
+    });
+  });
+
+  app.post('/api/hermes/curator/run', async (_request, reply) =>
+    guard(reply, async () => {
+      const result = await ctx.dashboard.runCurator();
+      cache.invalidate(CACHE_KEYS.curator);
+      return result;
+    }),
+  );
+
+  // --- Toolsets -------------------------------------------------------------
+
+  app.put('/api/hermes/toolsets/:name', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, enabledSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.toggleToolset(name, input.enabled);
+      cache.invalidate(CACHE_KEYS.toolsets);
+      return result;
+    });
   });
 }
