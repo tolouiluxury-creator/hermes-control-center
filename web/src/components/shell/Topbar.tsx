@@ -2,6 +2,7 @@ import { Menu, Monitor, Moon, Search, Sun, Wifi, WifiOff } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { navItemByPath } from '@/lib/nav';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import { useI18n } from '@/lib/i18n';
 import { useStatus } from '@/lib/useStatus';
 import type { StreamState } from '@/lib/stream';
 
@@ -56,6 +57,7 @@ export function Topbar({
   onOpenPalette: () => void;
 }) {
   const { preference, cycle } = useTheme();
+  const { t } = useI18n();
   const location = useLocation();
   const current = navItemByPath(location.pathname);
   const ThemeIcon = THEME_ICON[preference];
@@ -75,7 +77,7 @@ export function Topbar({
       </button>
 
       <h1 className="truncate text-sm font-semibold tracking-tight">
-        {current?.label ?? 'Hermes Control Center'}
+        {current ? t(`nav.${current.id}`) : 'Hermes Control Center'}
       </h1>
 
       {/* The search field is a button: typing happens in the palette, and this

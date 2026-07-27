@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router';
 import { getAuthStatus, queryKeys } from '@/lib/api';
 import { LoginScreen } from '@/components/LoginScreen';
 import { ToastProvider } from '@/components/Toast';
+import { I18nProvider } from '@/lib/i18n';
 import { AppRoutes } from '@/routes';
 
 /**
@@ -43,10 +44,12 @@ export default function App() {
   }
 
   return (
-    <ToastProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </ToastProvider>
+    <I18nProvider>
+      <ToastProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </ToastProvider>
+    </I18nProvider>
   );
 }

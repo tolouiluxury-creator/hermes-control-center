@@ -12,6 +12,7 @@ import {
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
 
 interface GatewayEventData {
@@ -22,6 +23,7 @@ interface GatewayEventData {
 
 export function ChatsPage() {
   const toast = useToast();
+  const { t } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [listPending, setListPending] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -168,18 +170,14 @@ export function ChatsPage() {
       setMessages((current) => current.slice(0, -1));
       toast.push({
         tone: 'error',
-        title: 'Senden fehlgeschlagen',
+        title: t('chat.sendFailed'),
         description: error instanceof Error ? error.message : undefined,
       });
     }
   };
 
   return (
-    <PageShell
-      title="Chats"
-      description="Unterhalte dich direkt mit deinem Agenten — über das laufende Dashboard, ohne zusätzliche Server."
-      wide
-    >
+    <PageShell title={t('nav.chats')} description={t('page.chats.desc')} wide>
       <div className="flex h-[calc(100vh-11rem)] gap-4">
         {/* Session list */}
         <aside className="hidden w-64 shrink-0 flex-col sm:flex">
@@ -190,7 +188,7 @@ export function ChatsPage() {
             className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
           >
             <Plus size={14} aria-hidden />
-            Neue Unterhaltung
+            {t('chat.newConversation')}
           </button>
 
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
@@ -198,13 +196,13 @@ export function ChatsPage() {
               <SkeletonText lines={6} />
             ) : sessions.length === 0 ? (
               <p className="px-1 text-xs text-[var(--color-ink-faint)]">
-                Noch keine Unterhaltungen.
+                {t('chat.noConversations')}
               </p>
             ) : (
               <ul className="space-y-1">
                 {sessions.map((session) => {
                   const active = session.id === sessionId;
-                  const label = session.title || session.preview || 'Unterhaltung';
+                  const label = session.title || session.preview || t('chat.conversation');
                   return (
                     <li key={session.id}>
                       <button
@@ -218,7 +216,11 @@ export function ChatsPage() {
                       >
                         <p className="truncate text-xs font-medium">{label}</p>
                         <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                          {session.messageCount > 0 && <span>{session.messageCount} Nachr.</span>}
+                          {session.messageCount > 0 && (
+                            <span>
+                              {session.messageCount} {t('chat.messages')}
+                            </span>
+                          )}
                           {session.startedAt && (
                             <span>· {formatRelativeTime(session.startedAt)}</span>
                           )}
@@ -240,14 +242,14 @@ export function ChatsPage() {
                 {connectionError}
               </p>
               <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-                Der Chat läuft über das Hermes-Dashboard. Prüfe, dass das Dashboard erreichbar ist.
+                {t('chat.overDashboard')}
               </p>
               <button
                 type="button"
                 onClick={startNew}
                 className="mt-3 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               >
-                Erneut versuchen
+                {t('common.retry')}
               </button>
             </div>
           ) : (
@@ -265,9 +267,9 @@ export function ChatsPage() {
                       >
                         <MessagesSquare size={22} />
                       </span>
-                      <p className="mt-3 text-sm font-medium">Neue Unterhaltung</p>
+                      <p className="mt-3 text-sm font-medium">{t('chat.emptyTitle')}</p>
                       <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-                        Schreib unten eine Nachricht, um loszulegen.
+                        {t('chat.emptyHint')}
                       </p>
                     </div>
                   </div>
@@ -312,9 +314,7 @@ export function ChatsPage() {
                     }
                   }}
                   rows={1}
-                  placeholder={
-                    connecting ? 'Verbinde …' : 'Nachricht an den Agenten … (Enter sendet)'
-                  }
+                  placeholder={connecting ? t('chat.connecting') : t('chat.placeholder')}
                   disabled={connecting || streaming || !sessionId}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
@@ -324,7 +324,7 @@ export function ChatsPage() {
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
                 >
                   <Send size={15} aria-hidden />
-                  Senden
+                  {t('chat.send')}
                 </button>
               </form>
             </>

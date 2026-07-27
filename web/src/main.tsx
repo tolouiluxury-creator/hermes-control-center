@@ -4,10 +4,12 @@ import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-qu
 import App from '@/App';
 import { ApiError, queryKeys } from '@/lib/api';
 import { initTheme } from '@/lib/theme';
+import { initLang } from '@/lib/i18n';
 import '@/styles/app.css';
 
-// Before the first render, so no frame flashes in the wrong theme.
+// Before the first render, so no frame flashes in the wrong theme or direction.
 initTheme();
+initLang();
 
 /**
  * A 401 anywhere means the session ended (expired, or the password was changed).

@@ -3,6 +3,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { FOOTER_NAV, PRIMARY_NAV, type NavItem } from '@/lib/nav';
 import { formatDuration } from '@/lib/format';
 import { useStatus } from '@/lib/useStatus';
+import { useI18n } from '@/lib/i18n';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -21,6 +22,8 @@ function NavRow({
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
+  const { t } = useI18n();
+  const label = t(`nav.${item.id}`);
 
   return (
     <li>
@@ -39,7 +42,7 @@ function NavRow({
               : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)] hover:text-[var(--color-ink)]',
           ].join(' ')
         }
-        title={collapsed ? item.label : undefined}
+        title={collapsed ? label : undefined}
       >
         {({ isActive }) => (
           <>
@@ -50,7 +53,7 @@ function NavRow({
               />
             )}
             <Icon size={17} className="shrink-0" aria-hidden />
-            {!collapsed && <span className="truncate">{item.label}</span>}
+            {!collapsed && <span className="truncate">{label}</span>}
             {!collapsed && item.badge === 'live' && (
               <span
                 className="ml-auto size-1.5 rounded-full bg-[var(--color-accent)]"

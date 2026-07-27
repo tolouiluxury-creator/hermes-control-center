@@ -20,6 +20,7 @@ import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import { useI18n, LANGUAGES } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
 import type { EnvVar, Toolset } from '@/lib/hermesTypes';
 
@@ -52,12 +53,46 @@ const THEME_OPTIONS: { id: ThemePreference; label: string; icon: typeof Moon }[]
   { id: 'system', label: 'System', icon: Monitor },
 ];
 
+const THEME_LABEL_KEY: Record<ThemePreference, string> = {
+  dark: 'settings.theme.dark',
+  light: 'settings.theme.light',
+  system: 'settings.theme.system',
+};
+
+function LanguageSection() {
+  const { t, lang, setLang } = useI18n();
+  return (
+    <Section title={t('settings.language')} description={t('settings.language.desc')}>
+      <div className="flex flex-wrap gap-2">
+        {LANGUAGES.map(({ id, endonym }) => {
+          const active = lang === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setLang(id)}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                active
+                  ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                  : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+              }`}
+            >
+              {endonym}
+            </button>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
 function AppearanceSection() {
+  const { t } = useI18n();
   const { preference, setPreference } = useTheme();
   return (
-    <Section title="Erscheinungsbild" description="Gilt nur für dieses Gerät.">
+    <Section title={t('settings.appearance')} description={t('settings.appearance.desc')}>
       <div className="flex flex-wrap gap-2">
-        {THEME_OPTIONS.map(({ id, label, icon: Icon }) => {
+        {THEME_OPTIONS.map(({ id, icon: Icon }) => {
           const active = preference === id;
           return (
             <button
@@ -71,7 +106,7 @@ function AppearanceSection() {
               }`}
             >
               <Icon size={14} aria-hidden />
-              {label}
+              {t(THEME_LABEL_KEY[id])}
             </button>
           );
         })}
@@ -130,6 +165,7 @@ function ToolsetRow({
 function ToolsetsSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.toolsets,
     queryFn: getToolsets,
@@ -150,10 +186,7 @@ function ToolsetsSection() {
   });
 
   return (
-    <Section
-      title="Werkzeuge"
-      description="Werkzeugsätze, die deinem Agenten zur Verfügung stehen."
-    >
+    <Section title={t('settings.tools')} description={t('settings.tools.desc')}>
       {isPending ? (
         <SkeletonText lines={5} />
       ) : error ? (
@@ -181,6 +214,7 @@ function ToolsetsSection() {
 function MaintenanceSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const update = useQuery({ queryKey: queryKeys.update, queryFn: getUpdate, staleTime: 300_000 });
   const curator = useQuery({ queryKey: queryKeys.curator, queryFn: getCurator, staleTime: 60_000 });
 
@@ -207,7 +241,7 @@ function MaintenanceSection() {
   });
 
   return (
-    <Section title="Wartung" description="Version und die Pflege des Langzeitgedächtnisses.">
+    <Section title={t('settings.maintenance')} description={t('settings.maintenance.desc')}>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">
           <p className="text-xs text-[var(--color-ink-faint)]">Version</p>
@@ -387,6 +421,7 @@ function EnvRow({
 function EnvSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('gesetzt');
   const [editing, setEditing] = useState<string | null>(null);
@@ -444,10 +479,7 @@ function EnvSection() {
   }, [entries, search, category]);
 
   return (
-    <Section
-      title="Umgebung & Schlüssel"
-      description="API-Schlüssel und Umgebungsvariablen deines Hermes. Werte werden nie im Klartext angezeigt."
-    >
+    <Section title={t('settings.env')} description={t('settings.env.desc')}>
       {isPending ? (
         <SkeletonText lines={5} />
       ) : error ? (
@@ -539,6 +571,7 @@ function EnvSection() {
 function ConfigSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -562,10 +595,7 @@ function ConfigSection() {
   });
 
   return (
-    <Section
-      title="Rohkonfiguration (YAML)"
-      description="Die vollständige Hermes-Konfiguration. Fehler hier können den Agenten stören — mit Bedacht bearbeiten."
-    >
+    <Section title={t('settings.config')} description={t('settings.config.desc')}>
       {isPending ? (
         <SkeletonText lines={6} />
       ) : error ? (
@@ -642,16 +672,18 @@ function ConfigSection() {
 // --- Security ---------------------------------------------------------------
 
 function SecuritySection() {
+  const { t } = useI18n();
+  const [before, after] = t('settings.security.password').split('{command}');
   return (
-    <Section title="Sicherheit" description="Zugang zum Control Center selbst.">
+    <Section title={t('settings.security')} description={t('settings.security.desc')}>
       <div className="card flex items-start gap-3 p-4">
         <KeyRound size={16} className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]" aria-hidden />
         <p className="text-xs text-[var(--color-ink-muted)]">
-          Das Passwort für das Control Center wird auf dem Server gesetzt:{' '}
+          {before}
           <code className="font-mono text-[var(--color-ink)]">
             hermes-control-center --set-password
           </code>
-          . Solange keins gesetzt ist, bindet der Server nur an localhost.
+          {after}
         </p>
       </div>
     </Section>
@@ -659,11 +691,10 @@ function SecuritySection() {
 }
 
 export function EinstellungenPage() {
+  const { t } = useI18n();
   return (
-    <PageShell
-      title="Einstellungen"
-      description="Konfiguration, Schlüssel, Werkzeuge und Wartung deines Hermes."
-    >
+    <PageShell title={t('nav.einstellungen')} description={t('page.einstellungen.desc')}>
+      <LanguageSection />
       <AppearanceSection />
       <ToolsetsSection />
       <MaintenanceSection />
