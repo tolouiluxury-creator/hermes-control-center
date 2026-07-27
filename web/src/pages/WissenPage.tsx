@@ -6,15 +6,9 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import { formatCompact } from '@/lib/format';
 import type { MemoryProvider } from '@/lib/hermesTypes';
-
-const STATUS_LABEL: Record<string, string> = {
-  ready: 'bereit',
-  unavailable: 'nicht verfügbar',
-  needs_config: 'Einrichtung nötig',
-  error: 'Fehler',
-};
 
 const STATUS_COLOR: Record<string, string> = {
   ready: 'var(--color-ok)',
@@ -23,10 +17,12 @@ const STATUS_COLOR: Record<string, string> = {
   error: 'var(--color-danger)',
 };
 
-/** Human names for the built-in note files Hermes keeps regardless of provider. */
-const FILE_LABEL: Record<string, string> = {
-  memory: 'Erinnerungen',
-  user: 'Nutzerprofil',
+const STATUS_KEYS = new Set(['ready', 'unavailable', 'needs_config', 'error']);
+
+/** The built-in note files Hermes keeps regardless of provider. */
+const FILE_KEY: Record<string, string> = {
+  memory: 'wissen.files.memory',
+  user: 'wissen.files.user',
 };
 
 function ProviderRow({
@@ -46,8 +42,12 @@ function ProviderRow({
   onConfirm: (name: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const color = STATUS_COLOR[provider.status ?? ''] ?? 'var(--color-ink-faint)';
-  const label = STATUS_LABEL[provider.status ?? ''] ?? provider.status ?? 'unbekannt';
+  const label =
+    provider.status && STATUS_KEYS.has(provider.status)
+      ? t(`wissen.status.${provider.status}`)
+      : (provider.status ?? t('wissen.status.unknown'));
 
   return (
     <li className="card p-4">
@@ -63,15 +63,15 @@ function ProviderRow({
             {active && (
               <span className="inline-flex items-center gap-1 text-[0.65rem] text-[var(--color-ok)]">
                 <Check size={11} aria-hidden />
-                aktiv
+                {t('common.active')}
               </span>
             )}
             {!active && provider.available && (
-              <span className="text-[0.65rem] text-[var(--color-ok)]">verfügbar</span>
+              <span className="text-[0.65rem] text-[var(--color-ok)]">{t('wissen.available')}</span>
             )}
             {!provider.available && provider.configured && (
               <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
-                eingerichtet, aber nicht nutzbar
+                {t('wissen.notUsable')}
               </span>
             )}
           </div>
@@ -88,7 +88,7 @@ function ProviderRow({
             disabled={pending}
             className="mt-0.5 shrink-0 rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
           >
-            Aktivieren
+            {t('common.activate')}
           </button>
         )}
 
@@ -103,13 +103,8 @@ function ProviderRow({
       {confirming && (
         <ConfirmInline
           tone="warn"
-          message={
-            <>
-              „{provider.name}" als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann
-              hierüber.
-            </>
-          }
-          confirmLabel="Aktivieren"
+          message={t('wissen.activateConfirm', { name: provider.name })}
+          confirmLabel={t('common.activate')}
           pending={pending}
           onConfirm={() => onConfirm(provider.name)}
           onCancel={onCancel}
@@ -122,6 +117,7 @@ function ProviderRow({
 export function WissenPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
@@ -135,17 +131,14 @@ export function WissenPage() {
     onSuccess: async (_r, provider) => {
       setConfirming(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.memory });
-      toast.push({ tone: 'success', title: `„${provider}" aktiviert` });
+      toast.push({ tone: 'success', title: t('wissen.activatedToast', { name: provider }) });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Aktivieren fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.actionFailed'), description: e.message }),
   });
 
   return (
-    <PageShell
-      title="Wissen (RAG)"
-      description="Was dein Agent behält: die eingebauten Notizdateien und die verfügbaren Speicher-Anbieter für Langzeitgedächtnis und Retrieval."
-    >
+    <PageShell title={t('nav.wissen')} description={t('page.wissen.desc')}>
       {isPending ? (
         <SkeletonText lines={8} />
       ) : error ? (
@@ -157,19 +150,22 @@ export function WissenPage() {
           {data.files.length > 0 && (
             <section>
               <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                Eingebautes Gedächtnis
+                {t('wissen.builtin')}
               </h3>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {data.files.map((file) => (
-                  <div key={file.name} className="card p-4">
-                    <p className="font-mono text-2xl tracking-tight">
-                      {formatCompact(file.entries)}
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                      {FILE_LABEL[file.name] ?? file.name}
-                    </p>
-                  </div>
-                ))}
+                {data.files.map((file) => {
+                  const fileKey = FILE_KEY[file.name];
+                  return (
+                    <div key={file.name} className="card p-4">
+                      <p className="font-mono text-2xl tracking-tight">
+                        {formatCompact(file.entries)}
+                      </p>
+                      <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+                        {fileKey ? t(fileKey) : file.name}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
@@ -177,20 +173,23 @@ export function WissenPage() {
           <section>
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-                Speicher-Anbieter
+                {t('wissen.providers')}
               </h3>
               <p className="text-xs text-[var(--color-ink-faint)]">
-                {data.availableCount} von {data.providers.length} verfügbar
+                {t('wissen.providersCount', {
+                  available: data.availableCount,
+                  total: data.providers.length,
+                })}
                 {data.active ? (
                   <>
                     {' · '}
                     <span className="inline-flex items-center gap-1 text-[var(--color-ok)]">
                       <Check size={11} aria-hidden />
-                      aktiv: {data.active}
+                      {t('wissen.activeProvider', { name: data.active })}
                     </span>
                   </>
                 ) : (
-                  ' · keiner aktiv'
+                  ` · ${t('wissen.noneActive')}`
                 )}
               </p>
             </div>
@@ -203,10 +202,9 @@ export function WissenPage() {
                 >
                   <BookOpen size={22} />
                 </span>
-                <p className="mt-4 text-sm font-medium">Keine Speicher-Anbieter gemeldet</p>
+                <p className="mt-4 text-sm font-medium">{t('wissen.empty.title')}</p>
                 <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-ink-muted)]">
-                  Hermes nutzt derzeit nur seine eingebauten Notizdateien. Ein RAG-Anbieter wird in
-                  der Hermes-Konfiguration eingerichtet.
+                  {t('wissen.empty.desc')}
                 </p>
               </div>
             ) : (

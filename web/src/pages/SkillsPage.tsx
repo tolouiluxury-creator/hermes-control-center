@@ -6,15 +6,17 @@ import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import type { SkillEntry } from '@/lib/hermesTypes';
 
 type Provenance = 'alle' | 'bundled' | 'hub' | 'agent';
 
-const PROVENANCE_LABEL: Record<string, { label: string; icon: typeof Package; hint: string }> = {
-  bundled: { label: 'mitgeliefert', icon: Package, hint: 'Kommt mit Hermes' },
-  hub: { label: 'Hub', icon: Store, hint: 'Aus dem Skill-Hub installiert' },
-  agent: { label: 'selbst erstellt', icon: Sparkles, hint: 'Vom Agenten angelegt' },
-};
+const PROVENANCE_META: Record<string, { icon: typeof Package; labelKey: string; hintKey: string }> =
+  {
+    bundled: { icon: Package, labelKey: 'skills.bundled', hintKey: 'skills.bundledHint' },
+    hub: { icon: Store, labelKey: 'skills.hub', hintKey: 'skills.hubHint' },
+    agent: { icon: Sparkles, labelKey: 'skills.agent', hintKey: 'skills.agentHint' },
+  };
 
 function ToggleSwitch({
   enabled,
@@ -62,7 +64,8 @@ function SkillRow({
   onConfirmDisable: (skill: SkillEntry) => void;
   onCancel: () => void;
 }) {
-  const provenance = skill.provenance ? PROVENANCE_LABEL[skill.provenance] : undefined;
+  const { t } = useI18n();
+  const provenance = skill.provenance ? PROVENANCE_META[skill.provenance] : undefined;
   const Icon = provenance?.icon;
 
   return (
@@ -74,7 +77,7 @@ function SkillRow({
           }`}
           aria-hidden
         />
-        <span className="sr-only">{skill.enabled ? 'aktiv' : 'inaktiv'}</span>
+        <span className="sr-only">{skill.enabled ? t('common.active') : t('common.inactive')}</span>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -91,34 +94,30 @@ function SkillRow({
         {Icon && (
           <span
             className="mt-0.5 flex shrink-0 items-center gap-1 text-[0.65rem] text-[var(--color-ink-faint)]"
-            title={provenance?.hint}
+            title={provenance ? t(provenance.hintKey) : undefined}
           >
             <Icon size={11} aria-hidden />
-            {provenance?.label}
+            {provenance && t(provenance.labelKey)}
           </span>
         )}
 
         <span className="mt-0.5 w-10 shrink-0 text-right font-mono text-xs text-[var(--color-ink-faint)]">
-          {skill.usage > 0 ? `${skill.usage}×` : '—'}
+          {skill.usage > 0 ? t('skills.usage', { count: skill.usage }) : '—'}
         </span>
 
         <ToggleSwitch
           enabled={skill.enabled}
           disabled={pending}
           onClick={() => onToggle(skill)}
-          label={`${skill.name} ${skill.enabled ? 'deaktivieren' : 'aktivieren'}`}
+          label={`${skill.name} ${skill.enabled ? t('common.disable') : t('common.enable')}`}
         />
       </div>
 
       {confirming && (
         <ConfirmInline
           tone="warn"
-          message={
-            <>
-              „{skill.name}" deaktivieren? Dein Agent kann diese Fähigkeit dann nicht mehr nutzen.
-            </>
-          }
-          confirmLabel="Deaktivieren"
+          message={t('skills.disableConfirm', { name: skill.name })}
+          confirmLabel={t('common.disable')}
           pending={pending}
           onConfirm={() => onConfirmDisable(skill)}
           onCancel={onCancel}
@@ -131,6 +130,7 @@ function SkillRow({
 export function SkillsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.skillList,
@@ -152,13 +152,15 @@ export function SkillsPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
       toast.push({
         tone: 'success',
-        title: skill.enabled ? `„${skill.name}" deaktiviert` : `„${skill.name}" aktiviert`,
+        title: skill.enabled
+          ? t('skills.disabledToast', { name: skill.name })
+          : t('skills.enabledToast', { name: skill.name }),
       });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Umschalten fehlgeschlagen',
+        title: t('toast.toggleFailed'),
         description: mutationError.message,
       }),
   });
@@ -209,9 +211,9 @@ export function SkillsPage() {
 
   return (
     <PageShell
-      title="Skills"
-      description="Fähigkeiten, die dein Agent nutzen kann. Die Nutzungszahl zeigt, was davon tatsächlich zum Einsatz kommt."
-      actions={<SearchField value={search} onChange={setSearch} label="Skills durchsuchen" />}
+      title={t('nav.skills')}
+      description={t('page.skills.desc')}
+      actions={<SearchField value={search} onChange={setSearch} label={t('skills.searchLabel')} />}
     >
       {isPending ? (
         <SkeletonText lines={10} />
@@ -223,34 +225,34 @@ export function SkillsPage() {
         <>
           <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2">
             <FilterChips
-              label="Herkunft"
+              label={t('skills.origin')}
               value={provenance}
               onChange={setProvenance}
               options={[
-                { id: 'alle', label: 'Alle', count: skills.length },
-                { id: 'bundled', label: 'mitgeliefert', count: provenanceCounts.bundled },
-                { id: 'hub', label: 'Hub', count: provenanceCounts.hub },
-                { id: 'agent', label: 'selbst erstellt', count: provenanceCounts.agent },
+                { id: 'alle', label: t('common.all'), count: skills.length },
+                { id: 'bundled', label: t('skills.bundled'), count: provenanceCounts.bundled },
+                { id: 'hub', label: t('skills.hub'), count: provenanceCounts.hub },
+                { id: 'agent', label: t('skills.agent'), count: provenanceCounts.agent },
               ]}
             />
           </div>
 
           <div className="mb-4 flex flex-wrap gap-1.5">
             <FilterChips
-              label="Kategorie"
+              label={t('skills.category')}
               value={category}
               onChange={setCategory}
-              options={[{ id: 'alle', label: 'Alle Kategorien' }, ...categories]}
+              options={[{ id: 'alle', label: t('skills.categories') }, ...categories]}
             />
           </div>
 
           <p className="mb-2 text-xs text-[var(--color-ink-faint)]" role="status">
-            {visible.length} von {skills.length} Skills
+            {t('skills.count', { visible: visible.length, total: skills.length })}
           </p>
 
           {visible.length === 0 ? (
             <p className="card p-8 text-center text-sm text-[var(--color-ink-muted)]">
-              Kein Skill passt zu dieser Auswahl.
+              {t('skills.noMatch')}
             </p>
           ) : (
             <ul className="card overflow-hidden p-0">
