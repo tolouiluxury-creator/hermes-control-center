@@ -54,6 +54,16 @@ import {
 const actionResultSchema = z.looseObject({ ok: z.boolean().nullish() });
 export type ActionResult = z.infer<typeof actionResultSchema>;
 
+/** Test endpoints (MCP, messaging) return a verdict with a human message. */
+const testResultSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  state: z.string().nullish(),
+  message: z.string().nullish(),
+});
+export type TestResult = z.infer<typeof testResultSchema>;
+
+export type CronAction = 'pause' | 'resume' | 'trigger';
+
 /**
  * Hermes dashboard backend (default :9119). Owns configuration, inventory
  * (skills, MCP, models) and telemetry. Unauthenticated on loopback; the profile
@@ -152,6 +162,83 @@ export class DashboardClient {
       method: 'PUT',
       body: { name, enabled },
     });
+  }
+
+  /** Pause, resume or trigger a scheduled job. */
+  cronAction(id: string, action: CronAction, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/cron/jobs/${encodeURIComponent(id)}/${action}`,
+      { ...options, method: 'POST' },
+    );
+  }
+
+  deleteCron(id: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/cron/jobs/${encodeURIComponent(id)}`, {
+      ...options,
+      method: 'DELETE',
+    });
+  }
+
+  /** Set the agent's main model. `confirm_expensive_model` skips the price gate. */
+  setMainModel(provider: string, model: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/model/set', {
+      ...options,
+      method: 'POST',
+      body: { scope: 'main', provider, model, confirm_expensive_model: true },
+    });
+  }
+
+  setMcpEnabled(name: string, enabled: boolean, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/mcp/servers/${encodeURIComponent(name)}/enabled`,
+      { ...options, method: 'PUT', body: { enabled } },
+    );
+  }
+
+  testMcp(name: string, options?: RequestOptions): Promise<TestResult> {
+    return this.client.json(testResultSchema, `/api/mcp/servers/${encodeURIComponent(name)}/test`, {
+      ...options,
+      method: 'POST',
+    });
+  }
+
+  deleteMcp(name: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/mcp/servers/${encodeURIComponent(name)}`, {
+      ...options,
+      method: 'DELETE',
+    });
+  }
+
+  /** Set the active memory (RAG) provider. */
+  setMemoryProvider(provider: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/memory/provider', {
+      ...options,
+      method: 'PUT',
+      body: { provider },
+    });
+  }
+
+  /** Enable or disable a messaging platform (gateway channel). */
+  setPlatformEnabled(
+    id: string,
+    enabled: boolean,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/messaging/platforms/${encodeURIComponent(id)}`,
+      { ...options, method: 'PUT', body: { enabled } },
+    );
+  }
+
+  testPlatform(id: string, options?: RequestOptions): Promise<TestResult> {
+    return this.client.json(
+      testResultSchema,
+      `/api/messaging/platforms/${encodeURIComponent(id)}/test`,
+      { ...options, method: 'POST' },
+    );
   }
 
   raw(path: string, options?: RequestOptions): Promise<Response> {

@@ -1,17 +1,42 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, Lock, LockOpen } from 'lucide-react';
-import { getModelInfo, getModelOptions, queryKeys } from '@/lib/api';
+import { getModelInfo, getModelOptions, queryKeys, setMainModel } from '@/lib/api';
 import { formatCompact } from '@/lib/format';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ConfirmInline } from '@/components/ConfirmInline';
+import { useToast } from '@/components/Toast';
 
 export function ModelsPage() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  /** The provider+model a switch is being confirmed for, if any. */
+  const [pending, setPending] = useState<{ provider: string; model: string } | null>(null);
+
   const options = useQuery({
     queryKey: queryKeys.models,
     queryFn: getModelOptions,
     staleTime: 60_000,
   });
   const info = useQuery({ queryKey: queryKeys.model, queryFn: getModelInfo, staleTime: 60_000 });
+
+  const switchModel = useMutation({
+    mutationFn: ({ provider, model }: { provider: string; model: string }) =>
+      setMainModel(provider, model),
+    onSuccess: async (_result, variables) => {
+      setPending(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.models });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.model });
+      toast.push({ tone: 'success', title: `Modell gewechselt zu ${variables.model}` });
+    },
+    onError: (mutationError: Error) =>
+      toast.push({
+        tone: 'error',
+        title: 'Modellwechsel fehlgeschlagen',
+        description: mutationError.message,
+      }),
+  });
 
   return (
     <PageShell
@@ -89,18 +114,38 @@ export function ModelsPage() {
 
                 {provider.models.length > 0 && (
                   <ul className="mt-2 flex flex-wrap gap-1">
-                    {provider.models.slice(0, 12).map((model) => (
-                      <li
-                        key={model}
-                        className={`rounded-full border px-2 py-0.5 font-mono text-[0.65rem] ${
-                          model === options.data?.currentModel
-                            ? 'border-[var(--color-accent)]/40 text-[var(--color-accent)]'
-                            : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)]'
-                        }`}
-                      >
-                        {model}
-                      </li>
-                    ))}
+                    {provider.models.slice(0, 12).map((model) => {
+                      const isCurrent = model === options.data?.currentModel;
+                      // Only an authenticated provider's non-current models can be
+                      // switched to; the rest are shown but not clickable.
+                      const switchable = provider.authenticated === true && !isCurrent;
+
+                      return (
+                        <li key={model}>
+                          <button
+                            type="button"
+                            disabled={!switchable || switchModel.isPending}
+                            onClick={() => setPending({ provider: provider.slug, model })}
+                            title={
+                              switchable
+                                ? `Zu ${model} wechseln`
+                                : isCurrent
+                                  ? 'Aktives Modell'
+                                  : 'Anbieter nicht angemeldet'
+                            }
+                            className={`rounded-full border px-2 py-0.5 font-mono text-[0.65rem] transition-colors ${
+                              isCurrent
+                                ? 'border-[var(--color-accent)]/40 text-[var(--color-accent)]'
+                                : switchable
+                                  ? 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]'
+                                  : 'border-[var(--color-hairline)] text-[var(--color-ink-faint)] cursor-default'
+                            }`}
+                          >
+                            {model}
+                          </button>
+                        </li>
+                      );
+                    })}
                     {provider.totalModels !== null && provider.totalModels > 12 && (
                       <li className="px-2 py-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
                         +{provider.totalModels - 12} weitere
@@ -108,14 +153,25 @@ export function ModelsPage() {
                     )}
                   </ul>
                 )}
+
+                {pending?.provider === provider.slug && (
+                  <ConfirmInline
+                    tone="warn"
+                    message={
+                      <>
+                        Agent auf „{pending.model}" umstellen? Alle neuen Sitzungen nutzen dann
+                        dieses Modell.
+                      </>
+                    }
+                    confirmLabel="Umstellen"
+                    pending={switchModel.isPending}
+                    onConfirm={() => switchModel.mutate(pending)}
+                    onCancel={() => setPending(null)}
+                  />
+                )}
               </li>
             ))}
           </ul>
-
-          <p className="mt-4 text-xs text-[var(--color-ink-faint)]">
-            Das Modell zu wechseln verändert deine Hermes-Konfiguration. Diese Aktion baue ich mit
-            Sicherheitsabfrage ein, sobald die Schreibvorgänge dran sind.
-          </p>
         </>
       )}
     </PageShell>

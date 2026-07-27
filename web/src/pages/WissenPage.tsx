@@ -1,8 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Check } from 'lucide-react';
-import { getMemory, queryKeys } from '@/lib/api';
+import { getMemory, queryKeys, setMemoryProvider } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ConfirmInline } from '@/components/ConfirmInline';
+import { useToast } from '@/components/Toast';
 import { formatCompact } from '@/lib/format';
 import type { MemoryProvider } from '@/lib/hermesTypes';
 
@@ -26,48 +29,116 @@ const FILE_LABEL: Record<string, string> = {
   user: 'Nutzerprofil',
 };
 
-function ProviderRow({ provider }: { provider: MemoryProvider }) {
+function ProviderRow({
+  provider,
+  active,
+  confirming,
+  pending,
+  onActivate,
+  onConfirm,
+  onCancel,
+}: {
+  provider: MemoryProvider;
+  active: boolean;
+  confirming: boolean;
+  pending: boolean;
+  onActivate: (name: string) => void;
+  onConfirm: (name: string) => void;
+  onCancel: () => void;
+}) {
   const color = STATUS_COLOR[provider.status ?? ''] ?? 'var(--color-ink-faint)';
   const label = STATUS_LABEL[provider.status ?? ''] ?? provider.status ?? 'unbekannt';
 
   return (
-    <li className="card flex items-start gap-3 p-4">
-      <span
-        className="mt-1 size-2 shrink-0 rounded-full"
-        style={{ background: color }}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="font-mono text-sm">{provider.name}</span>
-          {provider.available && (
-            <span className="text-[0.65rem] text-[var(--color-ok)]">verfügbar</span>
-          )}
-          {!provider.available && provider.configured && (
-            <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
-              eingerichtet, aber nicht nutzbar
-            </span>
+    <li className="card p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-1 size-2 shrink-0 rounded-full"
+          style={{ background: color }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="font-mono text-sm">{provider.name}</span>
+            {active && (
+              <span className="inline-flex items-center gap-1 text-[0.65rem] text-[var(--color-ok)]">
+                <Check size={11} aria-hidden />
+                aktiv
+              </span>
+            )}
+            {!active && provider.available && (
+              <span className="text-[0.65rem] text-[var(--color-ok)]">verfügbar</span>
+            )}
+            {!provider.available && provider.configured && (
+              <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
+                eingerichtet, aber nicht nutzbar
+              </span>
+            )}
+          </div>
+          {provider.description && (
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{provider.description}</p>
           )}
         </div>
-        {provider.description && (
-          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{provider.description}</p>
+
+        {/* Only an available, not-yet-active provider can be switched to. */}
+        {provider.available && !active && (
+          <button
+            type="button"
+            onClick={() => onActivate(provider.name)}
+            disabled={pending}
+            className="mt-0.5 shrink-0 rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
+          >
+            Aktivieren
+          </button>
         )}
+
+        <span
+          className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[0.65rem]"
+          style={{ background: `color-mix(in oklab, ${color} 15%, transparent)`, color }}
+        >
+          {label}
+        </span>
       </div>
-      <span
-        className="mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[0.65rem]"
-        style={{ background: `color-mix(in oklab, ${color} 15%, transparent)`, color }}
-      >
-        {label}
-      </span>
+
+      {confirming && (
+        <ConfirmInline
+          tone="warn"
+          message={
+            <>
+              „{provider.name}" als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann
+              hierüber.
+            </>
+          }
+          confirmLabel="Aktivieren"
+          pending={pending}
+          onConfirm={() => onConfirm(provider.name)}
+          onCancel={onCancel}
+        />
+      )}
     </li>
   );
 }
 
 export function WissenPage() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [confirming, setConfirming] = useState<string | null>(null);
+
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.memory,
     queryFn: getMemory,
     staleTime: 60_000,
+  });
+
+  const activate = useMutation({
+    mutationFn: (provider: string) => setMemoryProvider(provider),
+    onSuccess: async (_r, provider) => {
+      setConfirming(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.memory });
+      toast.push({ tone: 'success', title: `„${provider}" aktiviert` });
+    },
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: 'Aktivieren fehlgeschlagen', description: e.message }),
   });
 
   return (
@@ -141,7 +212,16 @@ export function WissenPage() {
             ) : (
               <ul className="space-y-2">
                 {data.providers.map((provider) => (
-                  <ProviderRow key={provider.name} provider={provider} />
+                  <ProviderRow
+                    key={provider.name}
+                    provider={provider}
+                    active={data.active === provider.name}
+                    confirming={confirming === provider.name}
+                    pending={activate.isPending && activate.variables === provider.name}
+                    onActivate={setConfirming}
+                    onConfirm={(name) => activate.mutate(name)}
+                    onCancel={() => setConfirming(null)}
+                  />
                 ))}
               </ul>
             )}

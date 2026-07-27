@@ -86,12 +86,61 @@ export const getSkills = (): Promise<SkillSummary> => apiRequest<SkillSummary>('
 export const getSkillList = (): Promise<SkillEntry[]> =>
   apiRequest<SkillEntry[]>('/hermes/skills/list');
 
+export interface ActionResult {
+  ok?: boolean;
+}
+
+export interface TestResult {
+  ok?: boolean;
+  state?: string | null;
+  message?: string | null;
+}
+
 /** Enable or disable a skill on the agent. Returns once Hermes confirms. */
-export const toggleSkill = (name: string, enabled: boolean): Promise<{ ok?: boolean }> =>
-  apiRequest<{ ok?: boolean }>('/hermes/skills/toggle', {
+export const toggleSkill = (name: string, enabled: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/skills/toggle', {
     method: 'PUT',
     ...jsonBody({ name, enabled }),
   });
+
+export const cronAction = (
+  id: string,
+  action: 'pause' | 'resume' | 'trigger',
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
+
+export const deleteCronJob = (id: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const setMainModel = (provider: string, model: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/model/set', {
+    method: 'POST',
+    ...jsonBody({ provider, model }),
+  });
+
+export const setMcpEnabled = (name: string, enabled: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/mcp/${encodeURIComponent(name)}/enabled`, {
+    method: 'PUT',
+    ...jsonBody({ enabled }),
+  });
+
+export const testMcpServer = (name: string): Promise<TestResult> =>
+  apiRequest<TestResult>(`/hermes/mcp/${encodeURIComponent(name)}/test`, { method: 'POST' });
+
+export const deleteMcpServer = (name: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/mcp/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
+export const setMemoryProvider = (provider: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/memory/provider', { method: 'PUT', ...jsonBody({ provider }) });
+
+export const setPlatformEnabled = (id: string, enabled: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/messaging/${encodeURIComponent(id)}/enabled`, {
+    method: 'PUT',
+    ...jsonBody({ enabled }),
+  });
+
+export const testPlatform = (id: string): Promise<TestResult> =>
+  apiRequest<TestResult>(`/hermes/messaging/${encodeURIComponent(id)}/test`, { method: 'POST' });
 
 export const getModelOptions = (): Promise<ModelOptions> =>
   apiRequest<ModelOptions>('/hermes/models');

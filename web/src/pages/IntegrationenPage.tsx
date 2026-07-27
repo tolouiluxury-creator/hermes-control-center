@@ -1,9 +1,18 @@
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ExternalLink, Plug, Users, Webhook } from 'lucide-react';
-import { getMessaging, getPairing, getWebhooks, queryKeys } from '@/lib/api';
+import {
+  getMessaging,
+  getPairing,
+  getWebhooks,
+  queryKeys,
+  setPlatformEnabled,
+  testPlatform,
+} from '@/lib/api';
 import { FilterChips, PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ConfirmInline } from '@/components/ConfirmInline';
+import { useToast } from '@/components/Toast';
 import { formatRelativeTime } from '@/lib/format';
 import type { MessagingPlatform } from '@/lib/hermesTypes';
 
@@ -23,70 +32,167 @@ const STATE_LABEL: Record<string, string> = {
   disconnected: 'getrennt',
 };
 
-function PlatformCard({ platform }: { platform: MessagingPlatform }) {
+function PlatformCard({
+  platform,
+  confirming,
+  pending,
+  onToggle,
+  onConfirm,
+  onCancel,
+  onTest,
+}: {
+  platform: MessagingPlatform;
+  confirming: boolean;
+  pending: boolean;
+  onToggle: (id: string) => void;
+  onConfirm: (platform: MessagingPlatform) => void;
+  onCancel: () => void;
+  onTest: (id: string) => void;
+}) {
   const color = stateColor(platform);
+  // Only a configured platform can be started or tested — an unconfigured one
+  // has no credentials, so its actions would only ever fail.
+  const canAct = platform.configured;
 
   return (
-    <li className="card flex items-start gap-3 p-4">
-      <span
-        className="mt-1 size-2 shrink-0 rounded-full"
-        style={{ background: color }}
-        aria-hidden
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <span className="text-sm font-medium">{platform.name}</span>
-          {platform.enabled ? (
-            <span className="text-[0.65rem] text-[var(--color-ok)]">aktiv</span>
-          ) : platform.configured ? (
-            <span className="text-[0.65rem] text-[var(--color-warn)]">eingerichtet</span>
-          ) : null}
-          {platform.state && (
-            <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
-              {STATE_LABEL[platform.state] ?? platform.state}
-            </span>
+    <li className="card p-4">
+      <div className="flex items-start gap-3">
+        <span
+          className="mt-1 size-2 shrink-0 rounded-full"
+          style={{ background: color }}
+          aria-hidden
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-sm font-medium">{platform.name}</span>
+            {platform.enabled ? (
+              <span className="text-[0.65rem] text-[var(--color-ok)]">aktiv</span>
+            ) : platform.configured ? (
+              <span className="text-[0.65rem] text-[var(--color-warn)]">eingerichtet</span>
+            ) : null}
+            {platform.state && (
+              <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
+                {STATE_LABEL[platform.state] ?? platform.state}
+              </span>
+            )}
+          </div>
+          {platform.description && (
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{platform.description}</p>
           )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem]">
+            {platform.configured && platform.requiredMissing > 0 && (
+              <span className="text-[var(--color-warn)]">
+                {platform.requiredMissing} von {platform.requiredTotal} Pflichtangaben fehlen
+              </span>
+            )}
+            {platform.errorMessage && (
+              <span className="text-[var(--color-danger)]">{platform.errorMessage}</span>
+            )}
+            {platform.homeChannel && (
+              <span className="text-[var(--color-ink-faint)]">Kanal: {platform.homeChannel}</span>
+            )}
+            {platform.docsUrl && (
+              <a
+                href={platform.docsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-[var(--color-accent)] hover:underline"
+              >
+                Doku
+                <ExternalLink size={10} aria-hidden />
+              </a>
+            )}
+          </div>
         </div>
-        {platform.description && (
-          <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{platform.description}</p>
-        )}
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.7rem]">
-          {platform.configured && platform.requiredMissing > 0 && (
-            <span className="text-[var(--color-warn)]">
-              {platform.requiredMissing} von {platform.requiredTotal} Pflichtangaben fehlen
-            </span>
-          )}
-          {platform.errorMessage && (
-            <span className="text-[var(--color-danger)]">{platform.errorMessage}</span>
-          )}
-          {platform.homeChannel && (
-            <span className="text-[var(--color-ink-faint)]">Kanal: {platform.homeChannel}</span>
-          )}
-          {platform.docsUrl && (
-            <a
-              href={platform.docsUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[var(--color-accent)] hover:underline"
+
+        {canAct && (
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onTest(platform.id)}
+              disabled={pending}
+              className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
             >
-              Doku
-              <ExternalLink size={10} aria-hidden />
-            </a>
-          )}
-        </div>
+              Testen
+            </button>
+            <button
+              type="button"
+              onClick={() => onToggle(platform.id)}
+              disabled={pending}
+              className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
+            >
+              {platform.enabled ? 'Deaktivieren' : 'Aktivieren'}
+            </button>
+          </div>
+        )}
       </div>
+
+      {confirming && (
+        <ConfirmInline
+          tone="warn"
+          message={
+            platform.enabled ? (
+              <>
+                „{platform.name}" deaktivieren? Der Kanal geht offline und empfängt keine
+                Nachrichten mehr.
+              </>
+            ) : (
+              <>„{platform.name}" aktivieren? Der Kanal geht online, sobald das Gateway neu lädt.</>
+            )
+          }
+          confirmLabel={platform.enabled ? 'Deaktivieren' : 'Aktivieren'}
+          pending={pending}
+          onConfirm={() => onConfirm(platform)}
+          onCancel={onCancel}
+        />
+      )}
     </li>
   );
 }
 
 function MessagingSection() {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [scope, setScope] = useState<'eingerichtet' | 'alle'>('eingerichtet');
+  const [confirming, setConfirming] = useState<string | null>(null);
+
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.messaging,
     queryFn: getMessaging,
     staleTime: 30_000,
   });
 
-  const [scope, setScope] = useState<'eingerichtet' | 'alle'>('eingerichtet');
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.messaging });
+
+  const toggle = useMutation({
+    mutationFn: (platform: MessagingPlatform) => setPlatformEnabled(platform.id, !platform.enabled),
+    onSuccess: async (_r, platform) => {
+      setConfirming(null);
+      await invalidate();
+      toast.push({
+        tone: 'success',
+        title: platform.enabled ? `„${platform.name}" deaktiviert` : `„${platform.name}" aktiviert`,
+      });
+    },
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: 'Umschalten fehlgeschlagen', description: e.message }),
+  });
+
+  const test = useMutation({
+    mutationFn: (id: string) => testPlatform(id),
+    onSuccess: (result, id) =>
+      toast.push({
+        tone: result.ok ? 'success' : 'warning',
+        title: `Test: ${id}`,
+        description:
+          result.message ?? result.state ?? (result.ok ? 'Erreichbar' : 'Nicht erreichbar'),
+      }),
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: 'Test fehlgeschlagen', description: e.message }),
+  });
+
+  const busy = (id: string) =>
+    (toggle.isPending && toggle.variables?.id === id) || (test.isPending && test.variables === id);
 
   const platforms = useMemo(() => {
     const all = data?.platforms ?? [];
@@ -137,7 +243,16 @@ function MessagingSection() {
       ) : (
         <ul className="space-y-2">
           {platforms.map((platform) => (
-            <PlatformCard key={platform.id} platform={platform} />
+            <PlatformCard
+              key={platform.id}
+              platform={platform}
+              confirming={confirming === platform.id}
+              pending={busy(platform.id)}
+              onToggle={setConfirming}
+              onConfirm={(target) => toggle.mutate(target)}
+              onCancel={() => setConfirming(null)}
+              onTest={(id) => test.mutate(id)}
+            />
           ))}
         </ul>
       )}
