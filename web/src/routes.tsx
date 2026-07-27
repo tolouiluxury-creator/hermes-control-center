@@ -12,6 +12,7 @@ import { PromptsPage } from '@/pages/PromptsPage';
 import { WissenPage } from '@/pages/WissenPage';
 import { IntegrationenPage } from '@/pages/IntegrationenPage';
 import { EinstellungenPage } from '@/pages/EinstellungenPage';
+import { AgentenPage } from '@/pages/AgentenPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import type { ComponentType } from 'react';
 
@@ -27,6 +28,7 @@ const PAGES: Record<string, ComponentType> = {
   wissen: WissenPage,
   integrationen: IntegrationenPage,
   einstellungen: EinstellungenPage,
+  agenten: AgentenPage,
 };
 
 /**
@@ -35,7 +37,6 @@ const PAGES: Record<string, ComponentType> = {
  */
 const PLANNED: Record<string, string> = {
   chats: 'Unterhaltungen mit deinem Agenten, live gestreamt, mit Sitzungsverlauf und Suche.',
-  agenten: 'Deine Agenten mit Auslastung, Modellzuordnung und laufenden Aufträgen.',
   workflows: 'Wiederkehrende Abläufe: anlegen, planen, pausieren und Verlauf einsehen.',
 };
 

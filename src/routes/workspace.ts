@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { deriveInsights, type Insight } from '../insights.js';
 import { PromptsRepo } from '../store/prompts.js';
+import { AgentsRepo, AgentNameTakenError } from '../store/agents.js';
 import { log } from '../log.js';
 
 /**
@@ -17,11 +18,23 @@ const promptInputSchema = z.object({
   tags: z.array(z.string().max(40)).max(20).optional(),
 });
 
+const agentInputSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  provider: z.string().max(200).nullish(),
+  model: z.string().max(200).nullish(),
+  toolset: z.string().max(200).nullish(),
+  skills: z.array(z.string().max(200)).max(200).optional(),
+  systemPrompt: z.string().max(100_000).optional(),
+  accent: z.string().max(40).nullish(),
+});
+
 export async function registerWorkspaceRoutes(
   app: FastifyInstance,
   ctx: AppContext,
 ): Promise<void> {
   const prompts = new PromptsRepo(ctx.store);
+  const agents = new AgentsRepo(ctx.store);
 
   app.get('/api/prompts', async () => ({ prompts: prompts.list() }));
 
@@ -60,6 +73,53 @@ export async function registerWorkspaceRoutes(
     const uses = prompts.recordUse(id);
     if (uses === null) return reply.code(404).send({ error: 'not_found' });
     return { uses };
+  });
+
+  // --- Agent presets --------------------------------------------------------
+
+  app.get('/api/agents', async () => ({ agents: agents.list() }));
+
+  app.post('/api/agents', async (request, reply) => {
+    const parsed = agentInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'invalid_agent', message: parsed.error.issues[0]?.message ?? 'ungültig' });
+    }
+    try {
+      return reply.code(201).send({ agent: agents.create(parsed.data) });
+    } catch (error) {
+      if (error instanceof AgentNameTakenError) {
+        return reply.code(409).send({ error: 'name_taken', message: error.message });
+      }
+      throw error;
+    }
+  });
+
+  app.put('/api/agents/:id', async (request, reply) => {
+    const parsed = agentInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'invalid_agent', message: parsed.error.issues[0]?.message ?? 'ungültig' });
+    }
+    const { id } = request.params as { id: string };
+    try {
+      const updated = agents.update(id, parsed.data);
+      if (!updated) return reply.code(404).send({ error: 'not_found' });
+      return { agent: updated };
+    } catch (error) {
+      if (error instanceof AgentNameTakenError) {
+        return reply.code(409).send({ error: 'name_taken', message: error.message });
+      }
+      throw error;
+    }
+  });
+
+  app.delete('/api/agents/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!agents.delete(id)) return reply.code(404).send({ error: 'not_found' });
+    return { ok: true };
   });
 
   /**
