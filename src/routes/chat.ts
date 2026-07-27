@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { GatewayError } from '../hermes/gateway.js';
+import { toEpochMs } from '../hermes/inventory.js';
 import { log } from '../log.js';
 
 /**
@@ -20,31 +21,55 @@ const promptSchema = z.object({
   text: z.string().trim().min(1).max(100_000),
 });
 
-interface HistoryMessage {
-  role: string;
-  text: string;
+interface ChatSession {
+  id: string;
+  title: string;
+  preview: string;
+  startedAt: number | null;
+  messageCount: number;
+  source: string;
 }
 
-/** Reduces a gateway history result to the {role, text} the thread renders. */
-function normalizeHistory(result: unknown): HistoryMessage[] {
-  const raw = result as { history?: unknown; messages?: unknown } | null;
-  const list = Array.isArray(raw?.history)
-    ? raw.history
-    : Array.isArray(raw?.messages)
-      ? raw.messages
-      : [];
-  return list
-    .map((entry) => {
-      const message = entry as { role?: unknown; text?: unknown };
-      return {
-        role: typeof message.role === 'string' ? message.role : 'assistant',
-        text: typeof message.text === 'string' ? message.text : '',
-      };
-    })
-    .filter((message) => message.text !== '' || message.role === 'assistant');
+/** Reduces a gateway session.list result to the list the sidebar renders. */
+function normalizeSessions(result: unknown): ChatSession[] {
+  const raw = result as { sessions?: unknown } | null;
+  const list = Array.isArray(raw?.sessions) ? raw.sessions : [];
+  return list.map((entry) => {
+    const s = entry as Record<string, unknown>;
+    return {
+      id: typeof s.id === 'string' ? s.id : '',
+      title: typeof s.title === 'string' ? s.title.trim() : '',
+      preview: typeof s.preview === 'string' ? s.preview.trim() : '',
+      startedAt: toEpochMs(s.started_at),
+      messageCount: typeof s.message_count === 'number' ? s.message_count : 0,
+      source: typeof s.source === 'string' ? s.source : '',
+    };
+  });
 }
 
 export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
+  app.get('/api/chat/sessions', async (_request, reply) => {
+    try {
+      const result = await ctx.gateway.request('session.list', { limit: 50 });
+      return { sessions: normalizeSessions(result).filter((s) => s.id !== '') };
+    } catch (error) {
+      return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
+    }
+  });
+
+  app.post('/api/chat/resume', async (request, reply) => {
+    const sessionId = (request.body as { sessionId?: unknown } | undefined)?.sessionId;
+    if (typeof sessionId !== 'string' || sessionId.trim() === '') {
+      return reply.code(400).send({ error: 'missing_session' });
+    }
+    try {
+      await ctx.gateway.request('session.resume', { session_id: sessionId, cols: 80 });
+      return { ok: true };
+    } catch (error) {
+      return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
+    }
+  });
+
   app.post('/api/chat/session', async (_request, reply) => {
     try {
       const result = await ctx.gateway.request<{ session_id?: string }>('session.create', {
@@ -85,8 +110,10 @@ export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext):
     const sessionId = (request.query as { sessionId?: string } | undefined)?.sessionId;
     if (!sessionId) return reply.code(400).send({ error: 'missing_session' });
     try {
-      const result = await ctx.gateway.request('session.history', { session_id: sessionId });
-      return { messages: normalizeHistory(result) };
+      // The stored transcript (dashboard REST) is authoritative and needs no
+      // resume; the gateway's own history only holds a live session's turns.
+      const messages = await ctx.dashboard.sessionMessages(sessionId);
+      return { messages };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }

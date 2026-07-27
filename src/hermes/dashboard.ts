@@ -42,11 +42,13 @@ import {
   normalizeModelOptions,
   normalizePairing,
   normalizeSessions,
+  normalizeSessionMessages,
   normalizeSkillList,
   normalizeSkills,
   normalizeWebhooks,
   modelOptionsSchema,
   pairingSchema,
+  sessionMessagesSchema,
   sessionsSchema,
   skillsSchema,
   webhooksSchema,
@@ -152,6 +154,20 @@ export class DashboardClient {
 
   memory(options?: RequestOptions): Promise<MemorySummary> {
     return this.client.json(memorySchema, '/api/memory', options).then(normalizeMemory);
+  }
+
+  /** The stored transcript of a session, for reopening a past conversation. */
+  sessionMessages(
+    sessionId: string,
+    options?: RequestOptions,
+  ): Promise<ReturnType<typeof normalizeSessionMessages>> {
+    return this.client
+      .json(
+        sessionMessagesSchema,
+        `/api/sessions/${encodeURIComponent(sessionId)}/messages`,
+        options,
+      )
+      .then(normalizeSessionMessages);
   }
 
   messagingPlatforms(options?: RequestOptions): Promise<MessagingOverview> {

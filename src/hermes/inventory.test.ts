@@ -8,6 +8,7 @@ import {
   normalizeMessagingPlatforms,
   normalizeModelInfo,
   normalizePairing,
+  normalizeSessionMessages,
   normalizeSessions,
   normalizeSkills,
   normalizeWebhooks,
@@ -228,6 +229,27 @@ describe('normalizeMemory', () => {
     expect(summary.active).toBeNull();
     expect(summary.providers.map((p) => p.name)).toEqual(['holographic', 'byterover', 'other']);
     expect(summary.providers[0]?.available).toBe(true);
+  });
+});
+
+describe('normalizeSessionMessages', () => {
+  // Trimmed from a real /api/sessions/{id}/messages payload.
+  const real = {
+    session_id: '1438af28793a',
+    messages: [
+      { role: 'user', content: 'bist du da' },
+      { role: 'assistant', content: 'Ja, ich bin da.' },
+      { role: 'assistant', content: '' }, // tool-only turn: dropped
+      { role: 'tool', content: 'result' }, // internal role: dropped
+    ],
+  };
+
+  it('keeps user and assistant turns with text, dropping empty and tool turns', () => {
+    const messages = normalizeSessionMessages(real);
+    expect(messages).toEqual([
+      { role: 'user', text: 'bist du da' },
+      { role: 'assistant', text: 'Ja, ich bin da.' },
+    ]);
   });
 });
 

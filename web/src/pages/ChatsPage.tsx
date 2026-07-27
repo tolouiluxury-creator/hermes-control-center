@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MessagesSquare, Plus, Send } from 'lucide-react';
-import { createChatSession, sendChatPrompt, type ChatMessage } from '@/lib/api';
+import {
+  createChatSession,
+  getChatHistory,
+  getChatSessions,
+  resumeChatSession,
+  sendChatPrompt,
+  type ChatMessage,
+  type ChatSessionSummary,
+} from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
+import { SkeletonText } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { formatRelativeTime } from '@/lib/format';
 
 interface GatewayEventData {
   type: string;
@@ -12,6 +22,8 @@ interface GatewayEventData {
 
 export function ChatsPage() {
   const toast = useToast();
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [listPending, setListPending] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -27,8 +39,19 @@ export function ChatsPage() {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [messages, streaming]);
 
+  const loadSessions = useCallback(async () => {
+    try {
+      const { sessions: list } = await getChatSessions();
+      setSessions(list);
+    } catch {
+      // The list is a convenience; a failure here should not block chatting.
+    } finally {
+      setListPending(false);
+    }
+  }, []);
+
   // Only sets state after the await, so it is safe to call from an effect.
-  const openSession = useCallback(async () => {
+  const openNew = useCallback(async () => {
     try {
       const { sessionId: id } = await createChatSession();
       sessionRef.current = id;
@@ -47,15 +70,35 @@ export function ChatsPage() {
     setConnecting(true);
     setConnectionError(null);
     setMessages([]);
-    void openSession();
-  }, [openSession]);
+    void openNew();
+  }, [openNew]);
+
+  /** Reopen a previous conversation: bring it live, then load its history. */
+  const openExisting = useCallback(async (id: string) => {
+    sessionRef.current = id;
+    setSessionId(id);
+    setConnecting(true);
+    setConnectionError(null);
+    setMessages([]);
+    try {
+      await resumeChatSession(id);
+      const { messages: history } = await getChatHistory(id);
+      // Guard against a race where the user clicked another session meanwhile.
+      if (sessionRef.current === id) setMessages(history);
+    } catch (error) {
+      setConnectionError(error instanceof Error ? error.message : 'Öffnen fehlgeschlagen');
+    } finally {
+      setConnecting(false);
+    }
+  }, []);
 
   // One SSE stream for the page; events are filtered by the active session.
   useEffect(() => {
-    // openSession only touches state after an await, so this is not a
-    // synchronous set-state-in-effect despite how the rule reads it.
+    // These only touch state after an await, so they are not synchronous
+    // set-state-in-effect despite how the rule reads them.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void openSession();
+    void openNew();
+    void loadSessions();
 
     const source = new EventSource('/api/chat/events');
 
@@ -90,7 +133,6 @@ export function ChatsPage() {
       const data = forSession(event.data);
       if (!data) return;
       setStreaming(false);
-      // If nothing streamed (some models only emit a final message), take it now.
       setMessages((current) => {
         const last = current[current.length - 1];
         if (last && last.role === 'assistant' && last.text === '' && data.payload?.text) {
@@ -100,18 +142,18 @@ export function ChatsPage() {
         }
         return current;
       });
+      void loadSessions();
     };
 
     source.addEventListener('message.delta', onDelta);
     source.addEventListener('message.complete', onComplete);
     source.addEventListener('message.interim', onDelta);
     source.onerror = () => {
-      // The browser reconnects EventSource on its own; surface nothing unless it
-      // never opened, which the session bootstrap already reports.
+      // EventSource reconnects on its own; the bootstrap reports a hard failure.
     };
 
     return () => source.close();
-  }, [openSession]);
+  }, [openNew, loadSessions]);
 
   const send = async () => {
     const text = input.trim();
@@ -123,7 +165,7 @@ export function ChatsPage() {
       await sendChatPrompt(sessionRef.current, text);
     } catch (error) {
       setStreaming(false);
-      setMessages((current) => current.slice(0, -1)); // drop the empty assistant bubble
+      setMessages((current) => current.slice(0, -1));
       toast.push({
         tone: 'error',
         title: 'Senden fehlgeschlagen',
@@ -136,111 +178,159 @@ export function ChatsPage() {
     <PageShell
       title="Chats"
       description="Unterhalte dich direkt mit deinem Agenten — über das laufende Dashboard, ohne zusätzliche Server."
-      actions={
-        <button
-          type="button"
-          onClick={startNew}
-          disabled={connecting}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-hairline)] px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
-        >
-          <Plus size={14} aria-hidden />
-          Neue Unterhaltung
-        </button>
-      }
+      wide
     >
-      {connectionError ? (
-        <div className="card p-6">
-          <p className="text-sm text-[var(--color-danger)]" role="alert">
-            {connectionError}
-          </p>
-          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            Der Chat läuft über das Hermes-Dashboard. Prüfe, dass das Dashboard erreichbar ist.
-          </p>
+      <div className="flex h-[calc(100vh-11rem)] gap-4">
+        {/* Session list */}
+        <aside className="hidden w-64 shrink-0 flex-col sm:flex">
           <button
             type="button"
             onClick={startNew}
-            className="mt-3 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            disabled={connecting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
           >
-            Erneut versuchen
+            <Plus size={14} aria-hidden />
+            Neue Unterhaltung
           </button>
-        </div>
-      ) : (
-        <div className="flex h-[calc(100vh-12rem)] flex-col">
-          <div
-            ref={threadRef}
-            className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] p-4"
-          >
-            {messages.length === 0 && !connecting ? (
-              <div className="grid h-full place-items-center text-center">
-                <div>
-                  <span
-                    className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--color-raised)] text-[var(--color-ink-faint)]"
-                    aria-hidden
-                  >
-                    <MessagesSquare size={22} />
-                  </span>
-                  <p className="mt-3 text-sm font-medium">Neue Unterhaltung</p>
-                  <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-                    Schreib unten eine Nachricht, um loszulegen.
-                  </p>
-                </div>
-              </div>
+
+          <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
+            {listPending ? (
+              <SkeletonText lines={6} />
+            ) : sessions.length === 0 ? (
+              <p className="px-1 text-xs text-[var(--color-ink-faint)]">
+                Noch keine Unterhaltungen.
+              </p>
             ) : (
-              messages.map((message, index) => (
-                <div
-                  key={index}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
-                      message.role === 'user'
-                        ? 'bg-[var(--color-accent)]/15 text-[var(--color-ink)]'
-                        : 'bg-[var(--color-raised)] text-[var(--color-ink)]'
-                    }`}
-                  >
-                    {message.text || (
-                      <span className="inline-flex gap-1 text-[var(--color-ink-faint)]">
-                        <span className="animate-pulse">●</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+              <ul className="space-y-1">
+                {sessions.map((session) => {
+                  const active = session.id === sessionId;
+                  const label = session.title || session.preview || 'Unterhaltung';
+                  return (
+                    <li key={session.id}>
+                      <button
+                        type="button"
+                        onClick={() => void openExisting(session.id)}
+                        className={`w-full rounded-lg px-2.5 py-2 text-left transition-colors ${
+                          active
+                            ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
+                            : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
+                        }`}
+                      >
+                        <p className="truncate text-xs font-medium">{label}</p>
+                        <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                          {session.messageCount > 0 && <span>{session.messageCount} Nachr.</span>}
+                          {session.startedAt && (
+                            <span>· {formatRelativeTime(session.startedAt)}</span>
+                          )}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
+        </aside>
 
-          <form
-            className="mt-3 flex items-end gap-2"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void send();
-            }}
-          >
-            <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
+        {/* Thread */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {connectionError ? (
+            <div className="card p-6">
+              <p className="text-sm text-[var(--color-danger)]" role="alert">
+                {connectionError}
+              </p>
+              <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+                Der Chat läuft über das Hermes-Dashboard. Prüfe, dass das Dashboard erreichbar ist.
+              </p>
+              <button
+                type="button"
+                onClick={startNew}
+                className="mt-3 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                Erneut versuchen
+              </button>
+            </div>
+          ) : (
+            <>
+              <div
+                ref={threadRef}
+                className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] p-4"
+              >
+                {messages.length === 0 && !connecting ? (
+                  <div className="grid h-full place-items-center text-center">
+                    <div>
+                      <span
+                        className="mx-auto grid size-12 place-items-center rounded-2xl bg-[var(--color-raised)] text-[var(--color-ink-faint)]"
+                        aria-hidden
+                      >
+                        <MessagesSquare size={22} />
+                      </span>
+                      <p className="mt-3 text-sm font-medium">Neue Unterhaltung</p>
+                      <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                        Schreib unten eine Nachricht, um loszulegen.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
+                          message.role === 'user'
+                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-ink)]'
+                            : 'bg-[var(--color-raised)] text-[var(--color-ink)]'
+                        }`}
+                      >
+                        {message.text || (
+                          <span className="inline-flex gap-1 text-[var(--color-ink-faint)]">
+                            <span className="animate-pulse">●</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <form
+                className="mt-3 flex items-end gap-2"
+                onSubmit={(event) => {
                   event.preventDefault();
                   void send();
-                }
-              }}
-              rows={1}
-              placeholder={connecting ? 'Verbinde …' : 'Nachricht an den Agenten … (Enter sendet)'}
-              disabled={connecting || streaming || !sessionId}
-              className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
-            />
-            <button
-              type="submit"
-              disabled={connecting || streaming || input.trim() === '' || !sessionId}
-              className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
-            >
-              <Send size={15} aria-hidden />
-              Senden
-            </button>
-          </form>
+                }}
+              >
+                <textarea
+                  value={input}
+                  onChange={(event) => setInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' && !event.shiftKey) {
+                      event.preventDefault();
+                      void send();
+                    }
+                  }}
+                  rows={1}
+                  placeholder={
+                    connecting ? 'Verbinde …' : 'Nachricht an den Agenten … (Enter sendet)'
+                  }
+                  disabled={connecting || streaming || !sessionId}
+                  className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={connecting || streaming || input.trim() === '' || !sessionId}
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+                >
+                  <Send size={15} aria-hidden />
+                  Senden
+                </button>
+              </form>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </PageShell>
   );
 }

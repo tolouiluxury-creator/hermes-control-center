@@ -300,6 +300,21 @@ export interface ChatMessage {
   text: string;
 }
 
+export interface ChatSessionSummary {
+  id: string;
+  title: string;
+  preview: string;
+  startedAt: number | null;
+  messageCount: number;
+  source: string;
+}
+
+export const getChatSessions = (): Promise<{ sessions: ChatSessionSummary[] }> =>
+  apiRequest<{ sessions: ChatSessionSummary[] }>('/chat/sessions');
+
+export const resumeChatSession = (sessionId: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/chat/resume', { method: 'POST', ...jsonBody({ sessionId }) });
+
 export const createChatSession = (): Promise<{ sessionId: string }> =>
   apiRequest<{ sessionId: string }>('/chat/session', { method: 'POST' });
 

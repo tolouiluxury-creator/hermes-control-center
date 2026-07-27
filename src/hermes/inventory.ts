@@ -486,6 +486,42 @@ export function normalizeSessions(raw: z.infer<typeof sessionsSchema>): {
   };
 }
 
+// --- Session transcript -----------------------------------------------------
+
+export const sessionMessagesSchema = z.looseObject({
+  messages: z
+    .array(
+      z.looseObject({
+        role: z.string().nullish(),
+        content: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface TranscriptMessage {
+  role: string;
+  text: string;
+}
+
+/**
+ * Reduces a stored transcript to the {role, text} the chat thread renders.
+ * Only user and assistant turns with text survive: tool-call turns and internal
+ * roles would show as blank bubbles.
+ */
+export function normalizeSessionMessages(
+  raw: z.infer<typeof sessionMessagesSchema>,
+): TranscriptMessage[] {
+  return (raw.messages ?? [])
+    .map((message) => ({
+      role: message.role === 'user' ? 'user' : 'assistant',
+      text: message.content?.trim() ?? '',
+      keep: (message.role === 'user' || message.role === 'assistant') && !!message.content?.trim(),
+    }))
+    .filter((message) => message.keep)
+    .map(({ role, text }) => ({ role, text }));
+}
+
 // --- Memory / knowledge -----------------------------------------------------
 
 export const memorySchema = z.looseObject({
