@@ -293,6 +293,24 @@ export const getStatus = (fresh = false): Promise<StatusSnapshot> =>
 export const getConnection = (): Promise<PublicHermesConnection> =>
   apiRequest<PublicHermesConnection>('/connection');
 
+// --- Chat (dashboard tui_gateway) -------------------------------------------
+
+export interface ChatMessage {
+  role: string;
+  text: string;
+}
+
+export const createChatSession = (): Promise<{ sessionId: string }> =>
+  apiRequest<{ sessionId: string }>('/chat/session', { method: 'POST' });
+
+export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
+
+export const getChatHistory = (sessionId: string): Promise<{ messages: ChatMessage[] }> =>
+  apiRequest<{ messages: ChatMessage[] }>(
+    `/chat/history?sessionId=${encodeURIComponent(sessionId)}`,
+  );
+
 export const getMetricSeries = (metric: string, windowMs?: number): Promise<MetricSeries> => {
   const params = new URLSearchParams({ metric });
   if (windowMs) params.set('windowMs', String(windowMs));

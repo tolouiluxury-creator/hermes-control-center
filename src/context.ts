@@ -7,6 +7,7 @@ import { discoverHermes, toPublicConnection, type HermesConnection } from './her
 import { HermesClient } from './hermes/client.js';
 import { ApiServerClient } from './hermes/apiServer.js';
 import { DashboardClient } from './hermes/dashboard.js';
+import { GatewayClient } from './hermes/gateway.js';
 import { Store } from './store/db.js';
 import { SettingsRepo } from './store/settings.js';
 import { MetricsRepo } from './store/metrics.js';
@@ -20,6 +21,8 @@ export interface AppContext {
   auth: AuthService;
   api: ApiServerClient;
   dashboard: DashboardClient;
+  /** Chat with the agent over the dashboard's tui_gateway WebSocket. */
+  gateway: GatewayClient;
   store: Store;
   settings: SettingsRepo;
   metrics: MetricsRepo;
@@ -56,18 +59,24 @@ export function createContext(
     }),
   );
 
+  // The dashboard guards its API with a session token embedded in its HTML.
+  // The REST client and the chat gateway share one provider so a single
+  // bootstrap (and a single refresh after a restart) serves both.
+  const dashboardToken = new DashboardSessionToken(connection.dashboard.url, {
+    onWarn: (message) => log.warn(message),
+  });
+
   const dashboard = new DashboardClient(
     new HermesClient({
       name: 'dashboard',
       baseUrl: connection.dashboard.url,
       profile: connection.profile,
-      // The dashboard guards its API with a session token embedded in its HTML.
-      tokenProvider: new DashboardSessionToken(connection.dashboard.url, {
-        onWarn: (message) => log.warn(message),
-      }),
+      tokenProvider: dashboardToken,
       defaultTimeoutMs: 15_000,
     }),
   );
+
+  const gateway = new GatewayClient(connection.dashboard.url, dashboardToken);
 
   const store = Store.open(controlCenterDatabasePath(env));
   const settings = new SettingsRepo(store);
@@ -94,6 +103,7 @@ export function createContext(
     auth,
     api,
     dashboard,
+    gateway,
     store,
     settings,
     metrics,
@@ -116,6 +126,7 @@ export function createContext(
     },
 
     close() {
+      gateway.close();
       store.close();
     },
   };

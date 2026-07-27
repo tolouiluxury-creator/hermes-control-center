@@ -9,6 +9,7 @@ import { registerInventoryRoutes } from './routes/inventory.js';
 import { registerActionRoutes } from './routes/actions.js';
 import { ResponseCache, CACHE_TTL_MS } from './routes/cache.js';
 import { registerWorkspaceRoutes } from './routes/workspace.js';
+import { registerChatRoutes } from './routes/chat.js';
 import { registerMetaRoutes } from './routes/meta.js';
 import { registerStatusRoutes } from './routes/status.js';
 import { registerStreamRoutes } from './routes/stream.js';
@@ -85,6 +86,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerInventoryRoutes(app, ctx, cache);
   await registerActionRoutes(app, ctx, cache);
   await registerWorkspaceRoutes(app, ctx);
+  await registerChatRoutes(app, ctx);
   await registerStreamRoutes(app, ctx);
 
   const webRoot = resolveWebRoot();

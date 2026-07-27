@@ -14,32 +14,29 @@ import { IntegrationenPage } from '@/pages/IntegrationenPage';
 import { EinstellungenPage } from '@/pages/EinstellungenPage';
 import { AgentenPage } from '@/pages/AgentenPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
+import { ChatsPage } from '@/pages/ChatsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import type { ComponentType } from 'react';
 
-/** Pages that exist. Everything else in the nav still shows a placeholder. */
+/** Every nav item now maps to a real page. */
 const PAGES: Record<string, ComponentType> = {
+  chats: ChatsPage,
+  agenten: AgentenPage,
+  workflows: WorkflowsPage,
+  aufgaben: TasksPage,
+  wissen: WissenPage,
   skills: SkillsPage,
   mcp: McpPage,
   modelle: ModelsPage,
-  logs: LogsPage,
-  analytics: AnalyticsPage,
-  aufgaben: TasksPage,
   prompts: PromptsPage,
-  wissen: WissenPage,
   integrationen: IntegrationenPage,
+  analytics: AnalyticsPage,
+  logs: LogsPage,
   einstellungen: EinstellungenPage,
-  agenten: AgentenPage,
-  workflows: WorkflowsPage,
 };
 
-/**
- * What each not-yet-built page will contain. Written per page rather than as one
- * generic sentence, so the placeholder still tells the reader something true.
- */
-const PLANNED: Record<string, string> = {
-  chats: 'Unterhaltungen mit deinem Agenten, live gestreamt, mit Sitzungsverlauf und Suche.',
-};
+/** Fallback copy if a nav item ever lacks a page again. */
+const PLANNED: Record<string, string> = {};
 
 export function AppRoutes() {
   return (
