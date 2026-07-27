@@ -4,6 +4,7 @@ import type { AppContext } from '../context.js';
 import { deriveInsights, type Insight } from '../insights.js';
 import { PromptsRepo } from '../store/prompts.js';
 import { AgentsRepo, AgentNameTakenError } from '../store/agents.js';
+import { WorkflowsRepo } from '../store/workflows.js';
 import { log } from '../log.js';
 
 /**
@@ -29,12 +30,29 @@ const agentInputSchema = z.object({
   accent: z.string().max(40).nullish(),
 });
 
+const workflowInputSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  enabled: z.boolean().optional(),
+  steps: z
+    .array(
+      z.object({
+        kind: z.enum(['prompt', 'cron', 'note']),
+        ref: z.string().max(200).nullish(),
+        label: z.string().trim().min(1).max(500),
+      }),
+    )
+    .max(100)
+    .optional(),
+});
+
 export async function registerWorkspaceRoutes(
   app: FastifyInstance,
   ctx: AppContext,
 ): Promise<void> {
   const prompts = new PromptsRepo(ctx.store);
   const agents = new AgentsRepo(ctx.store);
+  const workflows = new WorkflowsRepo(ctx.store);
 
   app.get('/api/prompts', async () => ({ prompts: prompts.list() }));
 
@@ -119,6 +137,52 @@ export async function registerWorkspaceRoutes(
   app.delete('/api/agents/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     if (!agents.delete(id)) return reply.code(404).send({ error: 'not_found' });
+    return { ok: true };
+  });
+
+  // --- Workflows ------------------------------------------------------------
+
+  app.get('/api/workflows', async () => ({ workflows: workflows.list() }));
+
+  app.post('/api/workflows', async (request, reply) => {
+    const parsed = workflowInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'invalid_workflow',
+        message: parsed.error.issues[0]?.message ?? 'ungültig',
+      });
+    }
+    return reply.code(201).send({ workflow: workflows.create(parsed.data) });
+  });
+
+  app.put('/api/workflows/:id', async (request, reply) => {
+    const parsed = workflowInputSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'invalid_workflow',
+        message: parsed.error.issues[0]?.message ?? 'ungültig',
+      });
+    }
+    const { id } = request.params as { id: string };
+    const updated = workflows.update(id, parsed.data);
+    if (!updated) return reply.code(404).send({ error: 'not_found' });
+    return { workflow: updated };
+  });
+
+  app.post('/api/workflows/:id/enabled', async (request, reply) => {
+    const body = request.body as { enabled?: unknown } | undefined;
+    if (typeof body?.enabled !== 'boolean') {
+      return reply.code(400).send({ error: 'invalid_request', message: 'enabled fehlt' });
+    }
+    const { id } = request.params as { id: string };
+    const updated = workflows.setEnabled(id, body.enabled);
+    if (!updated) return reply.code(404).send({ error: 'not_found' });
+    return { workflow: updated };
+  });
+
+  app.delete('/api/workflows/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!workflows.delete(id)) return reply.code(404).send({ error: 'not_found' });
     return { ok: true };
   });
 

@@ -24,6 +24,8 @@ import type {
   Toolset,
   UpdateStatus,
   WebhooksOverview,
+  Workflow,
+  WorkflowInput,
 } from './hermesTypes';
 
 /**
@@ -251,6 +253,27 @@ export const updateAgent = (id: string, input: AgentInput): Promise<{ agent: Age
 export const deleteAgent = (id: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>(`/agents/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
+export const getWorkflows = (): Promise<{ workflows: Workflow[] }> =>
+  apiRequest<{ workflows: Workflow[] }>('/workflows');
+
+export const createWorkflow = (input: WorkflowInput): Promise<{ workflow: Workflow }> =>
+  apiRequest<{ workflow: Workflow }>('/workflows', { method: 'POST', ...jsonBody(input) });
+
+export const updateWorkflow = (id: string, input: WorkflowInput): Promise<{ workflow: Workflow }> =>
+  apiRequest<{ workflow: Workflow }>(`/workflows/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    ...jsonBody(input),
+  });
+
+export const setWorkflowEnabled = (id: string, enabled: boolean): Promise<{ workflow: Workflow }> =>
+  apiRequest<{ workflow: Workflow }>(`/workflows/${encodeURIComponent(id)}/enabled`, {
+    method: 'POST',
+    ...jsonBody({ enabled }),
+  });
+
+export const deleteWorkflow = (id: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/workflows/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
 
@@ -284,6 +307,7 @@ export const queryKeys = {
   insights: ['insights'] as const,
   prompts: ['prompts'] as const,
   agents: ['agents'] as const,
+  workflows: ['workflows'] as const,
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,

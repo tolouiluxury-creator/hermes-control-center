@@ -156,6 +156,38 @@ export interface AgentInput {
   accent?: string | null;
 }
 
+export type WorkflowStepKind = 'prompt' | 'cron' | 'note';
+
+export interface WorkflowStep {
+  id: string;
+  kind: WorkflowStepKind;
+  ref: string | null;
+  label: string;
+}
+
+export interface Workflow {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  steps: WorkflowStep[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WorkflowStepInput {
+  kind: WorkflowStepKind;
+  ref?: string | null;
+  label: string;
+}
+
+export interface WorkflowInput {
+  name: string;
+  description?: string;
+  enabled?: boolean;
+  steps?: WorkflowStepInput[];
+}
+
 export interface MemoryProvider {
   name: string;
   description: string | null;
