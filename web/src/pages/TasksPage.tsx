@@ -6,6 +6,7 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import { describeCron } from '@/widgets/SchedulerWidget';
 import type { CronJobSummary } from '@/lib/hermesTypes';
 
@@ -44,6 +45,7 @@ function ActionButton({
 export function TasksPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
@@ -59,18 +61,18 @@ export function TasksPage() {
       cronAction(id, action),
     onSuccess: async (_result, variables) => {
       await invalidate();
-      const verb =
+      const key =
         variables.action === 'pause'
-          ? 'pausiert'
+          ? 'tasks.paused.toast'
           : variables.action === 'resume'
-            ? 'fortgesetzt'
-            : 'ausgelöst';
-      toast.push({ tone: 'success', title: `Job ${verb}` });
+            ? 'tasks.resumed.toast'
+            : 'tasks.triggered.toast';
+      toast.push({ tone: 'success', title: t(key) });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Aktion fehlgeschlagen',
+        title: t('toast.actionFailed'),
         description: mutationError.message,
       }),
   });
@@ -80,12 +82,12 @@ export function TasksPage() {
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Job gelöscht' });
+      toast.push({ tone: 'success', title: t('tasks.deleted.toast') });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Löschen fehlgeschlagen',
+        title: t('toast.deleteFailed'),
         description: mutationError.message,
       }),
   });
@@ -98,10 +100,7 @@ export function TasksPage() {
   const active = jobs.filter((job: CronJobSummary) => !job.paused).length;
 
   return (
-    <PageShell
-      title="Aufgaben"
-      description="Geplante Jobs, die dein Agent von selbst ausführt. Pausieren, Auslösen und Löschen greifen in den laufenden Betrieb ein."
-    >
+    <PageShell title={t('nav.aufgaben')} description={t('page.aufgaben.desc')}>
       {isPending ? (
         <SkeletonText lines={6} />
       ) : error ? (
@@ -116,15 +115,15 @@ export function TasksPage() {
           >
             <CalendarClock size={22} />
           </span>
-          <p className="mt-4 text-sm font-medium">Keine geplanten Aufgaben</p>
+          <p className="mt-4 text-sm font-medium">{t('tasks.empty.title')}</p>
           <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-            Über <code className="font-mono">hermes cron</code> angelegte Jobs erscheinen hier.
+            {t('tasks.empty.desc', { command: 'hermes cron' })}
           </p>
         </div>
       ) : (
         <>
           <p className="mb-3 text-xs text-[var(--color-ink-faint)]" role="status">
-            {jobs.length} Jobs, davon {active} aktiv
+            {t('tasks.count', { total: jobs.length, active })}
           </p>
 
           <ul className="space-y-2">
@@ -146,8 +145,8 @@ export function TasksPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{job.name}</p>
                       <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                        {job.paused ? 'pausiert · ' : ''}
-                        {described ?? 'Zeitplan unbekannt'}
+                        {job.paused ? `${t('tasks.paused')} · ` : ''}
+                        {described ?? t('tasks.scheduleUnknown')}
                         {described && described !== job.schedule && job.schedule && (
                           <span className="ml-2 font-mono text-[var(--color-ink-faint)]">
                             {job.schedule}
@@ -160,8 +159,8 @@ export function TasksPage() {
                       <ActionButton
                         onClick={() => runAction.mutate({ id: job.id, action: 'trigger' })}
                         disabled={disabled}
-                        label={`${job.name} jetzt ausführen`}
-                        title="Jetzt ausführen"
+                        label={t('tasks.trigger', { name: job.name })}
+                        title={t('tasks.runNow')}
                       >
                         <Zap size={14} aria-hidden />
                       </ActionButton>
@@ -170,8 +169,12 @@ export function TasksPage() {
                           runAction.mutate({ id: job.id, action: job.paused ? 'resume' : 'pause' })
                         }
                         disabled={disabled}
-                        label={`${job.name} ${job.paused ? 'fortsetzen' : 'pausieren'}`}
-                        title={job.paused ? 'Fortsetzen' : 'Pausieren'}
+                        label={
+                          job.paused
+                            ? t('tasks.resumeAria', { name: job.name })
+                            : t('tasks.pauseAria', { name: job.name })
+                        }
+                        title={job.paused ? t('tasks.resume') : t('tasks.pause')}
                       >
                         {job.paused ? (
                           <Play size={14} aria-hidden />
@@ -182,8 +185,8 @@ export function TasksPage() {
                       <ActionButton
                         onClick={() => setConfirmDelete(job.id)}
                         disabled={disabled}
-                        label={`${job.name} löschen`}
-                        title="Löschen"
+                        label={t('tasks.deleteAria', { name: job.name })}
+                        title={t('common.delete')}
                         danger
                       >
                         <Trash2 size={14} aria-hidden />
@@ -194,10 +197,8 @@ export function TasksPage() {
                   {confirmDelete === job.id && (
                     <ConfirmInline
                       tone="danger"
-                      message={
-                        <>„{job.name}" endgültig löschen? Das lässt sich nicht rückgängig machen.</>
-                      }
-                      confirmLabel="Löschen"
+                      message={t('tasks.deleteConfirm', { name: job.name })}
+                      confirmLabel={t('common.delete')}
                       pending={remove.isPending && remove.variables === job.id}
                       onConfirm={() => remove.mutate(job.id)}
                       onCancel={() => setConfirmDelete(null)}

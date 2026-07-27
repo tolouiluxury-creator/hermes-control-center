@@ -6,12 +6,14 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 
 const CONNECTED = ['connected', 'ok', 'ready', 'running', 'online'];
 
 export function McpPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
@@ -30,12 +32,12 @@ export function McpPage() {
       toast.push({
         tone: 'success',
         title: variables.enabled
-          ? `„${variables.name}" aktiviert`
-          : `„${variables.name}" deaktiviert`,
+          ? t('skills.enabledToast', { name: variables.name })
+          : t('skills.disabledToast', { name: variables.name }),
       });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Umschalten fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.toggleFailed'), description: e.message }),
   });
 
   const test = useMutation({
@@ -43,12 +45,14 @@ export function McpPage() {
     onSuccess: (result, name) =>
       toast.push({
         tone: result.ok ? 'success' : 'warning',
-        title: `Test: ${name}`,
+        title: t('mcp.test', { name }),
         description:
-          result.message ?? result.state ?? (result.ok ? 'Erreichbar' : 'Nicht erreichbar'),
+          result.message ??
+          result.state ??
+          (result.ok ? t('label.reachable') : t('label.unreachable')),
       }),
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Test fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.testFailed'), description: e.message }),
   });
 
   const remove = useMutation({
@@ -56,10 +60,10 @@ export function McpPage() {
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Server entfernt' });
+      toast.push({ tone: 'success', title: t('common.remove') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Entfernen fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.removeFailed'), description: e.message }),
   });
 
   const busy = (name: string) =>
@@ -70,10 +74,7 @@ export function McpPage() {
   const servers = data ?? [];
 
   return (
-    <PageShell
-      title="MCP-Server"
-      description="Über das Model Context Protocol angebundene Werkzeugserver. Jeder Server bringt deinem Agenten zusätzliche Werkzeuge bei."
-    >
+    <PageShell title={t('nav.mcp')} description={t('page.mcp.desc')}>
       {isPending ? (
         <SkeletonText lines={6} />
       ) : error ? (
@@ -88,11 +89,9 @@ export function McpPage() {
           >
             <Server size={22} />
           </span>
-          <p className="mt-4 text-sm font-medium">Keine MCP-Server eingerichtet</p>
+          <p className="mt-4 text-sm font-medium">{t('mcp.empty.title')}</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-ink-muted)]">
-            Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Eingerichtet werden sie in
-            der Hermes-Konfiguration unter <code className="font-mono">mcpServers</code>; hier
-            erscheinen sie dann mit Status und Werkzeugliste.
+            {t('mcp.empty.desc')}
           </p>
         </div>
       ) : (
@@ -122,14 +121,14 @@ export function McpPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{server.name}</p>
                     <p className="text-xs text-[var(--color-ink-faint)]">
-                      {server.status ?? 'Status unbekannt'}
+                      {server.status ?? t('label.statusUnknown')}
                       {server.transport && ` · ${server.transport}`}
-                      {!server.enabled && ' · deaktiviert'}
+                      {!server.enabled && ` · ${t('common.disabled')}`}
                     </p>
                   </div>
                   {server.toolCount !== null && (
                     <span className="shrink-0 font-mono text-xs text-[var(--color-ink-muted)]">
-                      {server.toolCount} Werkzeuge
+                      {t('mcp.tools', { count: server.toolCount })}
                     </span>
                   )}
 
@@ -140,7 +139,7 @@ export function McpPage() {
                       disabled={disabled}
                       className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
                     >
-                      Testen
+                      {t('common.test')}
                     </button>
                     <button
                       type="button"
@@ -148,14 +147,14 @@ export function McpPage() {
                       disabled={disabled}
                       className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
                     >
-                      {server.enabled ? 'Deaktivieren' : 'Aktivieren'}
+                      {server.enabled ? t('common.disable') : t('common.enable')}
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDelete(server.name)}
                       disabled={disabled}
-                      aria-label={`${server.name} entfernen`}
-                      title="Entfernen"
+                      aria-label={t('common.remove')}
+                      title={t('common.remove')}
                       className="rounded-lg p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-danger)] disabled:opacity-40"
                     >
                       <Trash2 size={14} aria-hidden />
@@ -166,8 +165,8 @@ export function McpPage() {
                 {confirmDelete === server.name && (
                   <ConfirmInline
                     tone="danger"
-                    message={<>„{server.name}" entfernen? Der Agent verliert dessen Werkzeuge.</>}
-                    confirmLabel="Entfernen"
+                    message={t('mcp.removeConfirm', { name: server.name })}
+                    confirmLabel={t('common.remove')}
                     pending={remove.isPending && remove.variables === server.name}
                     onConfirm={() => remove.mutate(server.name)}
                     onCancel={() => setConfirmDelete(null)}

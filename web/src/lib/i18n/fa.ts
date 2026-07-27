@@ -125,4 +125,100 @@ export const fa: Dict = {
   'settings.security.desc': 'دسترسی به خود کنترل‌سنتر.',
   'settings.security.password':
     'رمز عبور کنترل‌سنتر روی سرور تنظیم می‌شود: {command}. تا زمانی که تنظیم نشود، سرور فقط به localhost متصل می‌شود.',
+
+  // Shared toasts and small labels
+  'toast.toggleFailed': 'تغییر وضعیت ناموفق بود',
+  'toast.testFailed': 'آزمایش ناموفق بود',
+  'toast.removeFailed': 'حذف ناموفق بود',
+  'toast.deleteFailed': 'حذف ناموفق بود',
+  'toast.saveFailed': 'ذخیره ناموفق بود',
+  'toast.actionFailed': 'عملیات ناموفق بود',
+  'toast.applyFailed': 'اعمال ناموفق بود',
+  'label.statusUnknown': 'وضعیت نامشخص',
+  'label.reachable': 'در دسترس',
+  'label.unreachable': 'در دسترس نیست',
+
+  // MCP
+  'mcp.empty.title': 'هیچ سرور MCP راه‌اندازی نشده',
+  'mcp.empty.desc':
+    'هرمس شما در حال حاضر هیچ سرور MCP پیکربندی‌شده‌ای ندارد. آن‌ها در پیکربندی هرمس زیر mcpServers تنظیم می‌شوند؛ سپس این‌جا با وضعیت و فهرست ابزار نمایان می‌شوند.',
+  'mcp.tools': '{count} ابزار',
+  'mcp.removeConfirm': '«{name}» حذف شود؟ ایجنت ابزارهای آن را از دست می‌دهد.',
+  'mcp.test': 'آزمایش: {name}',
+
+  // Models
+  'models.active': 'اکنون فعال',
+  'models.provider': 'ارائه‌دهنده: {name}',
+  'models.context': 'زمینه: {tokens} توکن',
+  'models.authenticated': 'وارد شده',
+  'models.notAuthenticated': 'وارد نشده',
+  'models.moreModels': '+{count} مورد دیگر',
+  'models.switchTitle': 'تغییر به {model}',
+  'models.currentModel': 'مدل فعال',
+  'models.notSignedIn': 'ارائه‌دهنده وارد نشده',
+  'models.switchConfirm':
+    'ایجنت به «{model}» تغییر کند؟ همه نشست‌های جدید از این مدل استفاده می‌کنند.',
+  'models.switch': 'تغییر',
+  'models.switched': 'مدل به {model} تغییر کرد',
+  'models.switchFailed': 'تغییر مدل ناموفق بود',
+
+  // Tasks (cron)
+  'tasks.count': '{total} کار، {active} فعال',
+  'tasks.empty.title': 'هیچ کار زمان‌بندی‌شده‌ای نیست',
+  'tasks.empty.desc': 'کارهای ساخته‌شده با {command} این‌جا نمایان می‌شوند.',
+  'tasks.paused': 'متوقف',
+  'tasks.scheduleUnknown': 'زمان‌بندی نامشخص',
+  'tasks.runNow': 'اکنون اجرا کن',
+  'tasks.trigger': 'اکنون {name} را اجرا کن',
+  'tasks.pause': 'توقف',
+  'tasks.resume': 'ادامه',
+  'tasks.pauseAria': 'توقف {name}',
+  'tasks.resumeAria': 'ادامه {name}',
+  'tasks.deleteAria': 'حذف {name}',
+  'tasks.deleteConfirm': '«{name}» برای همیشه حذف شود؟ این کار قابل بازگشت نیست.',
+  'tasks.paused.toast': 'کار متوقف شد',
+  'tasks.resumed.toast': 'کار ادامه یافت',
+  'tasks.triggered.toast': 'کار اجرا شد',
+  'tasks.deleted.toast': 'کار حذف شد',
+
+  // Skills
+  'skills.searchLabel': 'جستجوی مهارت‌ها',
+  'skills.origin': 'منشأ',
+  'skills.bundled': 'همراه',
+  'skills.hub': 'هاب',
+  'skills.agent': 'خودساخته',
+  'skills.bundledHint': 'همراه هرمس می‌آید',
+  'skills.hubHint': 'از هاب مهارت نصب شده',
+  'skills.agentHint': 'توسط ایجنت ساخته شده',
+  'skills.categories': 'همه دسته‌ها',
+  'skills.category': 'دسته',
+  'skills.count': '{visible} از {total} مهارت',
+  'skills.noMatch': 'هیچ مهارتی با این انتخاب هم‌خوانی ندارد.',
+  'skills.disableConfirm':
+    '«{name}» غیرفعال شود؟ ایجنت شما دیگر نمی‌تواند از این توانایی استفاده کند.',
+  'skills.enabledToast': '«{name}» فعال شد',
+  'skills.disabledToast': '«{name}» غیرفعال شد',
+  'skills.usage': '{count}×',
+
+  // Knowledge
+  'wissen.builtin': 'حافظه داخلی',
+  'wissen.files.memory': 'خاطرات',
+  'wissen.files.user': 'نمایه کاربر',
+  'wissen.providers': 'ارائه‌دهندگان حافظه',
+  'wissen.providersCount': '{available} از {total} در دسترس',
+  'wissen.activeProvider': 'فعال: {name}',
+  'wissen.noneActive': 'هیچ‌کدام فعال نیست',
+  'wissen.available': 'در دسترس',
+  'wissen.notUsable': 'پیکربندی‌شده، اما قابل استفاده نیست',
+  'wissen.empty.title': 'هیچ ارائه‌دهنده حافظه‌ای گزارش نشد',
+  'wissen.empty.desc':
+    'هرمس در حال حاضر فقط از فایل‌های یادداشت داخلی خود استفاده می‌کند. یک ارائه‌دهنده RAG در پیکربندی هرمس تنظیم می‌شود.',
+  'wissen.activateConfirm':
+    '«{name}» به‌عنوان ارائه‌دهنده حافظه فعال شود؟ ایجنت موارد جدید را از این طریق به خاطر می‌سپارد.',
+  'wissen.activatedToast': '«{name}» فعال شد',
+  'wissen.status.ready': 'آماده',
+  'wissen.status.unavailable': 'در دسترس نیست',
+  'wissen.status.needs_config': 'نیاز به تنظیم',
+  'wissen.status.error': 'خطا',
+  'wissen.status.unknown': 'نامشخص',
 };

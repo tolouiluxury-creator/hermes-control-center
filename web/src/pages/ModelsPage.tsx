@@ -7,10 +7,12 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 
 export function ModelsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   /** The provider+model a switch is being confirmed for, if any. */
   const [pending, setPending] = useState<{ provider: string; model: string } | null>(null);
 
@@ -28,21 +30,18 @@ export function ModelsPage() {
       setPending(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.models });
       await queryClient.invalidateQueries({ queryKey: queryKeys.model });
-      toast.push({ tone: 'success', title: `Modell gewechselt zu ${variables.model}` });
+      toast.push({ tone: 'success', title: t('models.switched', { model: variables.model }) });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Modellwechsel fehlgeschlagen',
+        title: t('models.switchFailed'),
         description: mutationError.message,
       }),
   });
 
   return (
-    <PageShell
-      title="Modelle"
-      description="Anbieter, die dein Hermes kennt, und das Modell, mit dem er gerade arbeitet."
-    >
+    <PageShell title={t('nav.modelle')} description={t('page.modelle.desc')}>
       {options.isPending ? (
         <SkeletonText lines={8} />
       ) : options.error ? (
@@ -52,16 +51,18 @@ export function ModelsPage() {
       ) : (
         <>
           <section className="card mb-4 p-5">
-            <p className="text-xs text-[var(--color-ink-faint)]">Aktuell aktiv</p>
+            <p className="text-xs text-[var(--color-ink-faint)]">{t('models.active')}</p>
             <p className="mt-1 font-mono text-xl tracking-tight">
               {options.data?.currentModel ?? '—'}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-ink-muted)]">
               {options.data?.currentProvider && (
-                <span>Anbieter: {options.data.currentProvider}</span>
+                <span>{t('models.provider', { name: options.data.currentProvider })}</span>
               )}
               {info.data?.contextLength && (
-                <span>Kontext: {formatCompact(info.data.contextLength)} Token</span>
+                <span>
+                  {t('models.context', { tokens: formatCompact(info.data.contextLength) })}
+                </span>
               )}
             </div>
           </section>
@@ -76,7 +77,7 @@ export function ModelsPage() {
                       title="Dieser Anbieter liefert das aktive Modell"
                     >
                       <Check size={11} aria-hidden />
-                      aktiv
+                      {t('common.active')}
                     </span>
                   )}
 
@@ -98,7 +99,9 @@ export function ModelsPage() {
                     ) : (
                       <Lock size={11} aria-hidden />
                     )}
-                    {provider.authenticated ? 'angemeldet' : 'nicht angemeldet'}
+                    {provider.authenticated
+                      ? t('models.authenticated')
+                      : t('models.notAuthenticated')}
                     {provider.authType && provider.authType !== 'virtual' && (
                       <span className="text-[var(--color-ink-faint)]"> · {provider.authType}</span>
                     )}
@@ -128,10 +131,10 @@ export function ModelsPage() {
                             onClick={() => setPending({ provider: provider.slug, model })}
                             title={
                               switchable
-                                ? `Zu ${model} wechseln`
+                                ? t('models.switchTitle', { model })
                                 : isCurrent
-                                  ? 'Aktives Modell'
-                                  : 'Anbieter nicht angemeldet'
+                                  ? t('models.currentModel')
+                                  : t('models.notSignedIn')
                             }
                             className={`rounded-full border px-2 py-0.5 font-mono text-[0.65rem] transition-colors ${
                               isCurrent
@@ -148,7 +151,7 @@ export function ModelsPage() {
                     })}
                     {provider.totalModels !== null && provider.totalModels > 12 && (
                       <li className="px-2 py-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                        +{provider.totalModels - 12} weitere
+                        {t('models.moreModels', { count: provider.totalModels - 12 })}
                       </li>
                     )}
                   </ul>
@@ -157,13 +160,8 @@ export function ModelsPage() {
                 {pending?.provider === provider.slug && (
                   <ConfirmInline
                     tone="warn"
-                    message={
-                      <>
-                        Agent auf „{pending.model}" umstellen? Alle neuen Sitzungen nutzen dann
-                        dieses Modell.
-                      </>
-                    }
-                    confirmLabel="Umstellen"
+                    message={t('models.switchConfirm', { model: pending.model })}
+                    confirmLabel={t('models.switch')}
                     pending={switchModel.isPending}
                     onConfirm={() => switchModel.mutate(pending)}
                     onCancel={() => setPending(null)}

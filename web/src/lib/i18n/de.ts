@@ -126,4 +126,100 @@ export const de: Dict = {
   'settings.security.desc': 'Zugang zum Control Center selbst.',
   'settings.security.password':
     'Das Passwort für das Control Center wird auf dem Server gesetzt: {command}. Solange keins gesetzt ist, bindet der Server nur an localhost.',
+
+  // Shared toasts and small labels
+  'toast.toggleFailed': 'Umschalten fehlgeschlagen',
+  'toast.testFailed': 'Test fehlgeschlagen',
+  'toast.removeFailed': 'Entfernen fehlgeschlagen',
+  'toast.deleteFailed': 'Löschen fehlgeschlagen',
+  'toast.saveFailed': 'Speichern fehlgeschlagen',
+  'toast.actionFailed': 'Aktion fehlgeschlagen',
+  'toast.applyFailed': 'Anwenden fehlgeschlagen',
+  'label.statusUnknown': 'Status unbekannt',
+  'label.reachable': 'Erreichbar',
+  'label.unreachable': 'Nicht erreichbar',
+
+  // MCP
+  'mcp.empty.title': 'Keine MCP-Server eingerichtet',
+  'mcp.empty.desc':
+    'Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Eingerichtet werden sie in der Hermes-Konfiguration unter mcpServers; hier erscheinen sie dann mit Status und Werkzeugliste.',
+  'mcp.tools': '{count} Werkzeuge',
+  'mcp.removeConfirm': '„{name}" entfernen? Der Agent verliert dessen Werkzeuge.',
+  'mcp.test': 'Test: {name}',
+
+  // Models
+  'models.active': 'Aktuell aktiv',
+  'models.provider': 'Anbieter: {name}',
+  'models.context': 'Kontext: {tokens} Token',
+  'models.authenticated': 'angemeldet',
+  'models.notAuthenticated': 'nicht angemeldet',
+  'models.moreModels': '+{count} weitere',
+  'models.switchTitle': 'Zu {model} wechseln',
+  'models.currentModel': 'Aktives Modell',
+  'models.notSignedIn': 'Anbieter nicht angemeldet',
+  'models.switchConfirm':
+    'Agent auf „{model}" umstellen? Alle neuen Sitzungen nutzen dann dieses Modell.',
+  'models.switch': 'Umstellen',
+  'models.switched': 'Modell gewechselt zu {model}',
+  'models.switchFailed': 'Modellwechsel fehlgeschlagen',
+
+  // Tasks (cron)
+  'tasks.count': '{total} Jobs, davon {active} aktiv',
+  'tasks.empty.title': 'Keine geplanten Aufgaben',
+  'tasks.empty.desc': 'Über {command} angelegte Jobs erscheinen hier.',
+  'tasks.paused': 'pausiert',
+  'tasks.scheduleUnknown': 'Zeitplan unbekannt',
+  'tasks.runNow': 'Jetzt ausführen',
+  'tasks.trigger': '{name} jetzt ausführen',
+  'tasks.pause': 'Pausieren',
+  'tasks.resume': 'Fortsetzen',
+  'tasks.pauseAria': '{name} pausieren',
+  'tasks.resumeAria': '{name} fortsetzen',
+  'tasks.deleteAria': '{name} löschen',
+  'tasks.deleteConfirm': '„{name}" endgültig löschen? Das lässt sich nicht rückgängig machen.',
+  'tasks.paused.toast': 'Job pausiert',
+  'tasks.resumed.toast': 'Job fortgesetzt',
+  'tasks.triggered.toast': 'Job ausgelöst',
+  'tasks.deleted.toast': 'Job gelöscht',
+
+  // Skills
+  'skills.searchLabel': 'Skills durchsuchen',
+  'skills.origin': 'Herkunft',
+  'skills.bundled': 'mitgeliefert',
+  'skills.hub': 'Hub',
+  'skills.agent': 'selbst erstellt',
+  'skills.bundledHint': 'Kommt mit Hermes',
+  'skills.hubHint': 'Aus dem Skill-Hub installiert',
+  'skills.agentHint': 'Vom Agenten angelegt',
+  'skills.categories': 'Alle Kategorien',
+  'skills.category': 'Kategorie',
+  'skills.count': '{visible} von {total} Skills',
+  'skills.noMatch': 'Kein Skill passt zu dieser Auswahl.',
+  'skills.disableConfirm':
+    '„{name}" deaktivieren? Dein Agent kann diese Fähigkeit dann nicht mehr nutzen.',
+  'skills.enabledToast': '„{name}" aktiviert',
+  'skills.disabledToast': '„{name}" deaktiviert',
+  'skills.usage': '{count}×',
+
+  // Knowledge
+  'wissen.builtin': 'Eingebautes Gedächtnis',
+  'wissen.files.memory': 'Erinnerungen',
+  'wissen.files.user': 'Nutzerprofil',
+  'wissen.providers': 'Speicher-Anbieter',
+  'wissen.providersCount': '{available} von {total} verfügbar',
+  'wissen.activeProvider': 'aktiv: {name}',
+  'wissen.noneActive': 'keiner aktiv',
+  'wissen.available': 'verfügbar',
+  'wissen.notUsable': 'eingerichtet, aber nicht nutzbar',
+  'wissen.empty.title': 'Keine Speicher-Anbieter gemeldet',
+  'wissen.empty.desc':
+    'Hermes nutzt derzeit nur seine eingebauten Notizdateien. Ein RAG-Anbieter wird in der Hermes-Konfiguration eingerichtet.',
+  'wissen.activateConfirm':
+    '„{name}" als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann hierüber.',
+  'wissen.activatedToast': '„{name}" aktiviert',
+  'wissen.status.ready': 'bereit',
+  'wissen.status.unavailable': 'nicht verfügbar',
+  'wissen.status.needs_config': 'Einrichtung nötig',
+  'wissen.status.error': 'Fehler',
+  'wissen.status.unknown': 'unbekannt',
 };
