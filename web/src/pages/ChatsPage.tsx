@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MessagesSquare, Plus, Send } from 'lucide-react';
+import { CheckSquare, MessagesSquare, Plus, Send, Square, Trash2 } from 'lucide-react';
 import {
   createChatSession,
+  deleteChatSessions,
+  deleteEmptyChatSessions,
   getChatHistory,
   getChatSessions,
   resumeChatSession,
@@ -11,6 +13,7 @@ import {
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
@@ -23,7 +26,7 @@ interface GatewayEventData {
 
 export function ChatsPage() {
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [listPending, setListPending] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -32,6 +35,11 @@ export function ChatsPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
+  /** Selection mode for the conversation list: pick several, then delete them. */
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const sessionRef = useRef<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -103,6 +111,72 @@ export function ChatsPage() {
     },
     [t],
   );
+
+  const toggleSelected = (id: string) =>
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const leaveSelection = () => {
+    setSelecting(false);
+    setSelected(new Set());
+    setConfirmDelete(false);
+  };
+
+  const removeSelected = async () => {
+    const ids = [...selected];
+    if (ids.length === 0) return;
+    setDeleting(true);
+    try {
+      const result = await deleteChatSessions(ids);
+      // Deleting the conversation on screen would leave a thread pointing at
+      // something that no longer exists, so start a fresh one instead.
+      const hitActive = sessionRef.current !== null && ids.includes(sessionRef.current);
+      leaveSelection();
+      await loadSessions();
+      if (hitActive) startNew();
+      toast.push({
+        tone: 'success',
+        title: t('chat.deleted', { count: result.deleted ?? ids.length }),
+      });
+    } catch (error) {
+      toast.push({
+        tone: 'error',
+        title: t('toast.deleteFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  /*
+   * Empty conversations pile up on their own — anything that opens a session
+   * and then goes away leaves one behind. Hermes spares active ones, so the
+   * conversation on screen survives this.
+   */
+  const removeEmpty = async () => {
+    setDeleting(true);
+    try {
+      const result = await deleteEmptyChatSessions();
+      await loadSessions();
+      toast.push({
+        tone: 'success',
+        title: t('chat.cleanedEmpty', { count: result.deleted ?? 0 }),
+      });
+    } catch (error) {
+      toast.push({
+        tone: 'error',
+        title: t('toast.deleteFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // One SSE stream for the page; events are filtered by the active session.
   useEffect(() => {
@@ -204,6 +278,63 @@ export function ChatsPage() {
             {t('chat.newConversation')}
           </button>
 
+          {sessions.length > 0 && (
+            <div className="mt-2 flex items-center gap-2 text-[0.7rem]">
+              {selecting ? (
+                <>
+                  <span className="text-[var(--color-ink-faint)]">
+                    {t('chat.selectedCount', { count: selected.size })}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(true)}
+                    disabled={selected.size === 0 || deleting}
+                    className="ml-auto inline-flex items-center gap-1 text-[var(--color-danger)] transition-opacity hover:opacity-80 disabled:opacity-40"
+                  >
+                    <Trash2 size={12} aria-hidden />
+                    {t('common.delete')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={leaveSelection}
+                    className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelecting(true)}
+                    className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+                  >
+                    {t('chat.select')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void removeEmpty()}
+                    disabled={deleting}
+                    className="ml-auto text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-40"
+                  >
+                    {t('chat.cleanEmpty')}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {confirmDelete && (
+            <ConfirmInline
+              tone="danger"
+              message={t('chat.deleteConfirm', { count: selected.size })}
+              confirmLabel={t('common.delete')}
+              pending={deleting}
+              onConfirm={() => void removeSelected()}
+              onCancel={() => setConfirmDelete(false)}
+            />
+          )}
+
           <div className="mt-3 min-h-0 flex-1 overflow-y-auto">
             {listPending ? (
               <SkeletonText lines={6} />
@@ -216,28 +347,48 @@ export function ChatsPage() {
                 {sessions.map((session) => {
                   const active = session.id === sessionId;
                   const label = session.title || session.preview || t('chat.conversation');
+                  const picked = selected.has(session.id);
                   return (
                     <li key={session.id}>
                       <button
                         type="button"
-                        onClick={() => void openExisting(session.id)}
-                        className={`w-full rounded-lg px-2.5 py-2 text-left transition-colors ${
-                          active
+                        onClick={() =>
+                          selecting ? toggleSelected(session.id) : void openExisting(session.id)
+                        }
+                        aria-pressed={selecting ? picked : undefined}
+                        className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                          active && !selecting
                             ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
                             : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
                         }`}
                       >
-                        <p className="truncate text-xs font-medium">{label}</p>
-                        <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                          {session.messageCount > 0 && (
-                            <span>
-                              {session.messageCount} {t('chat.messages')}
-                            </span>
-                          )}
-                          {session.startedAt && (
-                            <span>· {formatRelativeTime(session.startedAt)}</span>
-                          )}
-                        </p>
+                        {selecting &&
+                          (picked ? (
+                            <CheckSquare
+                              size={13}
+                              className="mt-0.5 shrink-0 text-[var(--color-accent)]"
+                              aria-hidden
+                            />
+                          ) : (
+                            <Square
+                              size={13}
+                              className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
+                              aria-hidden
+                            />
+                          ))}
+                        <span className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium">{label}</p>
+                          <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                            {session.messageCount > 0 && (
+                              <span>
+                                {session.messageCount} {t('chat.messages')}
+                              </span>
+                            )}
+                            {session.startedAt && (
+                              <span>· {formatRelativeTime(session.startedAt, lang)}</span>
+                            )}
+                          </p>
+                        </span>
                       </button>
                     </li>
                   );

@@ -43,6 +43,19 @@ export class ResponseCache {
     for (const key of keys) this.entries.delete(key);
   }
 
+  /**
+   * Drops every read whose key starts with `prefix`.
+   *
+   * Parameterised reads are cached per parameter — `sessions:12` and
+   * `sessions:50` are separate entries — so deleting a conversation has to
+   * clear all of them, not just the one width the caller happened to use.
+   */
+  invalidatePrefix(prefix: string): void {
+    for (const key of this.entries.keys()) {
+      if (key.startsWith(prefix)) this.entries.delete(key);
+    }
+  }
+
   clear(): void {
     this.entries.clear();
   }
@@ -74,3 +87,9 @@ export const CACHE_KEYS = {
   update: 'update',
   toolsets: 'toolsets',
 } as const;
+
+/**
+ * Prefix for the parameterised session reads (`sessions:12`, `sessions:50`, …).
+ * Deleting a conversation invalidates all of them at once.
+ */
+export const SESSIONS_CACHE_PREFIX = 'sessions:';

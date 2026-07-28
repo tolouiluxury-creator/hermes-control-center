@@ -318,6 +318,21 @@ export const resumeChatSession = (sessionId: string): Promise<{ ok: boolean }> =
 export const createChatSession = (): Promise<{ sessionId: string }> =>
   apiRequest<{ sessionId: string }>('/chat/session', { method: 'POST' });
 
+/** Reports how many rows really went — Hermes skips ids it no longer knows. */
+export interface DeleteSessionsResult {
+  ok?: boolean | null;
+  deleted?: number | null;
+}
+
+export const deleteChatSessions = (ids: string[]): Promise<DeleteSessionsResult> =>
+  apiRequest<DeleteSessionsResult>('/hermes/sessions/delete', {
+    method: 'POST',
+    ...jsonBody({ ids }),
+  });
+
+export const deleteEmptyChatSessions = (): Promise<DeleteSessionsResult> =>
+  apiRequest<DeleteSessionsResult>('/hermes/sessions/empty', { method: 'DELETE' });
+
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
 

@@ -86,6 +86,12 @@ export const fa: Dict = {
   'chat.openFailed': 'باز کردن ناموفق بود',
   'chat.connectFailed': 'اتصال ناموفق بود',
   'chat.thinking': 'در حال فکر کردن …',
+  'chat.select': 'انتخاب',
+  'chat.selectedCount': '{count} انتخاب‌شده',
+  'chat.deleteConfirm': '{count} گفتگو حذف شود؟ این کار قابل بازگشت نیست.',
+  'chat.deleted': '{count} گفتگو حذف شد',
+  'chat.cleanEmpty': 'پاک‌سازی خالی‌ها',
+  'chat.cleanedEmpty': '{count} گفتگوی خالی حذف شد',
 
   // Settings
   'settings.appearance': 'ظاهر',

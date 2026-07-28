@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { UpstreamError } from '../hermes/client.js';
-import { CACHE_KEYS, type ResponseCache } from './cache.js';
+import { CACHE_KEYS, SESSIONS_CACHE_PREFIX, type ResponseCache } from './cache.js';
 
 /**
  * Write actions against the Hermes dashboard. Each one validates its input,
@@ -18,6 +18,14 @@ const skillToggleSchema = z.object({
 });
 
 const enabledSchema = z.object({ enabled: z.boolean() });
+
+/**
+ * Hermes caps a batch at 500 and answers 400 above it. Rejecting here keeps the
+ * failure local and specific rather than surfacing an upstream error.
+ */
+const sessionIdsSchema = z.object({
+  ids: z.array(z.string().trim().min(1)).min(1).max(500),
+});
 
 const modelSetSchema = z.object({
   provider: z.string().trim().min(1),
@@ -235,4 +243,25 @@ export async function registerActionRoutes(
       return result;
     });
   });
+
+  // --- Sessions -------------------------------------------------------------
+
+  /** POST, not DELETE: the ids travel in a body, which DELETE cannot carry reliably. */
+  app.post('/api/hermes/sessions/delete', async (request, reply) => {
+    const input = parse(reply, sessionIdsSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.deleteSessions(input.ids);
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
+      return result;
+    });
+  });
+
+  app.delete('/api/hermes/sessions/empty', async (_request, reply) =>
+    guard(reply, async () => {
+      const result = await ctx.dashboard.deleteEmptySessions();
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
+      return result;
+    }),
+  );
 }

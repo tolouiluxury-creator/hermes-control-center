@@ -81,6 +81,17 @@ const testResultSchema = z.looseObject({
 });
 export type TestResult = z.infer<typeof testResultSchema>;
 
+/**
+ * Session deletes report how many rows actually went. Hermes skips ids it does
+ * not know rather than failing the batch, so this is the only honest count —
+ * `empty` omits it entirely when it removed nothing.
+ */
+const bulkDeleteResultSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  deleted: z.number().nullish(),
+});
+export type BulkDeleteResult = z.infer<typeof bulkDeleteResultSchema>;
+
 export type CronAction = 'pause' | 'resume' | 'trigger';
 
 /**
@@ -296,6 +307,38 @@ export class DashboardClient {
 
   toolsets(options?: RequestOptions): Promise<Toolset[]> {
     return this.client.json(toolsetsSchema, '/api/tools/toolsets', options).then(normalizeToolsets);
+  }
+
+  // --- Sessions: writes -----------------------------------------------------
+
+  /**
+   * Delete the given conversations in one transaction.
+   *
+   * POST rather than DELETE because the ids travel in a body, which many HTTP
+   * clients refuse to send on DELETE — Hermes documents that choice too.
+   * Unknown ids are skipped rather than failing the batch, so `deleted` is the
+   * number that really went, not the number asked for. Hermes caps a batch at
+   * 500; the caller is expected to stay under that.
+   */
+  deleteSessions(ids: string[], options?: RequestOptions): Promise<BulkDeleteResult> {
+    return this.client.json(bulkDeleteResultSchema, '/api/sessions/bulk-delete', {
+      ...options,
+      method: 'POST',
+      body: { ids },
+    });
+  }
+
+  /**
+   * Drop conversations that never got a message.
+   *
+   * They accumulate on their own: anything that opens a session and then goes
+   * away leaves one behind.
+   */
+  deleteEmptySessions(options?: RequestOptions): Promise<BulkDeleteResult> {
+    return this.client.json(bulkDeleteResultSchema, '/api/sessions/empty', {
+      ...options,
+      method: 'DELETE',
+    });
   }
 
   // --- Settings: writes -----------------------------------------------------

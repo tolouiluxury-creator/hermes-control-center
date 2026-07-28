@@ -86,6 +86,12 @@ export const en: Dict = {
   'chat.openFailed': 'Failed to open',
   'chat.connectFailed': 'Connection failed',
   'chat.thinking': 'thinking …',
+  'chat.select': 'Select',
+  'chat.selectedCount': '{count} selected',
+  'chat.deleteConfirm': 'Delete {count} conversations? This cannot be undone.',
+  'chat.deleted': '{count} conversations deleted',
+  'chat.cleanEmpty': 'Clean up empty',
+  'chat.cleanedEmpty': '{count} empty conversations removed',
 
   // Settings
   'settings.appearance': 'Appearance',
