@@ -105,12 +105,22 @@ export interface SessionsResponse {
 
 export type InsightSeverity = 'info' | 'warn' | 'critical';
 
+/** A label or value is either our copy (a key) or Hermes' own data (verbatim). */
+export interface InsightEvidence {
+  labelKey?: string;
+  label?: string;
+  valueKey?: string;
+  value?: string | number;
+}
+
 export interface Insight {
   id: string;
   severity: InsightSeverity;
-  title: string;
-  body: string;
-  evidence: Record<string, string | number>;
+  /** The server reports what it found; this side decides the wording. */
+  titleKey: string;
+  bodyKey: string;
+  params: Record<string, string | number>;
+  evidence: InsightEvidence[];
   action?: string;
 }
 

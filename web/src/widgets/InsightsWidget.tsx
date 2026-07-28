@@ -18,7 +18,7 @@ const SEVERITY: Record<InsightSeverity, { icon: typeof Info; color: string }> = 
  * of thresholds trains people to distrust everything else on the page.
  */
 export function InsightsWidget() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.insights,
     queryFn: getInsights,
@@ -39,23 +39,35 @@ export function InsightsWidget() {
         <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {insights.map((insight) => {
             const { icon: Icon, color } = SEVERITY[insight.severity];
-            const evidence = Object.entries(insight.evidence);
 
             return (
               <li key={insight.id} className="flex gap-2.5">
                 <Icon size={14} className="mt-0.5 shrink-0" style={{ color }} aria-hidden />
                 <div className="min-w-0">
-                  <p className="text-sm leading-snug font-medium">{insight.title}</p>
-                  <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{insight.body}</p>
+                  <p className="text-sm leading-snug font-medium">
+                    {t(insight.titleKey, insight.params)}
+                  </p>
+                  <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+                    {t(insight.bodyKey, insight.params)}
+                  </p>
 
-                  {evidence.length > 0 && (
+                  {insight.evidence.length > 0 && (
                     <dl className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                      {evidence.slice(0, 4).map(([key, value]) => (
-                        <div key={key} className="flex gap-1 text-[0.65rem]">
-                          <dt className="text-[var(--color-ink-faint)]">{key}:</dt>
-                          <dd className="font-mono">{String(value)}</dd>
-                        </div>
-                      ))}
+                      {insight.evidence.slice(0, 4).map((row, index) => {
+                        const label = row.labelKey ? t(row.labelKey) : (row.label ?? '');
+                        const value = row.valueKey
+                          ? t(row.valueKey)
+                          : typeof row.value === 'number'
+                            ? row.value.toLocaleString(lang)
+                            : (row.value ?? '');
+
+                        return (
+                          <div key={`${label}-${index}`} className="flex gap-1 text-[0.65rem]">
+                            <dt className="text-[var(--color-ink-faint)]">{label}:</dt>
+                            <dd className="font-mono">{value}</dd>
+                          </div>
+                        );
+                      })}
                     </dl>
                   )}
 

@@ -21,14 +21,35 @@ import type {
 
 export type InsightSeverity = 'info' | 'warn' | 'critical';
 
+/**
+ * One row of the numbers behind a verdict.
+ *
+ * A label is either our own copy (`labelKey`, translated in the browser) or a
+ * name that came from Hermes — a component, a job — which is data and stays
+ * verbatim. The same split applies to the value.
+ */
+export interface InsightEvidence {
+  labelKey?: string;
+  label?: string;
+  valueKey?: string;
+  value?: string | number;
+}
+
 export interface Insight {
   /** Stable across runs so dismissals can stick. */
   id: string;
   severity: InsightSeverity;
-  title: string;
-  body: string;
+  /**
+   * Dictionary keys, not sentences. The interface language is a per-device
+   * browser preference, so the server has no business choosing the wording —
+   * it reports what it found and lets the browser say it.
+   */
+  titleKey: string;
+  bodyKey: string;
+  /** Interpolation values for the title and body. */
+  params: Record<string, string | number>;
   /** The numbers behind the verdict, shown so the rule can be checked. */
-  evidence: Record<string, string | number>;
+  evidence: InsightEvidence[];
   /** A command the user can run, when one exists. */
   action?: string;
 }
@@ -61,12 +82,10 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'disk-pressure',
       severity: disk >= DISK_CRITICAL ? 'critical' : 'warn',
-      title: `Speicherplatz zu ${Math.round(disk)} % belegt`,
-      body:
-        disk >= DISK_CRITICAL
-          ? 'Wenn die Platte volläuft, kann Hermes weder Sitzungen noch Logs schreiben.'
-          : 'Noch unkritisch, aber der Trend ist einen Blick wert.',
-      evidence: { belegt: `${disk.toFixed(1)} %` },
+      titleKey: 'insight.disk.title',
+      bodyKey: disk >= DISK_CRITICAL ? 'insight.disk.bodyCritical' : 'insight.disk.body',
+      params: { percent: Math.round(disk) },
+      evidence: [{ labelKey: 'insight.used', value: `${disk.toFixed(1)} %` }],
     });
   }
 
@@ -75,9 +94,10 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'memory-pressure',
       severity: 'warn',
-      title: `Arbeitsspeicher zu ${Math.round(memory)} % belegt`,
-      body: 'Bei anhaltendem Druck beendet der Kernel Prozesse — auch den Agenten.',
-      evidence: { belegt: `${memory.toFixed(1)} %` },
+      titleKey: 'insight.memory.title',
+      bodyKey: 'insight.memory.body',
+      params: { percent: Math.round(memory) },
+      evidence: [{ labelKey: 'insight.used', value: `${memory.toFixed(1)} %` }],
     });
   }
 
@@ -87,13 +107,16 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'gateway-stopped',
       severity: 'critical',
-      title: 'Das Gateway läuft nicht',
-      body:
-        'Ohne Gateway erreichen dich keine Nachrichten über Telegram, Discord oder die anderen Plattformen.' +
-        (input.agent.gatewayExitReason
-          ? ` Zuletzt gemeldet: ${input.agent.gatewayExitReason}`
-          : ''),
-      evidence: { Zustand: input.agent.gatewayState ?? 'unbekannt' },
+      titleKey: 'insight.gateway.title',
+      bodyKey: input.agent.gatewayExitReason
+        ? 'insight.gateway.bodyWithReason'
+        : 'insight.gateway.body',
+      params: { reason: input.agent.gatewayExitReason ?? '' },
+      evidence: [
+        input.agent.gatewayState
+          ? { labelKey: 'insight.gateway.state', value: input.agent.gatewayState }
+          : { labelKey: 'insight.gateway.state', valueKey: 'insight.unknown' },
+      ],
       action: 'hermes gateway',
     });
   }
@@ -103,12 +126,15 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'components-failing',
       severity: 'critical',
-      title:
-        failing.length === 1
-          ? `Komponente „${failing[0]?.name}" meldet einen Fehler`
-          : `${failing.length} Komponenten melden Fehler`,
-      body: 'Hermes meldet diese Teile selbst als defekt.',
-      evidence: Object.fromEntries(failing.map((check) => [check.name, check.detail ?? 'Fehler'])),
+      titleKey:
+        failing.length === 1 ? 'insight.components.titleOne' : 'insight.components.titleMany',
+      bodyKey: 'insight.components.body',
+      params: { name: failing[0]?.name ?? '', count: failing.length },
+      evidence: failing.map((check) =>
+        check.detail
+          ? { label: check.name, value: check.detail }
+          : { label: check.name, valueKey: 'insight.error' },
+      ),
     });
   }
 
@@ -116,11 +142,10 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'api-server-off',
       severity: 'info',
-      title: 'Der API-Server ist nicht aktiv',
-      body:
-        'Chat, Sitzungen und Agent-Runs bleiben dadurch gesperrt. Alles andere funktioniert. ' +
-        'Aktivieren heißt: API_SERVER_ENABLED und API_SERVER_KEY in ~/.hermes/.env setzen und das Gateway neu starten.',
-      evidence: {},
+      titleKey: 'insight.apiServer.title',
+      bodyKey: 'insight.apiServer.body',
+      params: {},
+      evidence: [],
       action: 'hermes gateway restart',
     });
   }
@@ -153,17 +178,19 @@ export function deriveInsights(input: InsightInput): Insight[] {
       insights.push({
         id: 'log-errors',
         severity: repeating ? 'warn' : 'info',
-        title: repeating
-          ? `Ein Fehler wiederholt sich ${topCount}× im Log`
-          : `${errors.length} Fehlerzeilen im aktuellen Log`,
-        body: repeating
-          ? 'Dieselbe Meldung immer wieder deutet auf einen Neustart-Kreislauf hin, nicht auf einen Einzelfall.'
-          : 'Verteilte Fehler ohne erkennbares Muster.',
-        evidence: {
-          Fehlerzeilen: errors.length,
-          'geprüfte Zeilen': input.logs.length,
-          ...(repeating ? { Meldung: topSignature.trim(), Wiederholungen: topCount } : {}),
-        },
+        titleKey: repeating ? 'insight.logs.titleRepeating' : 'insight.logs.titleWidespread',
+        bodyKey: repeating ? 'insight.logs.bodyRepeating' : 'insight.logs.bodyWidespread',
+        params: { repeats: topCount, errors: errors.length },
+        evidence: [
+          { labelKey: 'insight.logs.errorLines', value: errors.length },
+          { labelKey: 'insight.logs.checkedLines', value: input.logs.length },
+          ...(repeating
+            ? [
+                { labelKey: 'insight.logs.message', value: topSignature.trim() },
+                { labelKey: 'insight.logs.repeats', value: topCount },
+              ]
+            : []),
+        ],
       });
     }
   }
@@ -176,9 +203,10 @@ export function deriveInsights(input: InsightInput): Insight[] {
       insights.push({
         id: 'skills-unused',
         severity: 'info',
-        title: `${input.skills.total} Skills installiert, keiner davon genutzt`,
-        body: 'Skills kosten Kontextfenster. Was nie zum Einsatz kommt, kann deaktiviert werden.',
-        evidence: { installiert: input.skills.total },
+        titleKey: 'insight.skills.title',
+        bodyKey: 'insight.skills.body',
+        params: { count: input.skills.total },
+        evidence: [{ labelKey: 'insight.skills.installed', value: input.skills.total }],
       });
     }
   }
@@ -187,9 +215,10 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'memory-provider-missing',
       severity: 'info',
-      title: 'Kein Speicher-Anbieter eingerichtet',
-      body: 'Hermes nutzt nur seine eingebauten Dateien. Für dauerhaftes Wissen über Sitzungen hinweg braucht es einen Anbieter.',
-      evidence: {},
+      titleKey: 'insight.memoryProvider.title',
+      bodyKey: 'insight.memoryProvider.body',
+      params: {},
+      evidence: [],
     });
   }
 
@@ -198,9 +227,12 @@ export function deriveInsights(input: InsightInput): Insight[] {
     insights.push({
       id: 'cron-paused',
       severity: 'info',
-      title: paused.length === 1 ? 'Ein Job ist pausiert' : `${paused.length} Jobs sind pausiert`,
-      body: 'Pausierte Jobs laufen nicht wieder an, bis sie fortgesetzt werden.',
-      evidence: Object.fromEntries(paused.slice(0, 5).map((job) => [job.name, 'pausiert'])),
+      titleKey: paused.length === 1 ? 'insight.cron.titleOne' : 'insight.cron.titleMany',
+      bodyKey: 'insight.cron.body',
+      params: { count: paused.length },
+      evidence: paused
+        .slice(0, 5)
+        .map((job) => ({ label: job.name, valueKey: 'insight.cron.pausedValue' })),
     });
   }
 
@@ -222,12 +254,14 @@ export function deriveInsights(input: InsightInput): Insight[] {
       insights.push({
         id: 'token-spike',
         severity: 'info',
-        title: 'Der Tokenverbrauch hat sich mehr als verdoppelt',
-        body: 'Die letzten drei Tage im Vergleich zu den drei davor.',
-        evidence: {
-          'letzte 3 Tage': recentTokens.toLocaleString('de'),
-          davor: earlierTokens.toLocaleString('de'),
-        },
+        titleKey: 'insight.tokenSpike.title',
+        bodyKey: 'insight.tokenSpike.body',
+        params: {},
+        // Raw numbers: the browser knows the locale, so it does the grouping.
+        evidence: [
+          { labelKey: 'insight.tokenSpike.recent', value: recentTokens },
+          { labelKey: 'insight.tokenSpike.earlier', value: earlierTokens },
+        ],
       });
     }
   }

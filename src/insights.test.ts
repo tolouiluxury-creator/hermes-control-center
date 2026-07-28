@@ -69,7 +69,8 @@ describe('deriveInsights', () => {
 
     expect(insight?.id).toBe('gateway-stopped');
     expect(insight?.severity).toBe('critical');
-    expect(insight?.body).toContain('Gateway restart requested');
+    expect(insight?.bodyKey).toBe('insight.gateway.bodyWithReason');
+    expect(insight?.params.reason).toBe('Gateway restart requested');
   });
 
   it('collects failing components into one insight with their details', () => {
@@ -83,7 +84,7 @@ describe('deriveInsights', () => {
     });
 
     expect(insight?.id).toBe('components-failing');
-    expect(insight?.evidence).toEqual({ storage: 'disk full' });
+    expect(insight?.evidence).toEqual([{ label: 'storage', value: 'disk full' }]);
   });
 
   describe('log errors', () => {
@@ -116,7 +117,7 @@ describe('deriveInsights', () => {
       const [insight] = deriveInsights({ ...base, logs });
       expect(insight?.id).toBe('log-errors');
       expect(insight?.severity).toBe('warn');
-      expect(insight?.evidence.Wiederholungen).toBe(7);
+      expect(insight?.params.repeats).toBe(7);
       // 3.5% — the share rule alone would have stayed silent.
       expect(7 / 200).toBeLessThan(0.05);
     });
@@ -139,8 +140,8 @@ describe('deriveInsights', () => {
       const [insight] = deriveInsights({ ...base, logs });
       expect(insight?.id).toBe('log-errors');
       expect(insight?.severity).toBe('warn');
-      expect(insight?.title).toContain('wiederholt');
-      expect(insight?.evidence.Wiederholungen).toBe(20);
+      expect(insight?.titleKey).toBe('insight.logs.titleRepeating');
+      expect(insight?.params.repeats).toBe(20);
     });
 
     it('describes scattered errors differently', () => {
@@ -153,7 +154,8 @@ describe('deriveInsights', () => {
       ];
 
       const [insight] = deriveInsights({ ...base, logs });
-      expect(insight?.title).toContain('4 Fehlerzeilen');
+      expect(insight?.titleKey).toBe('insight.logs.titleWidespread');
+      expect(insight?.params.errors).toBe(4);
       expect(insight?.severity).toBe('info');
     });
   });
@@ -190,7 +192,7 @@ describe('deriveInsights', () => {
     ];
     const [insight] = deriveInsights({ ...base, cron: jobs });
     expect(insight?.id).toBe('cron-paused');
-    expect(insight?.evidence).toEqual({ Bericht: 'pausiert' });
+    expect(insight?.evidence).toEqual([{ label: 'Bericht', valueKey: 'insight.cron.pausedValue' }]);
   });
 
   describe('token spike', () => {

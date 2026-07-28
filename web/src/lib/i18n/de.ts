@@ -603,4 +603,51 @@ export const de: Dict = {
   'env.category.messaging': 'Messaging',
   'env.category.setting': 'Einstellungen',
   'env.category.other': 'Sonstige',
+
+  // Insights — the server sends these keys, this side supplies the words
+  'insight.used': 'belegt',
+  'insight.unknown': 'unbekannt',
+  'insight.error': 'Fehler',
+  'insight.disk.title': 'Speicherplatz zu {percent} % belegt',
+  'insight.disk.body': 'Noch unkritisch, aber der Trend ist einen Blick wert.',
+  'insight.disk.bodyCritical':
+    'Wenn die Platte volläuft, kann Hermes weder Sitzungen noch Logs schreiben.',
+  'insight.memory.title': 'Arbeitsspeicher zu {percent} % belegt',
+  'insight.memory.body': 'Bei anhaltendem Druck beendet der Kernel Prozesse — auch den Agenten.',
+  'insight.gateway.title': 'Das Gateway läuft nicht',
+  'insight.gateway.body':
+    'Ohne Gateway erreichen dich keine Nachrichten über Telegram, Discord oder die anderen Plattformen.',
+  'insight.gateway.bodyWithReason':
+    'Ohne Gateway erreichen dich keine Nachrichten über Telegram, Discord oder die anderen Plattformen. Zuletzt gemeldet: {reason}',
+  'insight.gateway.state': 'Zustand',
+  'insight.components.titleOne': 'Komponente „{name}" meldet einen Fehler',
+  'insight.components.titleMany': '{count} Komponenten melden Fehler',
+  'insight.components.body': 'Hermes meldet diese Teile selbst als defekt.',
+  'insight.apiServer.title': 'Der API-Server ist nicht aktiv',
+  'insight.apiServer.body':
+    'Chat, Sitzungen und Agent-Runs bleiben dadurch gesperrt. Alles andere funktioniert. Aktivieren heißt: API_SERVER_ENABLED und API_SERVER_KEY in ~/.hermes/.env setzen und das Gateway neu starten.',
+  'insight.logs.titleRepeating': 'Ein Fehler wiederholt sich {repeats}× im Log',
+  'insight.logs.titleWidespread': '{errors} Fehlerzeilen im aktuellen Log',
+  'insight.logs.bodyRepeating':
+    'Dieselbe Meldung immer wieder deutet auf einen Neustart-Kreislauf hin, nicht auf einen Einzelfall.',
+  'insight.logs.bodyWidespread': 'Verteilte Fehler ohne erkennbares Muster.',
+  'insight.logs.errorLines': 'Fehlerzeilen',
+  'insight.logs.checkedLines': 'geprüfte Zeilen',
+  'insight.logs.message': 'Meldung',
+  'insight.logs.repeats': 'Wiederholungen',
+  'insight.skills.title': '{count} Skills installiert, keiner davon genutzt',
+  'insight.skills.body':
+    'Skills kosten Kontextfenster. Was nie zum Einsatz kommt, kann deaktiviert werden.',
+  'insight.skills.installed': 'installiert',
+  'insight.memoryProvider.title': 'Kein Speicher-Anbieter eingerichtet',
+  'insight.memoryProvider.body':
+    'Hermes nutzt nur seine eingebauten Dateien. Für dauerhaftes Wissen über Sitzungen hinweg braucht es einen Anbieter.',
+  'insight.cron.titleOne': 'Ein Job ist pausiert',
+  'insight.cron.titleMany': '{count} Jobs sind pausiert',
+  'insight.cron.body': 'Pausierte Jobs laufen nicht wieder an, bis sie fortgesetzt werden.',
+  'insight.cron.pausedValue': 'pausiert',
+  'insight.tokenSpike.title': 'Der Tokenverbrauch hat sich mehr als verdoppelt',
+  'insight.tokenSpike.body': 'Die letzten drei Tage im Vergleich zu den drei davor.',
+  'insight.tokenSpike.recent': 'letzte 3 Tage',
+  'insight.tokenSpike.earlier': 'davor',
 };

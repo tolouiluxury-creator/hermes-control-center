@@ -602,4 +602,51 @@ export const fa: Dict = {
   'env.category.messaging': 'پیام‌رسان‌ها',
   'env.category.setting': 'تنظیمات',
   'env.category.other': 'سایر',
+
+  // Insights — the server sends these keys, this side supplies the words
+  'insight.used': 'استفاده‌شده',
+  'insight.unknown': 'نامشخص',
+  'insight.error': 'خطا',
+  'insight.disk.title': 'دیسک {percent}٪ پر است',
+  'insight.disk.body': 'هنوز بحرانی نیست، اما روند آن ارزش نگاه کردن دارد.',
+  'insight.disk.bodyCritical':
+    'اگر دیسک پر شود، هرمس نه می‌تواند نشست‌ها را بنویسد و نه گزارش‌ها را.',
+  'insight.memory.title': 'حافظه {percent}٪ استفاده شده',
+  'insight.memory.body': 'زیر فشار پیوسته، هسته سیستم فرایندها را می‌بندد — از جمله خود ایجنت را.',
+  'insight.gateway.title': 'درگاه در حال اجرا نیست',
+  'insight.gateway.body':
+    'بدون درگاه، هیچ پیامی از تلگرام، دیسکورد یا دیگر پلتفرم‌ها به شما نمی‌رسد.',
+  'insight.gateway.bodyWithReason':
+    'بدون درگاه، هیچ پیامی از تلگرام، دیسکورد یا دیگر پلتفرم‌ها به شما نمی‌رسد. آخرین گزارش: {reason}',
+  'insight.gateway.state': 'وضعیت',
+  'insight.components.titleOne': 'مؤلفه «{name}» خطا گزارش می‌کند',
+  'insight.components.titleMany': '{count} مؤلفه خطا گزارش می‌کنند',
+  'insight.components.body': 'هرمس خودش این بخش‌ها را معیوب گزارش می‌کند.',
+  'insight.apiServer.title': 'سرور API فعال نیست',
+  'insight.apiServer.body':
+    'به همین دلیل گفتگو، نشست‌ها و اجراهای ایجنت قفل می‌مانند. بقیه موارد کار می‌کنند. برای فعال‌سازی: API_SERVER_ENABLED و API_SERVER_KEY را در ~/.hermes/.env تنظیم کنید و درگاه را دوباره راه‌اندازی کنید.',
+  'insight.logs.titleRepeating': 'یک خطا {repeats}× در گزارش تکرار می‌شود',
+  'insight.logs.titleWidespread': '{errors} خط خطا در گزارش کنونی',
+  'insight.logs.bodyRepeating':
+    'تکرار پیوسته یک پیام نشانه چرخه راه‌اندازی دوباره است، نه یک مورد تکی.',
+  'insight.logs.bodyWidespread': 'خطاهای پراکنده بدون الگوی مشخص.',
+  'insight.logs.errorLines': 'خطوط خطا',
+  'insight.logs.checkedLines': 'خطوط بررسی‌شده',
+  'insight.logs.message': 'پیام',
+  'insight.logs.repeats': 'تکرارها',
+  'insight.skills.title': '{count} مهارت نصب شده، هیچ‌کدام استفاده نشده',
+  'insight.skills.body':
+    'مهارت‌ها پنجره زمینه مصرف می‌کنند. آنچه هرگز به کار نمی‌رود می‌تواند خاموش شود.',
+  'insight.skills.installed': 'نصب‌شده',
+  'insight.memoryProvider.title': 'هیچ ارائه‌دهنده حافظه‌ای راه‌اندازی نشده',
+  'insight.memoryProvider.body':
+    'هرمس تنها از فایل‌های داخلی خود استفاده می‌کند. دانش ماندگار در میان نشست‌ها به یک ارائه‌دهنده نیاز دارد.',
+  'insight.cron.titleOne': 'یک کار متوقف است',
+  'insight.cron.titleMany': '{count} کار متوقف هستند',
+  'insight.cron.body': 'کارهای متوقف تا زمانی که ادامه داده نشوند دوباره اجرا نمی‌شوند.',
+  'insight.cron.pausedValue': 'متوقف',
+  'insight.tokenSpike.title': 'مصرف توکن بیش از دو برابر شده است',
+  'insight.tokenSpike.body': 'سه روز گذشته در مقایسه با سه روز پیش از آن.',
+  'insight.tokenSpike.recent': '۳ روز گذشته',
+  'insight.tokenSpike.earlier': 'پیش از آن',
 };
