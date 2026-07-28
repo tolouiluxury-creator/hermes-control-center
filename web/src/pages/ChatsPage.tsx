@@ -35,11 +35,18 @@ export function ChatsPage() {
 
   const sessionRef = useRef<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Keep the newest message in view as tokens arrive.
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [messages, streaming]);
+
+  // A conversation that just became ready should be typeable without a click —
+  // opening one is already the gesture that says "I want to write here".
+  useEffect(() => {
+    if (!connecting && sessionId) inputRef.current?.focus();
+  }, [connecting, sessionId]);
 
   const loadSessions = useCallback(async () => {
     try {
@@ -164,6 +171,9 @@ export function ChatsPage() {
     const text = input.trim();
     if (text === '' || streaming || !sessionRef.current) return;
     setInput('');
+    // Sending must not cost the caret. Clicking the button moves focus there,
+    // so it is handed back explicitly rather than left where the click put it.
+    inputRef.current?.focus();
     setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setStreaming(true);
     try {
@@ -308,6 +318,7 @@ export function ChatsPage() {
                 }}
               >
                 <textarea
+                  ref={inputRef}
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => {
@@ -318,7 +329,10 @@ export function ChatsPage() {
                   }}
                   rows={1}
                   placeholder={connecting ? t('chat.connecting') : t('chat.placeholder')}
-                  disabled={connecting || streaming || !sessionId}
+                  // Deliberately still writable while the answer streams: a disabled
+                  // field drops the caret, and the next thought should not have to
+                  // wait for the agent. Only sending waits — see the button.
+                  disabled={connecting || !sessionId}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
                 <button
