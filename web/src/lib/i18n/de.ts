@@ -307,4 +307,39 @@ export const de: Dict = {
   'workflows.disableAria': '{name} deaktivieren',
   'workflows.editAria': '{name} bearbeiten',
   'workflows.deleteAria': '{name} löschen',
+
+  // Integrations
+  'integrations.summary': '{enabled} aktiv · {configured} eingerichtet · {total} möglich',
+  'integrations.scope': 'Umfang',
+  'integrations.scope.configured': 'Eingerichtet',
+  'integrations.configured': 'eingerichtet',
+  'integrations.state.connected': 'verbunden',
+  'integrations.state.disabled': 'deaktiviert',
+  'integrations.state.connecting': 'verbindet',
+  'integrations.state.error': 'Fehler',
+  'integrations.state.disconnected': 'getrennt',
+  'integrations.missingFields': '{missing} von {total} Pflichtangaben fehlen',
+  'integrations.channel': 'Kanal: {name}',
+  'integrations.docs': 'Doku',
+  'integrations.test': 'Test: {name}',
+  'integrations.enableConfirm':
+    '„{name}" aktivieren? Der Kanal geht online, sobald das Gateway neu lädt.',
+  'integrations.disableConfirm':
+    '„{name}" deaktivieren? Der Kanal geht offline und empfängt keine Nachrichten mehr.',
+  'integrations.enabledToast': '„{name}" aktiviert',
+  'integrations.disabledToast': '„{name}" deaktiviert',
+  'integrations.empty.title': 'Keine Plattform eingerichtet',
+  'integrations.empty.desc':
+    'Über „{all}" siehst du die {count} Plattformen, die dein Hermes anbinden kann. Eingerichtet werden sie in der Hermes-Konfiguration.',
+  'integrations.webhooksAndPairing': 'Webhooks & Kopplung',
+  'integrations.webhooks': 'Eingehende Webhooks',
+  'integrations.webhooks.none':
+    'Keine Webhook-Abonnements. Hermes empfängt Ereignisse von Diensten wie GitHub oder Stripe, sobald hier ein Abonnement eingerichtet ist.',
+  'integrations.unnamed': 'Unbenannt',
+  'integrations.pairedUsers': 'Gekoppelte Nutzer',
+  'integrations.pairing.none':
+    'Noch niemand gekoppelt. Neue Nutzer werden über DM-Pairing auf der jeweiligen Plattform freigegeben.',
+  'integrations.pending': 'Wartet auf Freigabe',
+  'integrations.approved': 'Freigegeben',
+  'integrations.unknownUser': 'Unbekannt',
 };

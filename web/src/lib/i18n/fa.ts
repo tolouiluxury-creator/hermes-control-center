@@ -306,4 +306,39 @@ export const fa: Dict = {
   'workflows.disableAria': 'غیرفعال‌سازی {name}',
   'workflows.editAria': 'ویرایش {name}',
   'workflows.deleteAria': 'حذف {name}',
+
+  // Integrations
+  'integrations.summary': '{enabled} فعال · {configured} راه‌اندازی‌شده · {total} ممکن',
+  'integrations.scope': 'دامنه',
+  'integrations.scope.configured': 'راه‌اندازی‌شده',
+  'integrations.configured': 'راه‌اندازی‌شده',
+  'integrations.state.connected': 'متصل',
+  'integrations.state.disabled': 'غیرفعال',
+  'integrations.state.connecting': 'در حال اتصال',
+  'integrations.state.error': 'خطا',
+  'integrations.state.disconnected': 'قطع',
+  'integrations.missingFields': '{missing} از {total} مورد الزامی وارد نشده',
+  'integrations.channel': 'کانال: {name}',
+  'integrations.docs': 'مستندات',
+  'integrations.test': 'آزمایش: {name}',
+  'integrations.enableConfirm':
+    '«{name}» فعال شود؟ این کانال به‌محض بارگذاری دوباره درگاه، آنلاین می‌شود.',
+  'integrations.disableConfirm':
+    '«{name}» غیرفعال شود؟ این کانال آفلاین می‌شود و دیگر پیامی دریافت نمی‌کند.',
+  'integrations.enabledToast': '«{name}» فعال شد',
+  'integrations.disabledToast': '«{name}» غیرفعال شد',
+  'integrations.empty.title': 'هیچ پلتفرمی راه‌اندازی نشده',
+  'integrations.empty.desc':
+    'زیر «{all}» می‌توانید {count} پلتفرمی را ببینید که هرمس شما می‌تواند به آن‌ها وصل شود. راه‌اندازی آن‌ها در پیکربندی هرمس انجام می‌شود.',
+  'integrations.webhooksAndPairing': 'وب‌هوک‌ها و جفت‌سازی',
+  'integrations.webhooks': 'وب‌هوک‌های ورودی',
+  'integrations.webhooks.none':
+    'هیچ اشتراک وب‌هوکی نیست. هرمس به‌محض اینکه این‌جا اشتراکی تنظیم شود، رویدادها را از سرویس‌هایی مانند GitHub یا Stripe دریافت می‌کند.',
+  'integrations.unnamed': 'بی‌نام',
+  'integrations.pairedUsers': 'کاربران جفت‌شده',
+  'integrations.pairing.none':
+    'هنوز کسی جفت نشده است. کاربران جدید از طریق جفت‌سازی با پیام مستقیم در همان پلتفرم تأیید می‌شوند.',
+  'integrations.pending': 'در انتظار تأیید',
+  'integrations.approved': 'تأییدشده',
+  'integrations.unknownUser': 'نامشخص',
 };

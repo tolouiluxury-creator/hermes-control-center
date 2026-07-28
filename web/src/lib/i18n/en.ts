@@ -304,4 +304,39 @@ export const en: Dict = {
   'workflows.disableAria': 'disable {name}',
   'workflows.editAria': 'edit {name}',
   'workflows.deleteAria': 'delete {name}',
+
+  // Integrations
+  'integrations.summary': '{enabled} active · {configured} set up · {total} possible',
+  'integrations.scope': 'Scope',
+  'integrations.scope.configured': 'Set up',
+  'integrations.configured': 'set up',
+  'integrations.state.connected': 'connected',
+  'integrations.state.disabled': 'disabled',
+  'integrations.state.connecting': 'connecting',
+  'integrations.state.error': 'error',
+  'integrations.state.disconnected': 'disconnected',
+  'integrations.missingFields': '{missing} of {total} required fields missing',
+  'integrations.channel': 'Channel: {name}',
+  'integrations.docs': 'Docs',
+  'integrations.test': 'Test: {name}',
+  'integrations.enableConfirm':
+    'Enable “{name}”? The channel goes online as soon as the gateway reloads.',
+  'integrations.disableConfirm':
+    'Disable “{name}”? The channel goes offline and stops receiving messages.',
+  'integrations.enabledToast': '“{name}” enabled',
+  'integrations.disabledToast': '“{name}” disabled',
+  'integrations.empty.title': 'No platform set up',
+  'integrations.empty.desc':
+    'Under “{all}” you see the {count} platforms your Hermes can connect to. They are set up in the Hermes configuration.',
+  'integrations.webhooksAndPairing': 'Webhooks & pairing',
+  'integrations.webhooks': 'Incoming webhooks',
+  'integrations.webhooks.none':
+    'No webhook subscriptions. Hermes receives events from services such as GitHub or Stripe as soon as a subscription is set up here.',
+  'integrations.unnamed': 'Unnamed',
+  'integrations.pairedUsers': 'Paired users',
+  'integrations.pairing.none':
+    'Nobody paired yet. New users are cleared through DM pairing on the respective platform.',
+  'integrations.pending': 'Waiting for approval',
+  'integrations.approved': 'Approved',
+  'integrations.unknownUser': 'Unknown',
 };
