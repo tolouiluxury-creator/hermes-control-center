@@ -20,6 +20,16 @@ export default tseslint.config(
     },
   },
   {
+    // One-off build helpers. Plain Node scripts, run by hand, never bundled.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['web/src/**/*.{ts,tsx}'],
     languageOptions: {
       globals: globals.browser,

@@ -86,6 +86,7 @@ export const de: Dict = {
   'chat.sendFailed': 'Senden fehlgeschlagen',
   'chat.openFailed': 'Öffnen fehlgeschlagen',
   'chat.connectFailed': 'Verbindung fehlgeschlagen',
+  'chat.thinking': 'denkt nach …',
 
   // Settings
   'settings.appearance': 'Erscheinungsbild',
@@ -515,6 +516,7 @@ export const de: Dict = {
   'shell.profile': 'Profil',
   'shell.connected': 'Verbunden',
   'shell.disconnected': 'Nicht verbunden',
+  'shell.home': 'Hermes Control Center — zum Dashboard',
   'shell.collapseSidebar': 'Sidebar einklappen',
   'shell.expandSidebar': 'Sidebar ausklappen',
 

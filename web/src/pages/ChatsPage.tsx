@@ -267,6 +267,30 @@ export function ChatsPage() {
             </div>
           ) : (
             <>
+              {/* Chat header. The quick-switchers for model and profile land here next. */}
+              <div className="mb-3 flex items-center gap-2.5 border-b border-[var(--color-hairline)] pb-2.5">
+                <img
+                  src="/logo.png"
+                  alt=""
+                  width={22}
+                  height={22}
+                  className="size-[1.375rem] shrink-0"
+                  aria-hidden
+                />
+                <span className="truncate text-sm font-medium">
+                  {sessions.find((session) => session.id === sessionId)?.title ||
+                    t('chat.newConversation')}
+                </span>
+                {streaming && (
+                  <span
+                    className="ml-auto shrink-0 animate-pulse text-xs text-[var(--color-ink-faint)]"
+                    role="status"
+                  >
+                    {t('chat.thinking')}
+                  </span>
+                )}
+              </div>
+
               <div
                 ref={threadRef}
                 className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] p-4"

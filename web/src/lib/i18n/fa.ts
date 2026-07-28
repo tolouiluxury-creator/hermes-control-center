@@ -85,6 +85,7 @@ export const fa: Dict = {
   'chat.sendFailed': 'ارسال ناموفق بود',
   'chat.openFailed': 'باز کردن ناموفق بود',
   'chat.connectFailed': 'اتصال ناموفق بود',
+  'chat.thinking': 'در حال فکر کردن …',
 
   // Settings
   'settings.appearance': 'ظاهر',
@@ -514,6 +515,7 @@ export const fa: Dict = {
   'shell.profile': 'پروفایل',
   'shell.connected': 'متصل',
   'shell.disconnected': 'متصل نیست',
+  'shell.home': 'کنترل‌سنتر هرمس — به داشبورد',
   'shell.collapseSidebar': 'جمع کردن نوار کناری',
   'shell.expandSidebar': 'باز کردن نوار کناری',
 

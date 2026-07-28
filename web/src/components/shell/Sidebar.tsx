@@ -121,16 +121,23 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
 
   return (
     <div className="flex h-full flex-col border-r border-[var(--color-hairline)] bg-[var(--color-surface)]">
-      <div
-        className={`flex items-center gap-2.5 px-4 ${collapsed ? 'justify-center px-0' : ''}`}
+      <NavLink
+        to="/"
+        onClick={onNavigate}
+        aria-label={t('shell.home')}
+        className={`flex items-center gap-2.5 px-4 transition-opacity hover:opacity-80 ${
+          collapsed ? 'justify-center px-0' : ''
+        }`}
         style={{ height: 'var(--topbar-height)' }}
       >
-        <span
-          className="grid size-7 shrink-0 place-items-center rounded-lg bg-[var(--color-accent)] font-bold text-[var(--color-base)]"
+        <img
+          src="/logo.png"
+          alt=""
+          width={28}
+          height={28}
+          className="size-7 shrink-0"
           aria-hidden
-        >
-          H
-        </span>
+        />
         {!collapsed && (
           <span className="min-w-0">
             <span className="block text-sm leading-tight font-semibold tracking-tight">Hermes</span>
@@ -139,7 +146,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
             </span>
           </span>
         )}
-      </div>
+      </NavLink>
 
       <nav
         aria-label={t('shell.mainNavigation')}
