@@ -186,7 +186,8 @@ npm run build && npm start
 | `npm run lint` | ESLint |
 
 Architecture, the widget catalogue and the full Hermes endpoint map are documented in
-[`docs/`](./docs).
+[`docs/`](./docs). Publishing and server deployment are in
+[`docs/RELEASE.md`](./docs/RELEASE.md).
 
 ### Known advisory noise
 
