@@ -26,6 +26,7 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import type {
   Workflow,
   WorkflowInput,
@@ -35,11 +36,11 @@ import type {
 
 const STEP_META: Record<
   WorkflowStepKind,
-  { label: string; icon: typeof StickyNote; color: string }
+  { labelKey: string; icon: typeof StickyNote; color: string }
 > = {
-  prompt: { label: 'Prompt', icon: ListChecks, color: 'var(--color-accent)' },
-  cron: { label: 'Cron-Job', icon: WorkflowIcon, color: 'var(--color-ok)' },
-  note: { label: 'Notiz', icon: StickyNote, color: 'var(--color-ink-faint)' },
+  prompt: { labelKey: 'workflows.step.prompt', icon: ListChecks, color: 'var(--color-accent)' },
+  cron: { labelKey: 'workflows.step.cron', icon: WorkflowIcon, color: 'var(--color-ok)' },
+  note: { labelKey: 'workflows.step.note', icon: StickyNote, color: 'var(--color-ink-faint)' },
 };
 
 function WorkflowEditor({
@@ -53,6 +54,7 @@ function WorkflowEditor({
   onSave: (input: WorkflowInput) => void;
   saving: boolean;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState(workflow?.name ?? '');
   const [description, setDescription] = useState(workflow?.description ?? '');
   const [steps, setSteps] = useState<WorkflowStepInput[]>(
@@ -101,20 +103,20 @@ function WorkflowEditor({
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">
-          {workflow ? 'Workflow bearbeiten' : 'Neuer Workflow'}
+          {workflow ? t('workflows.editTitle') : t('workflows.newTitle')}
         </h3>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-          aria-label="Abbrechen"
+          aria-label={t('common.cancel')}
         >
           <X size={15} aria-hidden />
         </button>
       </div>
 
       <label className="mt-3 block text-xs text-[var(--color-ink-faint)]">
-        Name
+        {t('workflows.name')}
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -126,7 +128,7 @@ function WorkflowEditor({
       </label>
 
       <label className="mt-3 block text-xs text-[var(--color-ink-faint)]">
-        Beschreibung
+        {t('workflows.description')}
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
@@ -136,7 +138,7 @@ function WorkflowEditor({
       </label>
 
       <div className="mt-4">
-        <p className="mb-2 text-xs text-[var(--color-ink-faint)]">Schritte</p>
+        <p className="mb-2 text-xs text-[var(--color-ink-faint)]">{t('workflows.steps')}</p>
         <ol className="space-y-2">
           {steps.map((step, index) => {
             const Meta = STEP_META[step.kind];
@@ -157,7 +159,7 @@ function WorkflowEditor({
                     }}
                     className={`${field} min-w-0 flex-1`}
                   >
-                    <option value="">— Prompt wählen —</option>
+                    <option value="">{t('workflows.choosePrompt')}</option>
                     {(prompts.data?.prompts ?? []).map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.title}
@@ -173,7 +175,7 @@ function WorkflowEditor({
                     }}
                     className={`${field} min-w-0 flex-1`}
                   >
-                    <option value="">— Job wählen —</option>
+                    <option value="">{t('workflows.chooseJob')}</option>
                     {(cron.data ?? []).map((j) => (
                       <option key={j.id} value={j.id}>
                         {j.name}
@@ -184,7 +186,7 @@ function WorkflowEditor({
                   <input
                     value={step.label}
                     onChange={(e) => patchStep(index, { label: e.target.value })}
-                    placeholder="Notiz"
+                    placeholder={t('workflows.step.note')}
                     className={`${field} min-w-0 flex-1`}
                   />
                 )}
@@ -193,7 +195,7 @@ function WorkflowEditor({
                   type="button"
                   onClick={() => move(index, -1)}
                   disabled={index === 0}
-                  aria-label="Nach oben"
+                  aria-label={t('workflows.moveUp')}
                   className="rounded p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
                 >
                   <ArrowUp size={13} aria-hidden />
@@ -202,7 +204,7 @@ function WorkflowEditor({
                   type="button"
                   onClick={() => move(index, 1)}
                   disabled={index === steps.length - 1}
-                  aria-label="Nach unten"
+                  aria-label={t('workflows.moveDown')}
                   className="rounded p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-30"
                 >
                   <ArrowDown size={13} aria-hidden />
@@ -210,7 +212,7 @@ function WorkflowEditor({
                 <button
                   type="button"
                   onClick={() => removeStep(index)}
-                  aria-label="Schritt entfernen"
+                  aria-label={t('workflows.removeStep')}
                   className="rounded p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
                 >
                   <X size={13} aria-hidden />
@@ -231,7 +233,7 @@ function WorkflowEditor({
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
               >
                 <Plus size={12} aria-hidden />
-                {Meta.label}
+                {t(Meta.labelKey)}
               </button>
             );
           })}
@@ -245,14 +247,14 @@ function WorkflowEditor({
           className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
         >
           <Check size={14} aria-hidden />
-          {saving ? 'Speichere …' : 'Speichern'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-xl border border-[var(--color-hairline)] px-4 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-          Abbrechen
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -262,6 +264,7 @@ function WorkflowEditor({
 export function WorkflowsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [editing, setEditing] = useState<Workflow | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -279,17 +282,17 @@ export function WorkflowsPage() {
     onSuccess: async () => {
       setEditing(undefined);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Workflow gespeichert' });
+      toast.push({ tone: 'success', title: t('workflows.saved') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Speichern fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
   });
 
   const toggle = useMutation({
     mutationFn: (workflow: Workflow) => setWorkflowEnabled(workflow.id, !workflow.enabled),
     onSuccess: async () => invalidate(),
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Umschalten fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.toggleFailed'), description: e.message }),
   });
 
   const remove = useMutation({
@@ -297,18 +300,18 @@ export function WorkflowsPage() {
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Workflow gelöscht' });
+      toast.push({ tone: 'success', title: t('workflows.deleted') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Löschen fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.deleteFailed'), description: e.message }),
   });
 
   const workflows = data?.workflows ?? [];
 
   return (
     <PageShell
-      title="Workflows"
-      description="Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Sie werden hier angelegt; das automatische Ausführen der Kette kommt mit dem Hermes-API-Server."
+      title={t('nav.workflows')}
+      description={t('page.workflows.desc')}
       actions={
         <button
           type="button"
@@ -316,7 +319,7 @@ export function WorkflowsPage() {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
         >
           <Plus size={14} aria-hidden />
-          Neu
+          {t('common.new')}
         </button>
       }
     >
@@ -345,10 +348,9 @@ export function WorkflowsPage() {
           >
             <WorkflowIcon size={22} />
           </span>
-          <p className="mt-4 text-sm font-medium">Noch keine Workflows</p>
+          <p className="mt-4 text-sm font-medium">{t('workflows.empty.title')}</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-ink-muted)]">
-            Verkette Prompts und geplante Jobs zu einem benannten Ablauf, den du später mit einem
-            Klick startest.
+            {t('workflows.empty.desc')}
           </p>
         </div>
       ) : (
@@ -360,7 +362,10 @@ export function WorkflowsPage() {
                   type="button"
                   role="switch"
                   aria-checked={workflow.enabled}
-                  aria-label={`${workflow.name} ${workflow.enabled ? 'deaktivieren' : 'aktivieren'}`}
+                  aria-label={t(
+                    workflow.enabled ? 'workflows.disableAria' : 'workflows.enableAria',
+                    { name: workflow.name },
+                  )}
                   onClick={() => toggle.mutate(workflow)}
                   disabled={toggle.isPending && toggle.variables?.id === workflow.id}
                   className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40"
@@ -389,7 +394,7 @@ export function WorkflowsPage() {
                     type="button"
                     onClick={() => setEditing(workflow)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-                    aria-label={`${workflow.name} bearbeiten`}
+                    aria-label={t('workflows.editAria', { name: workflow.name })}
                   >
                     <Pencil size={14} aria-hidden />
                   </button>
@@ -397,7 +402,7 @@ export function WorkflowsPage() {
                     type="button"
                     onClick={() => setConfirmDelete(workflow.id)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
-                    aria-label={`${workflow.name} löschen`}
+                    aria-label={t('workflows.deleteAria', { name: workflow.name })}
                   >
                     <Trash2 size={14} aria-hidden />
                   </button>
@@ -413,7 +418,7 @@ export function WorkflowsPage() {
                         <span className="font-mono text-[var(--color-ink-faint)]">{index + 1}</span>
                         <Meta.icon size={12} style={{ color: Meta.color }} aria-hidden />
                         <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
-                          {Meta.label}
+                          {t(Meta.labelKey)}
                         </span>
                         <span className="truncate text-[var(--color-ink-muted)]">{step.label}</span>
                       </li>
@@ -425,8 +430,8 @@ export function WorkflowsPage() {
               {confirmDelete === workflow.id && (
                 <ConfirmInline
                   tone="danger"
-                  message={<>„{workflow.name}" löschen? Der Ablauf ist dann weg.</>}
-                  confirmLabel="Löschen"
+                  message={t('workflows.deleteConfirm', { name: workflow.name })}
+                  confirmLabel={t('common.delete')}
                   pending={remove.isPending && remove.variables === workflow.id}
                   onConfirm={() => remove.mutate(workflow.id)}
                   onCancel={() => setConfirmDelete(null)}
