@@ -12,6 +12,7 @@ import {
 import { PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
 import type { Prompt } from '@/lib/hermesTypes';
 
@@ -36,6 +37,7 @@ function PromptEditor({
   onSave: (input: { title: string; body: string; tags: string[] }) => void;
   saving: boolean;
 }) {
+  const { t } = useI18n();
   const [title, setTitle] = useState(prompt?.title ?? '');
   const [body, setBody] = useState(prompt?.body ?? '');
   const [tags, setTags] = useState((prompt?.tags ?? []).join(', '));
@@ -60,19 +62,21 @@ function PromptEditor({
       }}
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">{prompt ? 'Prompt bearbeiten' : 'Neuer Prompt'}</h3>
+        <h3 className="text-sm font-semibold">
+          {prompt ? t('prompts.editTitle') : t('prompts.newTitle')}
+        </h3>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
-          aria-label="Abbrechen"
+          aria-label={t('common.cancel')}
         >
           <X size={15} aria-hidden />
         </button>
       </div>
 
       <label className="mt-3 block text-xs text-[var(--color-ink-faint)]">
-        Titel
+        {t('prompts.title')}
         <input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
@@ -84,30 +88,30 @@ function PromptEditor({
       </label>
 
       <label className="mt-3 block text-xs text-[var(--color-ink-faint)]">
-        Text
+        {t('prompts.text')}
         <textarea
           value={body}
           onChange={(event) => setBody(event.target.value)}
           required
           rows={10}
-          placeholder={'Schreibe eine Zusammenfassung über {{thema}} in {{sprache}}.'}
+          placeholder={t('prompts.textPlaceholder')}
           className="mt-1 w-full resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]"
         />
       </label>
 
       <label className="mt-3 block text-xs text-[var(--color-ink-faint)]">
-        Schlagwörter, durch Komma getrennt
+        {t('prompts.tags')}
         <input
           value={tags}
           onChange={(event) => setTags(event.target.value)}
-          placeholder="recherche, wöchentlich"
+          placeholder={t('prompts.tagsPlaceholder')}
           className="mt-1 w-full rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]"
         />
       </label>
 
       {variables.length > 0 && (
         <p className="mt-3 text-xs text-[var(--color-ink-muted)]">
-          Erkannte Platzhalter:{' '}
+          {t('prompts.variables')}{' '}
           {variables.map((variable) => (
             <code
               key={variable}
@@ -126,14 +130,14 @@ function PromptEditor({
           className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
         >
           <Check size={14} aria-hidden />
-          {saving ? 'Speichere …' : 'Speichern'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-xl border border-[var(--color-hairline)] px-4 py-2 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
         >
-          Abbrechen
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -143,6 +147,7 @@ function PromptEditor({
 export function PromptsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Prompt | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -163,12 +168,12 @@ export function PromptsPage() {
     onSuccess: async () => {
       setEditing(undefined);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Prompt gespeichert' });
+      toast.push({ tone: 'success', title: t('prompts.saved') });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Speichern fehlgeschlagen',
+        title: t('toast.saveFailed'),
         description: mutationError.message,
       }),
   });
@@ -178,12 +183,12 @@ export function PromptsPage() {
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Prompt gelöscht' });
+      toast.push({ tone: 'success', title: t('prompts.deleted') });
     },
     onError: (mutationError: Error) =>
       toast.push({
         tone: 'error',
-        title: 'Löschen fehlgeschlagen',
+        title: t('toast.deleteFailed'),
         description: mutationError.message,
       }),
   });
@@ -208,30 +213,30 @@ export function PromptsPage() {
       await navigator.clipboard.writeText(prompt.body);
       await recordPromptUse(prompt.id);
       await invalidate();
-      toast.push({ tone: 'success', title: 'In die Zwischenablage kopiert' });
+      toast.push({ tone: 'success', title: t('prompts.copied') });
     } catch {
       toast.push({
         tone: 'error',
-        title: 'Kopieren nicht möglich',
-        description: 'Der Browser hat den Zugriff auf die Zwischenablage abgelehnt.',
+        title: t('prompts.copyFailed'),
+        description: t('prompts.copyFailedDesc'),
       });
     }
   };
 
   return (
     <PageShell
-      title="Prompt-Bibliothek"
-      description="Deine eigenen Vorlagen. Sie liegen im Control Center, nicht in Hermes — Hermes hat keine Prompt-Bibliothek."
+      title={t('nav.prompts')}
+      description={t('page.prompts.desc')}
       actions={
         <>
-          <SearchField value={search} onChange={setSearch} label="Prompts durchsuchen" />
+          <SearchField value={search} onChange={setSearch} label={t('prompts.searchLabel')} />
           <button
             type="button"
             onClick={() => setEditing(null)}
             className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20"
           >
             <Plus size={14} aria-hidden />
-            Neu
+            {t('common.new')}
           </button>
         </>
       }
@@ -256,12 +261,10 @@ export function PromptsPage() {
       ) : visible.length === 0 ? (
         <div className="card p-10 text-center">
           <p className="text-sm font-medium">
-            {prompts.length === 0 ? 'Noch keine Prompts' : 'Kein Treffer'}
+            {prompts.length === 0 ? t('prompts.empty.none') : t('prompts.empty.noMatch')}
           </p>
           <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-ink-muted)]">
-            {prompts.length === 0
-              ? 'Sammle hier Formulierungen, die sich bewährt haben. Mit {{platzhaltern}} bleiben sie wiederverwendbar.'
-              : 'Andere Suchbegriffe probieren.'}
+            {prompts.length === 0 ? t('prompts.empty.noneDesc') : t('prompts.empty.noMatchDesc')}
           </p>
         </div>
       ) : (
@@ -272,8 +275,8 @@ export function PromptsPage() {
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-medium">{prompt.title}</h3>
                   <p className="mt-0.5 text-[0.7rem] text-[var(--color-ink-faint)]">
-                    {prompt.uses > 0 ? `${prompt.uses}× verwendet · ` : ''}
-                    geändert {formatRelativeTime(prompt.updatedAt)}
+                    {prompt.uses > 0 ? t('prompts.used', { count: prompt.uses }) : ''}
+                    {t('prompts.changed', { time: formatRelativeTime(prompt.updatedAt) })}
                   </p>
                 </div>
 
@@ -282,8 +285,8 @@ export function PromptsPage() {
                     type="button"
                     onClick={() => void copy(prompt)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-accent)]"
-                    aria-label={`${prompt.title} kopieren`}
-                    title="Text kopieren"
+                    aria-label={t('prompts.copyAria', { title: prompt.title })}
+                    title={t('prompts.copyText')}
                   >
                     <Copy size={14} aria-hidden />
                   </button>
@@ -291,7 +294,7 @@ export function PromptsPage() {
                     type="button"
                     onClick={() => setEditing(prompt)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
-                    aria-label={`${prompt.title} bearbeiten`}
+                    aria-label={t('prompts.editAria', { title: prompt.title })}
                   >
                     <Pencil size={14} aria-hidden />
                   </button>
@@ -299,7 +302,7 @@ export function PromptsPage() {
                     type="button"
                     onClick={() => setConfirmDelete(prompt.id)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-danger)]"
-                    aria-label={`${prompt.title} löschen`}
+                    aria-label={t('prompts.deleteAria', { title: prompt.title })}
                   >
                     <Trash2 size={14} aria-hidden />
                   </button>
@@ -337,10 +340,10 @@ export function PromptsPage() {
                 <div
                   className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-3"
                   role="alertdialog"
-                  aria-label="Löschen bestätigen"
+                  aria-label={t('common.confirm')}
                 >
                   <p className="min-w-0 flex-1 text-xs">
-                    „{prompt.title}" endgültig löschen? Das lässt sich nicht rückgängig machen.
+                    {t('prompts.deleteConfirm', { title: prompt.title })}
                   </p>
                   <button
                     type="button"
@@ -348,14 +351,14 @@ export function PromptsPage() {
                     disabled={remove.isPending}
                     className="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1 text-xs text-[var(--color-danger)] disabled:opacity-50"
                   >
-                    Löschen
+                    {t('common.delete')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmDelete(null)}
                     className="rounded-lg px-3 py-1 text-xs text-[var(--color-ink-muted)]"
                   >
-                    Behalten
+                    {t('prompts.keep')}
                   </button>
                 </div>
               )}
