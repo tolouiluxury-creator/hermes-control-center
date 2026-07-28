@@ -3,15 +3,29 @@ import { BrowserRouter } from 'react-router';
 import { getAuthStatus, queryKeys } from '@/lib/api';
 import { LoginScreen } from '@/components/LoginScreen';
 import { ToastProvider } from '@/components/Toast';
-import { I18nProvider } from '@/lib/i18n';
+import { I18nProvider, useI18n } from '@/lib/i18n';
 import { AppRoutes } from '@/routes';
+
+/**
+ * The language provider wraps everything, including the login gate: the
+ * connecting notice and the password form are the first things a user sees, so
+ * they have to speak the chosen language too.
+ */
+export default function App() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
+  );
+}
 
 /**
  * Decides between the login gate and the application, and nothing else — the
  * layout lives in AppShell so that this stays the one place where "may this
  * person see anything at all?" is answered.
  */
-export default function App() {
+function AppContent() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const auth = useQuery({
@@ -24,7 +38,7 @@ export default function App() {
     return (
       <main className="grid min-h-full place-items-center">
         <p className="text-sm text-[var(--color-ink-muted)]" role="status">
-          Verbinde …
+          {t('shell.connecting')}
         </p>
       </main>
     );
@@ -44,12 +58,10 @@ export default function App() {
   }
 
   return (
-    <I18nProvider>
-      <ToastProvider>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
-      </ToastProvider>
-    </I18nProvider>
+    <ToastProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

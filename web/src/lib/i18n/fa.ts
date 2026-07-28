@@ -484,4 +484,111 @@ export const fa: Dict = {
   'cron.weekday.4': 'پنجشنبه‌ها',
   'cron.weekday.5': 'جمعه‌ها',
   'cron.weekday.6': 'شنبه‌ها',
+
+  // Shell: sidebar, top bar, skip link
+  'shell.live': 'زنده',
+  'shell.connecting': 'در حال اتصال …',
+  'shell.noLiveConnection': 'اتصال زنده برقرار نیست',
+  'shell.hermesUnreachable': 'هرمس در دسترس نیست',
+  'shell.openNavigation': 'باز کردن ناوبری',
+  'shell.closeNavigation': 'بستن ناوبری',
+  'shell.navigation': 'ناوبری',
+  'shell.mainNavigation': 'ناوبری اصلی',
+  'shell.skipToContent': 'پرش به محتوای اصلی',
+  'shell.searchOrJump': 'جستجو یا پرش …',
+  'shell.shortcutHint': 'Ctrl K',
+  'shell.theme': 'ظاهر: {theme}',
+  'shell.themeToggleAria': 'ظاهر: {theme}. برای تغییر فعال کنید.',
+  'shell.system': 'سیستم',
+  'shell.profile': 'پروفایل',
+  'shell.connected': 'متصل',
+  'shell.disconnected': 'متصل نیست',
+  'shell.collapseSidebar': 'جمع کردن نوار کناری',
+  'shell.expandSidebar': 'باز کردن نوار کناری',
+
+  // Degraded banner
+  'degraded.apiMissing': 'سرور API هرمس پاسخ نمی‌دهد.',
+  'degraded.keyMissing': 'برای سرور API هرمس هیچ کلیدی ذخیره نشده است.',
+  'degraded.consequence':
+    'به همین دلیل گفتگو، نشست‌ها و اجراهای ایجنت قفل می‌مانند. بقیه موارد — سنجه‌ها، مهارت‌ها، MCP، کران و گزارش‌ها — کار می‌کنند.',
+  'degraded.dismiss': 'بستن این پیام',
+
+  // Command palette
+  'palette.title': 'فرمان‌ها و ناوبری',
+  'palette.placeholder': 'یک صفحه باز کنید یا کاری را اجرا کنید …',
+  'palette.searchLabel': 'جستجوی فرمان',
+  'palette.results': 'نتایج',
+  'palette.noResults': 'چیزی برای «{query}» پیدا نشد',
+  'palette.navigation': 'ناوبری',
+  'palette.actions': 'کارها',
+  'palette.switchTheme': 'تغییر ظاهر',
+  'palette.switchTheme.keywords': 'تیره روشن ظاهر حالت dark light theme',
+  'palette.reloadData': 'بارگذاری دوباره داده‌ها',
+  'palette.reloadData.keywords': 'تازه‌سازی بارگذاری به‌روزرسانی refresh',
+  'palette.signOut': 'خروج',
+  'palette.signOut.keywords': 'خروج نشست پایان قفل logout',
+
+  // Command palette: extra words per nav entry, space separated
+  'navKeywords.dashboard': 'نمای کلی شروع ویجت‌ها داشبورد',
+  'navKeywords.chats': 'گفتگو نشست‌ها پیام‌ها مکالمه',
+  'navKeywords.agenten': 'ایجنت‌ها دستیارها پیش‌تنظیم‌ها',
+  'navKeywords.workflows': 'گردش‌کار خودکارسازی زنجیره‌ها',
+  'navKeywords.aufgaben': 'وظایف کارها زمان‌بندی کران صف',
+  'navKeywords.wissen': 'دانش حافظه بازیابی برداری rag',
+  'navKeywords.skills': 'مهارت‌ها توانایی‌ها افزونه‌ها',
+  'navKeywords.mcp': 'سرور ابزارها پروتکل زمینه mcp',
+  'navKeywords.modelle': 'مدل‌ها ارائه‌دهنده هزینه زمینه llm',
+  'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
+  'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
+  'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
+  'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',
+  'navKeywords.einstellungen': 'تنظیمات پیکربندی پروفایل ظاهر رمز زبان',
+
+  // Toast, placeholder and 404
+  'toast.dismiss': 'بستن پیام: {title}',
+  'placeholder.planned': 'این صفحه در یکی از گام‌های بعدی ساخته می‌شود.',
+  'placeholder.notBuilt': 'هنوز ساخته نشده — این‌جا بعداً داده واقعی می‌آید، نه محتوای ساختگی',
+  'notFound.title': 'صفحه پیدا نشد',
+  'notFound.desc': 'این نشانی به هیچ صفحه‌ای از کنترل‌سنتر تعلق ندارد.',
+
+  // Login
+  'login.title': 'ورود',
+  'login.prompt': 'برای ادامه رمز عبور خود را وارد کنید.',
+  'login.password': 'رمز عبور',
+  'login.submit': 'ورود',
+  'login.checking': 'در حال بررسی …',
+  'login.wrongPassword': 'رمز عبور نادرست است.',
+  'login.failed': 'ورود ناموفق بود.',
+  'login.forgotten': 'رمز عبور را فراموش کرده‌اید؟ در ترمینال یکی تازه تنظیم کنید:',
+
+  // Setup screen
+  'setup.title': 'راه‌اندازی',
+  'setup.heading': 'هرمس هنوز به‌طور کامل متصل نیست',
+  'setup.intro':
+    'کنترل‌سنتر در حال اجراست. به دو رابط هرمس نیاز دارد — هرچه هم‌اکنون در دسترس است، همین حالا کار می‌کند.',
+  'setup.dashboard.title': 'راه‌اندازی داشبورد هرمس',
+  'setup.dashboard.desc':
+    'پیکربندی، مهارت‌ها، سرورهای MCP، مدل‌ها، کارهای کران، گزارش‌ها و سنجه‌های سیستم را فراهم می‌کند. انتظار می‌رود روی {url} باشد.',
+  'setup.apiKey.title': 'تنظیم کلید سرور API',
+  'setup.apiKey.descLocal':
+    'بدون کلید، گفتگو، نشست‌ها و اجراها قفل می‌مانند. کلید از پیکربندی هرمس شما خوانده می‌شود و هرگز از سرور خارج نمی‌شود.',
+  'setup.apiKey.descRemote':
+    'ظاهراً هرمس روی رایانه دیگری اجرا می‌شود. بنابراین کلید را به‌صورت محلی وارد کنید — در {path} با نام «apiKey». این کلید سمت سرور می‌ماند و هرگز به مرورگر فرستاده نمی‌شود.',
+  'setup.gateway.title': 'راه‌اندازی درگاه هرمس',
+  'setup.gateway.desc': 'سرور API را فراهم می‌کند (انتظار می‌رود روی {url} باشد).',
+  'setup.copied': 'کپی شد',
+  'setup.copyCommand': 'کپی فرمان: {command}',
+  'setup.done': 'انجام‌شده',
+  'setup.open': 'باز',
+  'setup.warnings': 'نکته‌هایی از پیکربندی هرمس شما',
+  'setup.recheck': 'بررسی دوباره',
+  'setup.doctorHint': 'گزارش کامل در ترمینال:',
+
+  // Environment variable categories
+  'env.category.provider': 'ارائه‌دهندگان',
+  'env.category.tool': 'ابزارها',
+  'env.category.skill': 'مهارت‌ها',
+  'env.category.messaging': 'پیام‌رسان‌ها',
+  'env.category.setting': 'تنظیمات',
+  'env.category.other': 'سایر',
 };

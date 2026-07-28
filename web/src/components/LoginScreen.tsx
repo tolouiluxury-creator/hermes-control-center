@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { KeyRound, Loader2 } from 'lucide-react';
 import { ApiError, login } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Password gate. It says as little as possible about why a login failed — the
@@ -8,6 +9,7 @@ import { ApiError, login } from '@/lib/api';
  * beyond the retry hint, so probing gains nothing.
  */
 export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useI18n();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -31,11 +33,11 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
           caught.status === 429
             ? caught.message
             : caught.status === 401
-              ? 'Falsches Passwort.'
+              ? t('login.wrongPassword')
               : caught.message,
         );
       } else {
-        setError('Anmeldung fehlgeschlagen.');
+        setError(t('login.failed'));
       }
       setBusy(false);
     }
@@ -50,16 +52,14 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
       >
         <div className="flex items-center gap-2 text-[var(--color-accent)]">
           <KeyRound size={16} aria-hidden />
-          <span className="text-xs font-medium tracking-widest uppercase">Anmeldung</span>
+          <span className="text-xs font-medium tracking-widest uppercase">{t('login.title')}</span>
         </div>
 
         <h1 className="mt-3 text-lg font-semibold tracking-tight">Hermes Control Center</h1>
-        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-          Gib dein Passwort ein, um fortzufahren.
-        </p>
+        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('login.prompt')}</p>
 
         <label htmlFor={fieldId} className="mt-5 block text-xs text-[var(--color-ink-faint)]">
-          Passwort
+          {t('login.password')}
         </label>
         <input
           id={fieldId}
@@ -86,11 +86,11 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
           className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           {busy && <Loader2 size={14} className="animate-spin" aria-hidden />}
-          {busy ? 'Prüfe …' : 'Anmelden'}
+          {busy ? t('login.checking') : t('login.submit')}
         </button>
 
         <p className="mt-4 text-xs text-[var(--color-ink-faint)]">
-          Passwort vergessen? Setze im Terminal ein neues:{' '}
+          {t('login.forgotten')}{' '}
           <code className="font-mono">hermes-control-center --set-password</code>
         </p>
       </form>

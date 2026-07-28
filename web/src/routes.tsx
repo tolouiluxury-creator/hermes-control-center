@@ -16,6 +16,7 @@ import { AgentenPage } from '@/pages/AgentenPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { ChatsPage } from '@/pages/ChatsPage';
 import { NAV_ITEMS } from '@/lib/nav';
+import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
 
 /** Every nav item now maps to a real page. */
@@ -35,10 +36,12 @@ const PAGES: Record<string, ComponentType> = {
   einstellungen: EinstellungenPage,
 };
 
-/** Fallback copy if a nav item ever lacks a page again. */
+/** Fallback dictionary key if a nav item ever lacks a page again. */
 const PLANNED: Record<string, string> = {};
 
 export function AppRoutes() {
+  const { t } = useI18n();
+
   return (
     <Routes>
       <Route element={<AppShell />}>
@@ -57,9 +60,7 @@ export function AppRoutes() {
                 ) : (
                   <PlaceholderPage
                     item={item}
-                    planned={
-                      PLANNED[item.id] ?? 'Diese Seite entsteht in einem der nächsten Schritte.'
-                    }
+                    planned={t(PLANNED[item.id] ?? 'placeholder.planned')}
                   />
                 )
               }
@@ -72,10 +73,8 @@ export function AppRoutes() {
           element={
             <div className="mx-auto max-w-3xl px-6 py-12">
               <div className="card p-8 text-center">
-                <h2 className="text-lg font-semibold">Seite nicht gefunden</h2>
-                <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-                  Diese Adresse gehört zu keiner Seite des Control Centers.
-                </p>
+                <h2 className="text-lg font-semibold">{t('notFound.title')}</h2>
+                <p className="mt-2 text-sm text-[var(--color-ink-muted)]">{t('notFound.desc')}</p>
               </div>
             </div>
           }

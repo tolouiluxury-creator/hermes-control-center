@@ -8,6 +8,7 @@ import { CommandPalette } from '@/components/CommandPalette';
 import { SkeletonText } from '@/components/Skeleton';
 import { useControlCenterStream } from '@/lib/stream';
 import { useKeyBinding } from '@/lib/shortcuts';
+import { useI18n } from '@/lib/i18n';
 
 const COLLAPSED_KEY = 'hcc.sidebar.collapsed';
 
@@ -27,6 +28,7 @@ function readCollapsed(): boolean {
  * session, and pages simply read the query cache it writes into.
  */
 export function AppShell() {
+  const { t } = useI18n();
   const { state: streamState } = useControlCenterStream();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -62,7 +64,7 @@ export function AppShell() {
         href="#hauptinhalt"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-[var(--color-elevated)] focus:px-3 focus:py-2 focus:text-sm"
       >
-        Zum Hauptinhalt springen
+        {t('shell.skipToContent')}
       </a>
 
       {/*
@@ -97,7 +99,7 @@ export function AppShell() {
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-label="Navigation"
+            aria-label={t('shell.navigation')}
           >
             <Sidebar
               collapsed={false}
@@ -109,7 +111,7 @@ export function AppShell() {
             type="button"
             onClick={() => setDrawerOpen(false)}
             className="absolute top-3 right-3 rounded-lg p-2 text-white/70"
-            aria-label="Navigation schließen"
+            aria-label={t('shell.closeNavigation')}
           >
             <X size={18} aria-hidden />
           </button>

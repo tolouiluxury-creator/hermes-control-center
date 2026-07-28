@@ -60,11 +60,11 @@ export function ChatsPage() {
       setSessionId(id);
       setConnectionError(null);
     } catch (error) {
-      setConnectionError(error instanceof Error ? error.message : 'Verbindung fehlgeschlagen');
+      setConnectionError(error instanceof Error ? error.message : t('chat.connectFailed'));
     } finally {
       setConnecting(false);
     }
-  }, []);
+  }, [t]);
 
   const startNew = useCallback(() => {
     sessionRef.current = null;
@@ -76,23 +76,26 @@ export function ChatsPage() {
   }, [openNew]);
 
   /** Reopen a previous conversation: bring it live, then load its history. */
-  const openExisting = useCallback(async (id: string) => {
-    sessionRef.current = id;
-    setSessionId(id);
-    setConnecting(true);
-    setConnectionError(null);
-    setMessages([]);
-    try {
-      await resumeChatSession(id);
-      const { messages: history } = await getChatHistory(id);
-      // Guard against a race where the user clicked another session meanwhile.
-      if (sessionRef.current === id) setMessages(history);
-    } catch (error) {
-      setConnectionError(error instanceof Error ? error.message : 'Öffnen fehlgeschlagen');
-    } finally {
-      setConnecting(false);
-    }
-  }, []);
+  const openExisting = useCallback(
+    async (id: string) => {
+      sessionRef.current = id;
+      setSessionId(id);
+      setConnecting(true);
+      setConnectionError(null);
+      setMessages([]);
+      try {
+        await resumeChatSession(id);
+        const { messages: history } = await getChatHistory(id);
+        // Guard against a race where the user clicked another session meanwhile.
+        if (sessionRef.current === id) setMessages(history);
+      } catch (error) {
+        setConnectionError(error instanceof Error ? error.message : t('chat.openFailed'));
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [t],
+  );
 
   // One SSE stream for the page; events are filtered by the active session.
   useEffect(() => {

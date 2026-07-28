@@ -1,4 +1,5 @@
 import { Construction } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import type { NavItem } from '@/lib/nav';
 
 /**
@@ -8,6 +9,7 @@ import type { NavItem } from '@/lib/nav';
  * an empty shell that looks broken or, worse, mock content that looks real.
  */
 export function PlaceholderPage({ item, planned }: { item: NavItem; planned: string }) {
+  const { t } = useI18n();
   const Icon = item.icon;
 
   return (
@@ -20,13 +22,13 @@ export function PlaceholderPage({ item, planned }: { item: NavItem; planned: str
           <Icon size={22} />
         </span>
 
-        <h2 className="mt-4 text-lg font-semibold tracking-tight">{item.label}</h2>
+        <h2 className="mt-4 text-lg font-semibold tracking-tight">{t(`nav.${item.id}`)}</h2>
 
         <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-ink-muted)]">{planned}</p>
 
         <p className="mt-6 inline-flex items-center gap-2 rounded-full border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-faint)]">
           <Construction size={13} aria-hidden />
-          Noch nicht gebaut — hier stehen später echte Daten, keine Platzhalter
+          {t('placeholder.notBuilt')}
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, Copy, RefreshCw, Terminal } from 'lucide-react';
+import { useI18n, type TFunction } from '@/lib/i18n';
 import type { StatusSnapshot } from '@/lib/types';
 
 interface SetupStep {
@@ -10,17 +11,15 @@ interface SetupStep {
   commands: string[];
 }
 
-function buildSteps(snapshot: StatusSnapshot): SetupStep[] {
+function buildSteps(snapshot: StatusSnapshot, t: TFunction): SetupStep[] {
   const { apiServer, dashboard, connection } = snapshot;
 
   return [
     {
       id: 'dashboard',
-      title: 'Hermes-Dashboard starten',
+      title: t('setup.dashboard.title'),
       done: dashboard.reachable,
-      explanation:
-        'Liefert Konfiguration, Skills, MCP-Server, Modelle, Cron-Jobs, Logs und Systemmetriken. ' +
-        `Erwartet unter ${dashboard.url}.`,
+      explanation: t('setup.dashboard.desc', { url: dashboard.url }),
       commands: [
         'cd ~/.hermes/hermes-agent && uv pip install -e ".[web]"',
         'hermes dashboard --no-open',
@@ -28,14 +27,12 @@ function buildSteps(snapshot: StatusSnapshot): SetupStep[] {
     },
     {
       id: 'api-key',
-      title: 'API-Server-Key setzen',
+      title: t('setup.apiKey.title'),
       done: apiServer.hasKey,
       explanation:
         !connection.configuredRemotely && connection.homeExists
-          ? 'Ohne Key bleiben Chat, Sessions und Runs gesperrt. Der Key wird aus deiner Hermes-Konfiguration ' +
-            'gelesen und verlässt den Server nie.'
-          : `Hermes läuft offenbar auf einem anderen Rechner. Trag den Key darum lokal ein — in ${connection.configPath} ` +
-            'als "apiKey". Er bleibt serverseitig und wird nie an den Browser gesendet.',
+          ? t('setup.apiKey.descLocal')
+          : t('setup.apiKey.descRemote', { path: connection.configPath }),
       commands:
         !connection.configuredRemotely && connection.homeExists
           ? [
@@ -47,15 +44,16 @@ function buildSteps(snapshot: StatusSnapshot): SetupStep[] {
     },
     {
       id: 'api-server',
-      title: 'Hermes-Gateway starten',
+      title: t('setup.gateway.title'),
       done: apiServer.reachable,
-      explanation: `Stellt den API-Server bereit (erwartet unter ${apiServer.url}).`,
+      explanation: t('setup.gateway.desc', { url: apiServer.url }),
       commands: ['hermes gateway'],
     },
   ].filter((step) => !step.done || connection.warnings.length > 0);
 }
 
 function CommandBlock({ command }: { command: string }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const isComment = command.trimStart().startsWith('#');
 
@@ -83,7 +81,7 @@ function CommandBlock({ command }: { command: string }) {
           type="button"
           onClick={() => void copy()}
           className="rounded-lg border border-[var(--color-hairline)] p-2 text-[var(--color-ink-muted)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
-          aria-label={copied ? 'Kopiert' : `Befehl kopieren: ${command}`}
+          aria-label={copied ? t('setup.copied') : t('setup.copyCommand', { command })}
         >
           {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
         </button>
@@ -106,21 +104,17 @@ export function SetupScreen({
   onRetry: () => void;
   retrying: boolean;
 }) {
-  const steps = buildSteps(snapshot);
+  const { t } = useI18n();
+  const steps = buildSteps(snapshot, t);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-10">
       <header className="mb-8">
         <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">
-          Einrichtung
+          {t('setup.title')}
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Hermes ist noch nicht vollständig verbunden
-        </h1>
-        <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-          Das Control Center läuft. Es braucht zwei Hermes-Oberflächen — was schon erreichbar ist,
-          funktioniert bereits.
-        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">{t('setup.heading')}</h1>
+        <p className="mt-2 text-sm text-[var(--color-ink-muted)]">{t('setup.intro')}</p>
       </header>
 
       <ol className="space-y-4">
@@ -144,7 +138,9 @@ export function SetupScreen({
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-semibold">
                   {step.title}
-                  <span className="sr-only">{step.done ? ' (erledigt)' : ' (offen)'}</span>
+                  <span className="sr-only">
+                    {step.done ? ` (${t('setup.done')})` : ` (${t('setup.open')})`}
+                  </span>
                 </h2>
                 <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{step.explanation}</p>
                 <div className="mt-3 space-y-2">
@@ -162,7 +158,7 @@ export function SetupScreen({
         <section className="mt-6 rounded-2xl border border-[var(--color-warn)]/30 bg-[var(--color-warn)]/5 p-5">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-warn)]">
             <AlertTriangle size={15} aria-hidden />
-            Hinweise aus deiner Hermes-Konfiguration
+            {t('setup.warnings')}
           </h2>
           <ul className="mt-2 space-y-1 text-sm text-[var(--color-ink-muted)]">
             {snapshot.connection.warnings.map((warning) => (
@@ -180,11 +176,11 @@ export function SetupScreen({
           className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:outline-none"
         >
           <RefreshCw size={14} className={retrying ? 'animate-spin' : undefined} aria-hidden />
-          Erneut prüfen
+          {t('setup.recheck')}
         </button>
         <p className="flex items-center gap-2 text-xs text-[var(--color-ink-faint)]">
           <Terminal size={13} aria-hidden />
-          Ausführlicher Bericht im Terminal: <code>npx hermes-control-center --doctor</code>
+          {t('setup.doctorHint')} <code>npx hermes-control-center --doctor</code>
         </p>
       </footer>
     </div>

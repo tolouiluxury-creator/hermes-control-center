@@ -485,4 +485,111 @@ export const de: Dict = {
   'cron.weekday.4': 'donnerstags',
   'cron.weekday.5': 'freitags',
   'cron.weekday.6': 'samstags',
+
+  // Shell: sidebar, top bar, skip link
+  'shell.live': 'Live',
+  'shell.connecting': 'Verbinde …',
+  'shell.noLiveConnection': 'Keine Live-Verbindung',
+  'shell.hermesUnreachable': 'Hermes nicht erreichbar',
+  'shell.openNavigation': 'Navigation öffnen',
+  'shell.closeNavigation': 'Navigation schließen',
+  'shell.navigation': 'Navigation',
+  'shell.mainNavigation': 'Hauptnavigation',
+  'shell.skipToContent': 'Zum Hauptinhalt springen',
+  'shell.searchOrJump': 'Suchen oder springen …',
+  'shell.shortcutHint': 'Strg K',
+  'shell.theme': 'Erscheinungsbild: {theme}',
+  'shell.themeToggleAria': 'Erscheinungsbild: {theme}. Zum Wechseln aktivieren.',
+  'shell.system': 'System',
+  'shell.profile': 'Profil',
+  'shell.connected': 'Verbunden',
+  'shell.disconnected': 'Nicht verbunden',
+  'shell.collapseSidebar': 'Sidebar einklappen',
+  'shell.expandSidebar': 'Sidebar ausklappen',
+
+  // Degraded banner
+  'degraded.apiMissing': 'Der Hermes API-Server antwortet nicht.',
+  'degraded.keyMissing': 'Für den Hermes API-Server ist kein Schlüssel hinterlegt.',
+  'degraded.consequence':
+    'Chat, Sessions und Agent-Runs bleiben deshalb gesperrt. Alles andere — Metriken, Skills, MCP, Cron, Logs — funktioniert.',
+  'degraded.dismiss': 'Hinweis ausblenden',
+
+  // Command palette
+  'palette.title': 'Befehle und Navigation',
+  'palette.placeholder': 'Seite öffnen oder Aktion ausführen …',
+  'palette.searchLabel': 'Befehl suchen',
+  'palette.results': 'Ergebnisse',
+  'palette.noResults': 'Nichts gefunden für „{query}"',
+  'palette.navigation': 'Navigation',
+  'palette.actions': 'Aktionen',
+  'palette.switchTheme': 'Erscheinungsbild wechseln',
+  'palette.switchTheme.keywords': 'dark light hell dunkel theme modus erscheinungsbild',
+  'palette.reloadData': 'Daten neu laden',
+  'palette.reloadData.keywords': 'aktualisieren refresh neu laden',
+  'palette.signOut': 'Abmelden',
+  'palette.signOut.keywords': 'logout sitzung beenden sperren',
+
+  // Command palette: extra words per nav entry, space separated
+  'navKeywords.dashboard': 'übersicht start widgets cockpit',
+  'navKeywords.chats': 'unterhaltung sessions nachrichten gespräch',
+  'navKeywords.agenten': 'agents assistenten presets subagenten',
+  'navKeywords.workflows': 'abläufe automatisierung ketten',
+  'navKeywords.aufgaben': 'tasks runs jobs cron warteschlange zeitplan',
+  'navKeywords.wissen': 'rag memory gedächtnis embeddings vektor',
+  'navKeywords.skills': 'fähigkeiten plugins erweiterungen',
+  'navKeywords.mcp': 'model context protocol werkzeuge tools server',
+  'navKeywords.modelle': 'llm provider kosten kontext modelle',
+  'navKeywords.prompts': 'vorlagen templates systemprompt bibliothek',
+  'navKeywords.integrationen': 'api webhooks telegram discord schnittstellen',
+  'navKeywords.analytics': 'statistik kosten token auswertung nutzung',
+  'navKeywords.logs': 'protokoll fehler konsole ereignisse ausgabe',
+  'navKeywords.einstellungen': 'settings konfiguration profil theme passwort sprache',
+
+  // Toast, placeholder and 404
+  'toast.dismiss': 'Meldung schließen: {title}',
+  'placeholder.planned': 'Diese Seite entsteht in einem der nächsten Schritte.',
+  'placeholder.notBuilt': 'Noch nicht gebaut — hier stehen später echte Daten, keine Platzhalter',
+  'notFound.title': 'Seite nicht gefunden',
+  'notFound.desc': 'Diese Adresse gehört zu keiner Seite des Control Centers.',
+
+  // Login
+  'login.title': 'Anmeldung',
+  'login.prompt': 'Gib dein Passwort ein, um fortzufahren.',
+  'login.password': 'Passwort',
+  'login.submit': 'Anmelden',
+  'login.checking': 'Prüfe …',
+  'login.wrongPassword': 'Falsches Passwort.',
+  'login.failed': 'Anmeldung fehlgeschlagen.',
+  'login.forgotten': 'Passwort vergessen? Setze im Terminal ein neues:',
+
+  // Setup screen
+  'setup.title': 'Einrichtung',
+  'setup.heading': 'Hermes ist noch nicht vollständig verbunden',
+  'setup.intro':
+    'Das Control Center läuft. Es braucht zwei Hermes-Oberflächen — was schon erreichbar ist, funktioniert bereits.',
+  'setup.dashboard.title': 'Hermes-Dashboard starten',
+  'setup.dashboard.desc':
+    'Liefert Konfiguration, Skills, MCP-Server, Modelle, Cron-Jobs, Logs und Systemmetriken. Erwartet unter {url}.',
+  'setup.apiKey.title': 'API-Server-Key setzen',
+  'setup.apiKey.descLocal':
+    'Ohne Key bleiben Chat, Sessions und Runs gesperrt. Der Key wird aus deiner Hermes-Konfiguration gelesen und verlässt den Server nie.',
+  'setup.apiKey.descRemote':
+    'Hermes läuft offenbar auf einem anderen Rechner. Trag den Key darum lokal ein — in {path} als "apiKey". Er bleibt serverseitig und wird nie an den Browser gesendet.',
+  'setup.gateway.title': 'Hermes-Gateway starten',
+  'setup.gateway.desc': 'Stellt den API-Server bereit (erwartet unter {url}).',
+  'setup.copied': 'Kopiert',
+  'setup.copyCommand': 'Befehl kopieren: {command}',
+  'setup.done': 'erledigt',
+  'setup.open': 'offen',
+  'setup.warnings': 'Hinweise aus deiner Hermes-Konfiguration',
+  'setup.recheck': 'Erneut prüfen',
+  'setup.doctorHint': 'Ausführlicher Bericht im Terminal:',
+
+  // Environment variable categories
+  'env.category.provider': 'Anbieter',
+  'env.category.tool': 'Werkzeuge',
+  'env.category.skill': 'Skills',
+  'env.category.messaging': 'Messaging',
+  'env.category.setting': 'Einstellungen',
+  'env.category.other': 'Sonstige',
 };

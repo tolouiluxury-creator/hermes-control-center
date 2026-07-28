@@ -126,6 +126,8 @@ function ToolsetRow({
   pending: boolean;
   onToggle: (toolset: Toolset) => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <li className="flex items-start gap-3 border-b border-[var(--color-hairline)] px-3 py-2.5 last:border-b-0">
       <div className="min-w-0 flex-1">
@@ -135,7 +137,9 @@ function ToolsetRow({
             {toolset.name}
           </span>
           {!toolset.available && (
-            <span className="text-[0.65rem] text-[var(--color-warn)]">nicht verfügbar</span>
+            <span className="text-[0.65rem] text-[var(--color-warn)]">
+              {t('settings.tools.unavailable')}
+            </span>
           )}
         </div>
         {toolset.description && (
@@ -178,11 +182,13 @@ function ToolsetsSection() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.toolsets });
       toast.push({
         tone: 'success',
-        title: toolset.enabled ? `„${toolset.label}" deaktiviert` : `„${toolset.label}" aktiviert`,
+        title: t(toolset.enabled ? 'skills.disabledToast' : 'skills.enabledToast', {
+          name: toolset.label,
+        }),
       });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Umschalten fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.toggleFailed'), description: e.message }),
   });
 
   return (
@@ -214,7 +220,7 @@ function ToolsetsSection() {
 function MaintenanceSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const update = useQuery({ queryKey: queryKeys.update, queryFn: getUpdate, staleTime: 300_000 });
   const curator = useQuery({ queryKey: queryKeys.curator, queryFn: getCurator, staleTime: 60_000 });
 
@@ -257,7 +263,7 @@ function MaintenanceSection() {
               </p>
               {update.data?.updateAvailable && update.data.updateCommand && (
                 <p className="mt-2 text-xs text-[var(--color-warn)]">
-                  Update verfügbar — auf dem Server:{' '}
+                  {t('settings.updateAvailable', { command: '' })}
                   <code className="font-mono">{update.data.updateCommand}</code>
                 </p>
               )}
@@ -266,7 +272,7 @@ function MaintenanceSection() {
         </div>
 
         <div className="card p-4">
-          <p className="text-xs text-[var(--color-ink-faint)]">Gedächtnis-Kurator</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.curator')}</p>
           {curator.isPending ? (
             <SkeletonText lines={2} />
           ) : curator.error ? (
@@ -274,11 +280,17 @@ function MaintenanceSection() {
           ) : (
             <>
               <p className="mt-1 text-sm">
-                {curator.data?.paused ? 'pausiert' : curator.data?.enabled ? 'aktiv' : 'aus'}
+                {curator.data?.paused
+                  ? t('settings.curator.paused')
+                  : curator.data?.enabled
+                    ? t('common.active')
+                    : t('settings.curator.off')}
                 {curator.data?.lastRunAt && (
                   <span className="text-[var(--color-ink-faint)]">
-                    {' '}
-                    · zuletzt {formatRelativeTime(curator.data.lastRunAt)}
+                    {' · '}
+                    {t('settings.curator.lastRun', {
+                      time: formatRelativeTime(curator.data.lastRunAt, lang),
+                    })}
                   </span>
                 )}
               </p>
@@ -289,7 +301,7 @@ function MaintenanceSection() {
                   disabled={run.isPending}
                   className="rounded-lg border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
                 >
-                  Jetzt ausführen
+                  {t('settings.curator.runNow')}
                 </button>
                 <button
                   type="button"
@@ -297,7 +309,9 @@ function MaintenanceSection() {
                   disabled={pause.isPending}
                   className="rounded-lg border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
                 >
-                  {curator.data?.paused ? 'Fortsetzen' : 'Pausieren'}
+                  {curator.data?.paused
+                    ? t('settings.curator.resume')
+                    : t('settings.curator.pause')}
                 </button>
               </div>
             </>
@@ -310,13 +324,13 @@ function MaintenanceSection() {
 
 // --- Environment variables and secrets --------------------------------------
 
-const ENV_CATEGORY_LABEL: Record<string, string> = {
-  provider: 'Anbieter',
-  tool: 'Werkzeuge',
-  skill: 'Skills',
-  messaging: 'Messaging',
-  setting: 'Einstellungen',
-  sonstige: 'Sonstige',
+const ENV_CATEGORY_KEY: Record<string, string> = {
+  provider: 'env.category.provider',
+  tool: 'env.category.tool',
+  skill: 'env.category.skill',
+  messaging: 'env.category.messaging',
+  setting: 'env.category.setting',
+  sonstige: 'env.category.other',
 };
 
 function EnvRow({
@@ -336,6 +350,7 @@ function EnvRow({
   onSave: (value: string) => void;
   onDelete: () => void;
 }) {
+  const { t } = useI18n();
   const [value, setValue] = useState('');
 
   return (
@@ -367,7 +382,7 @@ function EnvRow({
             disabled={pending}
             className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
           >
-            {entry.isSet ? 'Ändern' : 'Setzen'}
+            {entry.isSet ? t('settings.env.change') : t('settings.env.set')}
           </button>
           {entry.isSet && (
             <button
@@ -376,7 +391,7 @@ function EnvRow({
               disabled={pending}
               className="rounded-lg px-2 py-1 text-xs text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-danger)] disabled:opacity-40"
             >
-              Löschen
+              {t('common.delete')}
             </button>
           )}
         </div>
@@ -395,7 +410,7 @@ function EnvRow({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             autoFocus
-            placeholder={`Wert für ${entry.key}`}
+            placeholder={t('settings.env.valueFor', { key: entry.key })}
             className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
           />
           <button
@@ -501,7 +516,7 @@ function EnvSection() {
                   { id: 'gesetzt', label: 'Gesetzt', count: entries.filter((e) => e.isSet).length },
                   ...categories.map((id) => ({
                     id,
-                    label: ENV_CATEGORY_LABEL[id] ?? id,
+                    label: ENV_CATEGORY_KEY[id] ? t(ENV_CATEGORY_KEY[id]) : id,
                     count: entries.filter((e) => e.category === id).length,
                   })),
                 ]}
@@ -621,8 +636,8 @@ function ConfigSection() {
               {confirm ? (
                 <ConfirmInline
                   tone="danger"
-                  message="Konfiguration überschreiben? Ungültiges YAML kann den Agenten beeinträchtigen."
-                  confirmLabel="Speichern"
+                  message={t('settings.config.overwriteConfirm')}
+                  confirmLabel={t('common.save')}
                   pending={save.isPending}
                   onConfirm={() => save.mutate(draft)}
                   onCancel={() => setConfirm(false)}

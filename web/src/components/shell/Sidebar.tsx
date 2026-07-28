@@ -69,17 +69,19 @@ function NavRow({
 
 /** Version, profile and uptime — the three facts worth a permanent corner. */
 function SystemInfo({ collapsed }: { collapsed: boolean }) {
+  const { t } = useI18n();
   const { data: snapshot } = useStatus();
   const agent = snapshot?.agent;
   const healthy = snapshot?.dashboard.reachable ?? false;
+  const connection = healthy ? t('shell.connected') : t('shell.disconnected');
 
   if (collapsed) {
     return (
       <div className="flex justify-center py-3">
         <span
           className={`size-2 rounded-full ${healthy ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-danger)]'}`}
-          title={healthy ? 'Verbunden' : 'Nicht verbunden'}
-          aria-label={healthy ? 'Verbunden' : 'Nicht verbunden'}
+          title={connection}
+          aria-label={connection}
         />
       </div>
     );
@@ -88,7 +90,9 @@ function SystemInfo({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="card mx-2 mb-2 p-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[var(--color-ink-muted)]">System</span>
+        <span className="text-xs font-medium text-[var(--color-ink-muted)]">
+          {t('shell.system')}
+        </span>
         <span
           className={`size-2 rounded-full ${healthy ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-danger)]'}`}
           aria-hidden
@@ -100,11 +104,11 @@ function SystemInfo({ collapsed }: { collapsed: boolean }) {
           <dd className="font-mono">{agent?.version ?? '—'}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--color-ink-faint)]">Profil</dt>
+          <dt className="text-[var(--color-ink-faint)]">{t('shell.profile')}</dt>
           <dd className="truncate font-mono">{agent?.profile ?? agent?.profiles[0] ?? '—'}</dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--color-ink-faint)]">Uptime</dt>
+          <dt className="text-[var(--color-ink-faint)]">{t('agentWidget.uptime')}</dt>
           <dd className="font-mono">{formatDuration(snapshot?.host?.uptimeSeconds)}</dd>
         </div>
       </dl>
@@ -113,6 +117,8 @@ function SystemInfo({ collapsed }: { collapsed: boolean }) {
 }
 
 export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarProps) {
+  const { t } = useI18n();
+
   return (
     <div className="flex h-full flex-col border-r border-[var(--color-hairline)] bg-[var(--color-surface)]">
       <div
@@ -135,7 +141,10 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
         )}
       </div>
 
-      <nav aria-label="Hauptnavigation" className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+      <nav
+        aria-label={t('shell.mainNavigation')}
+        className="min-h-0 flex-1 overflow-y-auto px-2 py-2"
+      >
         <ul className="space-y-0.5">
           {PRIMARY_NAV.map((item) => (
             <NavRow key={item.id} item={item} collapsed={collapsed} onNavigate={onNavigate} />
@@ -164,8 +173,10 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
         ) : (
           <PanelLeftClose size={15} aria-hidden />
         )}
-        {!collapsed && <span>Sidebar einklappen</span>}
-        <span className="sr-only">{collapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}</span>
+        {!collapsed && <span>{t('shell.collapseSidebar')}</span>}
+        <span className="sr-only">
+          {collapsed ? t('shell.expandSidebar') : t('shell.collapseSidebar')}
+        </span>
       </button>
     </div>
   );

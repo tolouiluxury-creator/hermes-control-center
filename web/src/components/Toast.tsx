@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 export type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -107,6 +108,7 @@ function ToastViewport({
 }
 
 function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number) => void }) {
+  const { t } = useI18n();
   const [paused, setPaused] = useState(false);
   const { icon: Icon, color } = TONE_STYLES[toast.tone];
 
@@ -140,7 +142,7 @@ function ToastCard({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         type="button"
         onClick={() => onDismiss(toast.id)}
         className="-m-1 shrink-0 rounded-lg p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
-        aria-label={`Meldung schließen: ${toast.title}`}
+        aria-label={t('toast.dismiss', { title: toast.title })}
       >
         <X size={14} aria-hidden />
       </button>

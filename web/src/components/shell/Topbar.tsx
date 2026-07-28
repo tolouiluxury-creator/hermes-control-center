@@ -6,28 +6,29 @@ import { useI18n } from '@/lib/i18n';
 import { useStatus } from '@/lib/useStatus';
 import type { StreamState } from '@/lib/stream';
 
-const THEME_LABEL: Record<ThemePreference, string> = {
-  dark: 'Dunkel',
-  light: 'Hell',
-  system: 'Systemeinstellung',
+const THEME_LABEL_KEY: Record<ThemePreference, string> = {
+  dark: 'settings.theme.dark',
+  light: 'settings.theme.light',
+  system: 'settings.theme.system',
 };
 
 const THEME_ICON = { dark: Moon, light: Sun, system: Monitor } as const;
 
 /** Shows whether live data is actually arriving, not merely that a page loaded. */
 function ConnectionPill({ streamState }: { streamState: StreamState }) {
+  const { t } = useI18n();
   const { data: snapshot } = useStatus();
 
   const upstreamsOk = snapshot ? snapshot.dashboard.reachable : false;
   const live = streamState === 'open' && upstreamsOk;
 
   const label = live
-    ? 'Live'
+    ? t('shell.live')
     : streamState === 'connecting'
-      ? 'Verbinde …'
+      ? t('shell.connecting')
       : upstreamsOk
-        ? 'Keine Live-Verbindung'
-        : 'Hermes nicht erreichbar';
+        ? t('shell.noLiveConnection')
+        : t('shell.hermesUnreachable');
 
   const color = live
     ? 'var(--color-ok)'
@@ -71,7 +72,7 @@ export function Topbar({
         type="button"
         onClick={onOpenSidebar}
         className="-ml-1 rounded-lg p-2 text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] lg:hidden"
-        aria-label="Navigation öffnen"
+        aria-label={t('shell.openNavigation')}
       >
         <Menu size={18} aria-hidden />
       </button>
@@ -88,9 +89,9 @@ export function Topbar({
         className="ml-auto flex max-w-md flex-1 items-center gap-2 rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5 text-left text-sm text-[var(--color-ink-faint)] transition-colors hover:border-[var(--color-hairline-strong)]"
       >
         <Search size={15} aria-hidden />
-        <span className="truncate">Suchen oder springen …</span>
+        <span className="truncate">{t('shell.searchOrJump')}</span>
         <kbd className="ml-auto hidden shrink-0 rounded border border-[var(--color-hairline)] px-1.5 py-0.5 font-mono text-[0.65rem] text-[var(--color-ink-faint)] sm:block">
-          Strg K
+          {t('shell.shortcutHint')}
         </kbd>
       </button>
 
@@ -100,8 +101,8 @@ export function Topbar({
         type="button"
         onClick={cycle}
         className="rounded-lg p-2 text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
-        aria-label={`Erscheinungsbild: ${THEME_LABEL[preference]}. Zum Wechseln aktivieren.`}
-        title={`Erscheinungsbild: ${THEME_LABEL[preference]}`}
+        aria-label={t('shell.themeToggleAria', { theme: t(THEME_LABEL_KEY[preference]) })}
+        title={t('shell.theme', { theme: t(THEME_LABEL_KEY[preference]) })}
       >
         <ThemeIcon size={17} aria-hidden />
       </button>

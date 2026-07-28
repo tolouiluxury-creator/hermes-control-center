@@ -6,6 +6,7 @@ import { NAV_ITEMS } from '@/lib/nav';
 import { scoreCommand } from '@/lib/search';
 import { useTheme } from '@/lib/theme';
 import { logout, queryKeys } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import type { LucideIcon } from 'lucide-react';
 
 interface Command {
@@ -25,6 +26,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { cycle } = useTheme();
+  const { t } = useI18n();
 
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -34,38 +36,42 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
   const optionId = (index: number) => `${listId}-option-${index}`;
 
   const commands = useMemo<Command[]>(() => {
+    // Keywords live in the dictionary as one space-separated string per entry,
+    // so each language can bring the words its speakers would actually type.
+    const words = (key: string): string[] => t(key).split(/\s+/).filter(Boolean);
+
     const navigation: Command[] = NAV_ITEMS.map((item) => ({
       id: `nav:${item.id}`,
-      label: item.label,
-      group: 'Navigation',
+      label: t(`nav.${item.id}`),
+      group: t('palette.navigation'),
       icon: item.icon,
-      keywords: item.keywords ?? [],
+      keywords: words(`navKeywords.${item.id}`),
       run: () => navigate(item.path),
     }));
 
     const actions: Command[] = [
       {
         id: 'action:theme',
-        label: 'Erscheinungsbild wechseln',
-        group: 'Aktionen',
+        label: t('palette.switchTheme'),
+        group: t('palette.actions'),
         icon: Moon,
-        keywords: ['dark', 'light', 'hell', 'dunkel', 'theme', 'modus'],
+        keywords: words('palette.switchTheme.keywords'),
         run: cycle,
       },
       {
         id: 'action:refresh',
-        label: 'Daten neu laden',
-        group: 'Aktionen',
+        label: t('palette.reloadData'),
+        group: t('palette.actions'),
         icon: RefreshCw,
-        keywords: ['aktualisieren', 'refresh', 'neu'],
+        keywords: words('palette.reloadData.keywords'),
         run: () => void queryClient.invalidateQueries(),
       },
       {
         id: 'action:logout',
-        label: 'Abmelden',
-        group: 'Aktionen',
+        label: t('palette.signOut'),
+        group: t('palette.actions'),
         icon: LogOut,
-        keywords: ['logout', 'sitzung', 'beenden', 'sperren'],
+        keywords: words('palette.signOut.keywords'),
         run: async () => {
           await logout();
           await queryClient.invalidateQueries({ queryKey: queryKeys.auth });
@@ -74,7 +80,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
     ];
 
     return [...navigation, ...actions];
-  }, [navigate, cycle, queryClient]);
+  }, [navigate, cycle, queryClient, t]);
 
   const results = useMemo(
     () =>
@@ -173,7 +179,7 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Befehle und Navigation"
+        aria-label={t('palette.title')}
         className="card w-full max-w-xl overflow-hidden p-0"
         style={{
           boxShadow: 'var(--shadow-overlay)',
@@ -190,13 +196,13 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
               setQuery(event.target.value);
               setActiveIndex(0);
             }}
-            placeholder="Seite öffnen oder Aktion ausführen …"
+            placeholder={t('palette.placeholder')}
             className="w-full bg-transparent py-3.5 text-sm outline-none placeholder:text-[var(--color-ink-faint)]"
             role="combobox"
             aria-expanded
             aria-controls={listId}
             aria-activedescendant={results.length > 0 ? optionId(active) : undefined}
-            aria-label="Befehl suchen"
+            aria-label={t('palette.searchLabel')}
             autoComplete="off"
             spellCheck={false}
           />
@@ -207,14 +213,14 @@ function PaletteDialog({ onClose }: { onClose: () => void }) {
 
         {results.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-[var(--color-ink-muted)]">
-            Nichts gefunden für „{query}“
+            {t('palette.noResults', { query })}
           </p>
         ) : (
           <ul
             ref={listRef}
             id={listId}
             role="listbox"
-            aria-label="Ergebnisse"
+            aria-label={t('palette.results')}
             className="max-h-[min(24rem,50vh)] overflow-y-auto p-2"
           >
             {results.map((command, index) => {

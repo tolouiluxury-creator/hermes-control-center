@@ -17,12 +17,10 @@ import {
 } from 'lucide-react';
 
 export interface NavItem {
+  /** Also the dictionary key: the label is `nav.<id>`, the search words `navKeywords.<id>`. */
   id: string;
-  label: string;
   path: string;
   icon: LucideIcon;
-  /** Extra words the command palette should match on. */
-  keywords?: string[];
   /** Shown in the sidebar as a small count or dot when the page has news. */
   badge?: 'live' | null;
 }
@@ -37,102 +35,74 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
     path: '/',
     icon: LayoutDashboard,
-    keywords: ['übersicht', 'start', 'widgets', 'cockpit'],
   },
   {
     id: 'chats',
-    label: 'Chats',
     path: '/chats',
     icon: MessagesSquare,
-    keywords: ['unterhaltung', 'sessions', 'nachrichten', 'gespräch'],
     badge: 'live',
   },
   {
     id: 'agenten',
-    label: 'Agenten',
     path: '/agenten',
     icon: Bot,
-    keywords: ['agents', 'assistenten', 'subagenten'],
   },
   {
     id: 'workflows',
-    label: 'Workflows',
     path: '/workflows',
     icon: Workflow,
-    keywords: ['abläufe', 'automatisierung', 'ketten'],
   },
   {
     id: 'aufgaben',
-    label: 'Aufgaben',
     path: '/aufgaben',
     icon: ListTodo,
-    keywords: ['tasks', 'runs', 'jobs', 'warteschlange'],
   },
   {
     id: 'wissen',
-    label: 'Wissen (RAG)',
     path: '/wissen',
     icon: BookOpen,
-    keywords: ['rag', 'memory', 'gedächtnis', 'embeddings', 'vektor'],
   },
   {
     id: 'skills',
-    label: 'Skills',
     path: '/skills',
     icon: Layers,
-    keywords: ['fähigkeiten', 'plugins', 'erweiterungen'],
   },
   {
     id: 'mcp',
-    label: 'MCP Server',
     path: '/mcp',
     icon: Server,
-    keywords: ['model context protocol', 'werkzeuge', 'tools'],
   },
   {
     id: 'modelle',
-    label: 'Modelle',
     path: '/modelle',
     icon: Cpu,
-    keywords: ['llm', 'provider', 'kosten', 'kontext'],
   },
   {
     id: 'prompts',
-    label: 'Prompt-Bibliothek',
     path: '/prompts',
     icon: Library,
-    keywords: ['vorlagen', 'templates', 'systemprompt'],
   },
   {
     id: 'integrationen',
-    label: 'API & Integrationen',
     path: '/integrationen',
     icon: Plug,
-    keywords: ['api', 'webhooks', 'telegram', 'discord', 'schnittstellen'],
   },
   {
     id: 'analytics',
-    label: 'Analytics',
     path: '/analytics',
     icon: BarChart3,
-    keywords: ['statistik', 'kosten', 'token', 'auswertung', 'nutzung'],
   },
   {
     id: 'logs',
-    label: 'Logs',
     path: '/logs',
     icon: ScrollText,
-    keywords: ['protokoll', 'fehler', 'konsole', 'ereignisse'],
   },
   {
     id: 'einstellungen',
-    label: 'Einstellungen',
     path: '/einstellungen',
     icon: Settings,
-    keywords: ['settings', 'konfiguration', 'profil', 'theme', 'passwort'],
   },
 ];
 

@@ -480,4 +480,111 @@ export const en: Dict = {
   'cron.weekday.4': 'Thursdays',
   'cron.weekday.5': 'Fridays',
   'cron.weekday.6': 'Saturdays',
+
+  // Shell: sidebar, top bar, skip link
+  'shell.live': 'Live',
+  'shell.connecting': 'Connecting …',
+  'shell.noLiveConnection': 'No live connection',
+  'shell.hermesUnreachable': 'Hermes not reachable',
+  'shell.openNavigation': 'Open navigation',
+  'shell.closeNavigation': 'Close navigation',
+  'shell.navigation': 'Navigation',
+  'shell.mainNavigation': 'Main navigation',
+  'shell.skipToContent': 'Skip to main content',
+  'shell.searchOrJump': 'Search or jump …',
+  'shell.shortcutHint': 'Ctrl K',
+  'shell.theme': 'Appearance: {theme}',
+  'shell.themeToggleAria': 'Appearance: {theme}. Activate to switch.',
+  'shell.system': 'System',
+  'shell.profile': 'Profile',
+  'shell.connected': 'Connected',
+  'shell.disconnected': 'Not connected',
+  'shell.collapseSidebar': 'Collapse sidebar',
+  'shell.expandSidebar': 'Expand sidebar',
+
+  // Degraded banner
+  'degraded.apiMissing': 'The Hermes API server is not responding.',
+  'degraded.keyMissing': 'No key is stored for the Hermes API server.',
+  'degraded.consequence':
+    'Chat, sessions and agent runs stay locked because of it. Everything else — metrics, skills, MCP, cron, logs — works.',
+  'degraded.dismiss': 'Dismiss notice',
+
+  // Command palette
+  'palette.title': 'Commands and navigation',
+  'palette.placeholder': 'Open a page or run an action …',
+  'palette.searchLabel': 'Search commands',
+  'palette.results': 'Results',
+  'palette.noResults': 'Nothing found for “{query}”',
+  'palette.navigation': 'Navigation',
+  'palette.actions': 'Actions',
+  'palette.switchTheme': 'Switch appearance',
+  'palette.switchTheme.keywords': 'dark light theme mode appearance',
+  'palette.reloadData': 'Reload data',
+  'palette.reloadData.keywords': 'refresh reload update',
+  'palette.signOut': 'Sign out',
+  'palette.signOut.keywords': 'logout session end lock',
+
+  // Command palette: extra words per nav entry, space separated
+  'navKeywords.dashboard': 'overview start widgets cockpit',
+  'navKeywords.chats': 'conversation sessions messages talk',
+  'navKeywords.agenten': 'agents assistants presets subagents',
+  'navKeywords.workflows': 'sequences automation chains',
+  'navKeywords.aufgaben': 'tasks runs jobs cron queue schedule',
+  'navKeywords.wissen': 'rag memory embeddings vector knowledge',
+  'navKeywords.skills': 'abilities plugins extensions',
+  'navKeywords.mcp': 'model context protocol tools servers',
+  'navKeywords.modelle': 'llm provider cost context models',
+  'navKeywords.prompts': 'templates library system prompt',
+  'navKeywords.integrationen': 'api webhooks telegram discord messaging',
+  'navKeywords.analytics': 'statistics cost tokens usage report',
+  'navKeywords.logs': 'log errors console events output',
+  'navKeywords.einstellungen': 'settings configuration profile theme password language',
+
+  // Toast, placeholder and 404
+  'toast.dismiss': 'Dismiss message: {title}',
+  'placeholder.planned': 'This page is coming in one of the next steps.',
+  'placeholder.notBuilt': 'Not built yet — real data will live here, never placeholders',
+  'notFound.title': 'Page not found',
+  'notFound.desc': 'This address does not belong to any page of the control center.',
+
+  // Login
+  'login.title': 'Sign in',
+  'login.prompt': 'Enter your password to continue.',
+  'login.password': 'Password',
+  'login.submit': 'Sign in',
+  'login.checking': 'Checking …',
+  'login.wrongPassword': 'Wrong password.',
+  'login.failed': 'Sign-in failed.',
+  'login.forgotten': 'Forgotten your password? Set a new one in the terminal:',
+
+  // Setup screen
+  'setup.title': 'Setup',
+  'setup.heading': 'Hermes is not fully connected yet',
+  'setup.intro':
+    'The control center is running. It needs two Hermes surfaces — whatever is already reachable works already.',
+  'setup.dashboard.title': 'Start the Hermes dashboard',
+  'setup.dashboard.desc':
+    'Supplies configuration, skills, MCP servers, models, cron jobs, logs and system metrics. Expected at {url}.',
+  'setup.apiKey.title': 'Set the API server key',
+  'setup.apiKey.descLocal':
+    'Without a key, chat, sessions and runs stay locked. The key is read from your Hermes configuration and never leaves the server.',
+  'setup.apiKey.descRemote':
+    'Hermes appears to run on another machine. Enter the key locally instead — in {path} as "apiKey". It stays server-side and is never sent to the browser.',
+  'setup.gateway.title': 'Start the Hermes gateway',
+  'setup.gateway.desc': 'Provides the API server (expected at {url}).',
+  'setup.copied': 'Copied',
+  'setup.copyCommand': 'Copy command: {command}',
+  'setup.done': 'done',
+  'setup.open': 'open',
+  'setup.warnings': 'Notes from your Hermes configuration',
+  'setup.recheck': 'Check again',
+  'setup.doctorHint': 'Detailed report in the terminal:',
+
+  // Environment variable categories
+  'env.category.provider': 'Providers',
+  'env.category.tool': 'Tools',
+  'env.category.skill': 'Skills',
+  'env.category.messaging': 'Messaging',
+  'env.category.setting': 'Settings',
+  'env.category.other': 'Other',
 };
