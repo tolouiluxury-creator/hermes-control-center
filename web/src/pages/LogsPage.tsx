@@ -4,6 +4,7 @@ import { Download, Pause, Play } from 'lucide-react';
 import { getLogs, queryKeys } from '@/lib/api';
 import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { useI18n } from '@/lib/i18n';
 import type { LogLevel } from '@/lib/hermesTypes';
 
 const LEVEL_COLOR: Record<LogLevel, string> = {
@@ -17,6 +18,7 @@ const LEVEL_COLOR: Record<LogLevel, string> = {
 const LINE_OPTIONS = [100, 300, 1000] as const;
 
 export function LogsPage() {
+  const { t, lang } = useI18n();
   const [lines, setLines] = useState<number>(300);
   const [level, setLevel] = useState<'all' | LogLevel>('all');
   const [search, setSearch] = useState('');
@@ -57,11 +59,11 @@ export function LogsPage() {
   return (
     <PageShell
       wide
-      title="Logs"
-      description={data?.file ? `Logdatei: ${data.file}` : 'Ausgabe deines Hermes-Agenten.'}
+      title={t('nav.logs')}
+      description={data?.file ? t('logs.file', { file: data.file }) : t('page.logs.desc')}
       actions={
         <>
-          <SearchField value={search} onChange={setSearch} label="Logzeilen durchsuchen" />
+          <SearchField value={search} onChange={setSearch} label={t('logs.searchLabel')} />
           <button
             type="button"
             onClick={() => setFollowing((value) => !value)}
@@ -73,7 +75,7 @@ export function LogsPage() {
             }`}
           >
             {following ? <Pause size={13} aria-hidden /> : <Play size={13} aria-hidden />}
-            {following ? 'Live' : 'Angehalten'}
+            {following ? t('logs.live') : t('logs.paused')}
           </button>
           <button
             type="button"
@@ -82,35 +84,38 @@ export function LogsPage() {
             className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-hairline)] px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
           >
             <Download size={13} aria-hidden />
-            Herunterladen
+            {t('logs.download')}
           </button>
         </>
       }
     >
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <FilterChips
-          label="Log-Ebene"
+          label={t('logs.level')}
           value={level}
           onChange={setLevel}
           options={[
-            { id: 'all', label: 'Alle', count: data?.lines.length ?? 0 },
-            { id: 'error', label: 'Fehler', count: counts.error },
-            { id: 'warn', label: 'Warnungen', count: counts.warn },
-            { id: 'info', label: 'Info', count: counts.info },
-            { id: 'debug', label: 'Debug', count: counts.debug },
+            { id: 'all', label: t('common.all'), count: data?.lines.length ?? 0 },
+            { id: 'error', label: t('logs.level.error'), count: counts.error },
+            { id: 'warn', label: t('logs.level.warn'), count: counts.warn },
+            { id: 'info', label: t('logs.level.info'), count: counts.info },
+            { id: 'debug', label: t('logs.level.debug'), count: counts.debug },
           ]}
         />
 
         <FilterChips
-          label="Anzahl Zeilen"
+          label={t('logs.lineCount')}
           value={String(lines)}
           onChange={(value) => setLines(Number(value))}
-          options={LINE_OPTIONS.map((count) => ({ id: String(count), label: `${count} Zeilen` }))}
+          options={LINE_OPTIONS.map((count) => ({
+            id: String(count),
+            label: t('logs.lines', { count }),
+          }))}
         />
 
         {dataUpdatedAt > 0 && (
           <span className="ml-auto text-xs text-[var(--color-ink-faint)]" role="status">
-            zuletzt {new Date(dataUpdatedAt).toLocaleTimeString('de')}
+            {t('logs.updated', { time: new Date(dataUpdatedAt).toLocaleTimeString(lang) })}
           </span>
         )}
       </div>
@@ -126,12 +131,10 @@ export function LogsPage() {
           className="card overflow-auto p-3 font-mono text-xs leading-relaxed"
           style={{ maxHeight: 'calc(100vh - 19rem)' }}
           role="log"
-          aria-label="Hermes-Logausgabe"
+          aria-label={t('logs.output')}
         >
           {visible.length === 0 ? (
-            <p className="py-8 text-center text-[var(--color-ink-faint)]">
-              Keine Zeile passt zu dieser Auswahl.
-            </p>
+            <p className="py-8 text-center text-[var(--color-ink-faint)]">{t('logs.noMatch')}</p>
           ) : (
             visible.map((line, index) => (
               <div

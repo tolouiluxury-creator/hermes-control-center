@@ -64,6 +64,8 @@ export const en: Dict = {
     'Your own templates. They live in the control center, not in Hermes — Hermes has no prompt library.',
   'page.integrationen.desc':
     'How your agent reaches the outside world: messaging platforms, incoming webhooks and the users cleared for them.',
+  'page.analytics.desc': 'Usage of your agent.',
+  'page.logs.desc': 'Output of your Hermes agent.',
   'page.einstellungen.desc': 'Configuration, keys, tools and maintenance of your Hermes.',
 
   // Chat
@@ -339,4 +341,38 @@ export const en: Dict = {
   'integrations.pending': 'Waiting for approval',
   'integrations.approved': 'Approved',
   'integrations.unknownUser': 'Unknown',
+
+  // Analytics
+  'analytics.periodDesc': 'Usage of your agent over the last {days} days.',
+  'analytics.inputTokens': 'Input tokens',
+  'analytics.inputTokens.hint': 'sent to the model',
+  'analytics.outputTokens': 'Output tokens',
+  'analytics.outputTokens.hint': 'produced by the model',
+  'analytics.cost': 'Cost',
+  'analytics.cost.estimated': 'estimated, not billed',
+  'analytics.cost.billed': 'billed',
+  'analytics.apiCalls': 'API calls',
+  'analytics.sessions': '{count} sessions',
+  'analytics.history': 'History',
+  'analytics.tokensPerDay': 'Token usage per day',
+  'analytics.byModel': 'By model',
+  'analytics.calls': '{count} calls',
+  'analytics.topTools': 'Most used tools',
+
+  // Logs
+  'logs.file': 'Log file: {file}',
+  'logs.searchLabel': 'Search log lines',
+  'logs.live': 'Live',
+  'logs.paused': 'Paused',
+  'logs.download': 'Download',
+  'logs.level': 'Log level',
+  'logs.level.error': 'Errors',
+  'logs.level.warn': 'Warnings',
+  'logs.level.info': 'Info',
+  'logs.level.debug': 'Debug',
+  'logs.lineCount': 'Line count',
+  'logs.lines': '{count} lines',
+  'logs.updated': 'last {time}',
+  'logs.output': 'Hermes log output',
+  'logs.noMatch': 'No line matches this selection.',
 };

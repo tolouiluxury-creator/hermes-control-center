@@ -65,6 +65,8 @@ export const de: Dict = {
     'Deine eigenen Vorlagen. Sie liegen im Control Center, nicht in Hermes — Hermes hat keine Prompt-Bibliothek.',
   'page.integrationen.desc':
     'Wie dein Agent die Außenwelt erreicht: Messaging-Plattformen, eingehende Webhooks und die dafür freigegebenen Nutzer.',
+  'page.analytics.desc': 'Nutzung deines Agenten.',
+  'page.logs.desc': 'Ausgabe deines Hermes-Agenten.',
   'page.einstellungen.desc': 'Konfiguration, Schlüssel, Werkzeuge und Wartung deines Hermes.',
 
   // Chat
@@ -342,4 +344,38 @@ export const de: Dict = {
   'integrations.pending': 'Wartet auf Freigabe',
   'integrations.approved': 'Freigegeben',
   'integrations.unknownUser': 'Unbekannt',
+
+  // Analytics
+  'analytics.periodDesc': 'Nutzung deines Agenten über die letzten {days} Tage.',
+  'analytics.inputTokens': 'Eingabe-Token',
+  'analytics.inputTokens.hint': 'an das Modell geschickt',
+  'analytics.outputTokens': 'Ausgabe-Token',
+  'analytics.outputTokens.hint': 'vom Modell erzeugt',
+  'analytics.cost': 'Kosten',
+  'analytics.cost.estimated': 'geschätzt, nicht abgerechnet',
+  'analytics.cost.billed': 'abgerechnet',
+  'analytics.apiCalls': 'API-Aufrufe',
+  'analytics.sessions': '{count} Sitzungen',
+  'analytics.history': 'Verlauf',
+  'analytics.tokensPerDay': 'Tokenverbrauch pro Tag',
+  'analytics.byModel': 'Nach Modell',
+  'analytics.calls': '{count} Aufrufe',
+  'analytics.topTools': 'Meistgenutzte Werkzeuge',
+
+  // Logs
+  'logs.file': 'Logdatei: {file}',
+  'logs.searchLabel': 'Logzeilen durchsuchen',
+  'logs.live': 'Live',
+  'logs.paused': 'Angehalten',
+  'logs.download': 'Herunterladen',
+  'logs.level': 'Log-Ebene',
+  'logs.level.error': 'Fehler',
+  'logs.level.warn': 'Warnungen',
+  'logs.level.info': 'Info',
+  'logs.level.debug': 'Debug',
+  'logs.lineCount': 'Anzahl Zeilen',
+  'logs.lines': '{count} Zeilen',
+  'logs.updated': 'zuletzt {time}',
+  'logs.output': 'Hermes-Logausgabe',
+  'logs.noMatch': 'Keine Zeile passt zu dieser Auswahl.',
 };

@@ -4,6 +4,7 @@ import { formatCompact, formatCost } from '@/lib/format';
 import { PageShell } from '@/components/PageShell';
 import { Sparkline } from '@/components/Sparkline';
 import { SkeletonText } from '@/components/Skeleton';
+import { useI18n } from '@/lib/i18n';
 
 function StatCard({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -40,6 +41,7 @@ function Bar({
 }
 
 export function AnalyticsPage() {
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.analytics,
     queryFn: getAnalytics,
@@ -53,11 +55,11 @@ export function AnalyticsPage() {
 
   return (
     <PageShell
-      title="Analytics"
+      title={t('nav.analytics')}
       description={
         data?.periodDays
-          ? `Nutzung deines Agenten über die letzten ${data.periodDays} Tage.`
-          : 'Nutzung deines Agenten.'
+          ? t('analytics.periodDesc', { days: data.periodDays })
+          : t('page.analytics.desc')
       }
       wide
     >
@@ -72,34 +74,36 @@ export function AnalyticsPage() {
           <div className="space-y-5">
             <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard
-                label="Eingabe-Token"
-                value={formatCompact(data.totals.inputTokens)}
-                hint="an das Modell geschickt"
+                label={t('analytics.inputTokens')}
+                value={formatCompact(data.totals.inputTokens, lang)}
+                hint={t('analytics.inputTokens.hint')}
               />
               <StatCard
-                label="Ausgabe-Token"
-                value={formatCompact(data.totals.outputTokens)}
-                hint="vom Modell erzeugt"
+                label={t('analytics.outputTokens')}
+                value={formatCompact(data.totals.outputTokens, lang)}
+                hint={t('analytics.outputTokens.hint')}
               />
               <StatCard
-                label="Kosten"
-                value={formatCost(data.totals.cost)}
-                hint={data.totals.costIsEstimate ? 'geschätzt, nicht abgerechnet' : 'abgerechnet'}
+                label={t('analytics.cost')}
+                value={formatCost(data.totals.cost, lang)}
+                hint={t(
+                  data.totals.costIsEstimate ? 'analytics.cost.estimated' : 'analytics.cost.billed',
+                )}
               />
               <StatCard
-                label="API-Aufrufe"
-                value={formatCompact(data.totals.apiCalls)}
-                hint={`${data.totals.sessions ?? 0} Sitzungen`}
+                label={t('analytics.apiCalls')}
+                value={formatCompact(data.totals.apiCalls, lang)}
+                hint={t('analytics.sessions', { count: data.totals.sessions ?? 0 })}
               />
             </section>
 
             {daily.length > 1 && (
               <section className="card p-5">
-                <h3 className="text-sm font-semibold">Verlauf</h3>
+                <h3 className="text-sm font-semibold">{t('analytics.history')}</h3>
                 <Sparkline
                   values={daily.map((entry) => entry.inputTokens + entry.outputTokens)}
                   className="mt-3 h-16 w-full"
-                  label="Tokenverbrauch pro Tag"
+                  label={t('analytics.tokensPerDay')}
                 />
                 <ul className="mt-3 space-y-1.5">
                   {daily.map((entry) => {
@@ -114,7 +118,7 @@ export function AnalyticsPage() {
                         </span>
                         <Bar value={tokens} max={maxDailyTokens} />
                         <span className="text-right font-mono text-xs">
-                          {formatCompact(tokens)}
+                          {formatCompact(tokens, lang)}
                         </span>
                       </li>
                     );
@@ -126,14 +130,15 @@ export function AnalyticsPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               {data.byModel.length > 0 && (
                 <section className="card p-5">
-                  <h3 className="mb-3 text-sm font-semibold">Nach Modell</h3>
+                  <h3 className="mb-3 text-sm font-semibold">{t('analytics.byModel')}</h3>
                   <ul className="space-y-2">
                     {data.byModel.map((entry) => (
                       <li key={entry.model}>
                         <div className="flex items-baseline justify-between gap-2">
                           <span className="truncate font-mono text-xs">{entry.model}</span>
                           <span className="shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">
-                            {formatCompact(entry.tokens)} · {entry.apiCalls} Aufrufe
+                            {formatCompact(entry.tokens, lang)} ·{' '}
+                            {t('analytics.calls', { count: entry.apiCalls })}
                           </span>
                         </div>
                         <Bar value={entry.tokens} max={maxModelTokens} />
@@ -145,7 +150,7 @@ export function AnalyticsPage() {
 
               {data.topTools.length > 0 && (
                 <section className="card p-5">
-                  <h3 className="mb-3 text-sm font-semibold">Meistgenutzte Werkzeuge</h3>
+                  <h3 className="mb-3 text-sm font-semibold">{t('analytics.topTools')}</h3>
                   <ul className="space-y-2">
                     {data.topTools.map((tool) => (
                       <li key={tool.tool}>

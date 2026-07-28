@@ -64,6 +64,8 @@ export const fa: Dict = {
     'قالب‌های خودتان. این‌ها در کنترل‌سنتر ذخیره می‌شوند، نه در هرمس — هرمس کتابخانه پرامپت ندارد.',
   'page.integrationen.desc':
     'اینکه ایجنت شما چگونه به دنیای بیرون می‌رسد: پلتفرم‌های پیام‌رسان، وب‌هوک‌های ورودی و کاربران مجاز برای آن‌ها.',
+  'page.analytics.desc': 'میزان استفاده از ایجنت شما.',
+  'page.logs.desc': 'خروجی ایجنت هرمس شما.',
   'page.einstellungen.desc': 'پیکربندی، کلیدها، ابزارها و نگهداری هرمس شما.',
 
   // Chat
@@ -341,4 +343,38 @@ export const fa: Dict = {
   'integrations.pending': 'در انتظار تأیید',
   'integrations.approved': 'تأییدشده',
   'integrations.unknownUser': 'نامشخص',
+
+  // Analytics
+  'analytics.periodDesc': 'میزان استفاده از ایجنت شما در {days} روز گذشته.',
+  'analytics.inputTokens': 'توکن ورودی',
+  'analytics.inputTokens.hint': 'ارسال‌شده به مدل',
+  'analytics.outputTokens': 'توکن خروجی',
+  'analytics.outputTokens.hint': 'تولیدشده توسط مدل',
+  'analytics.cost': 'هزینه',
+  'analytics.cost.estimated': 'تخمینی، صورت‌حساب نشده',
+  'analytics.cost.billed': 'صورت‌حساب‌شده',
+  'analytics.apiCalls': 'فراخوانی‌های API',
+  'analytics.sessions': '{count} نشست',
+  'analytics.history': 'روند',
+  'analytics.tokensPerDay': 'مصرف توکن در هر روز',
+  'analytics.byModel': 'بر پایه مدل',
+  'analytics.calls': '{count} فراخوانی',
+  'analytics.topTools': 'پرکاربردترین ابزارها',
+
+  // Logs
+  'logs.file': 'فایل گزارش: {file}',
+  'logs.searchLabel': 'جستجوی خطوط گزارش',
+  'logs.live': 'زنده',
+  'logs.paused': 'متوقف',
+  'logs.download': 'دانلود',
+  'logs.level': 'سطح گزارش',
+  'logs.level.error': 'خطاها',
+  'logs.level.warn': 'هشدارها',
+  'logs.level.info': 'اطلاعات',
+  'logs.level.debug': 'اشکال‌زدایی',
+  'logs.lineCount': 'تعداد خطوط',
+  'logs.lines': '{count} خط',
+  'logs.updated': 'آخرین بار {time}',
+  'logs.output': 'خروجی گزارش هرمس',
+  'logs.noMatch': 'هیچ خطی با این انتخاب هم‌خوانی ندارد.',
 };
