@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Search } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * The frame every management page shares: a title, an optional sentence saying
@@ -40,14 +41,16 @@ export function PageShell({
 export function SearchField({
   value,
   onChange,
-  placeholder = 'Suchen',
+  placeholder,
   label,
 }: {
   value: string;
   onChange: (value: string) => void;
+  /** Defaults to the translated "Search". */
   placeholder?: string;
   label: string;
 }) {
+  const { t } = useI18n();
   return (
     <label className="flex min-w-0 items-center gap-2 rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5">
       <Search size={14} className="shrink-0 text-[var(--color-ink-faint)]" aria-hidden />
@@ -55,7 +58,7 @@ export function SearchField({
         type="search"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder ?? t('common.search')}
         aria-label={label}
         className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-[var(--color-ink-faint)]"
       />

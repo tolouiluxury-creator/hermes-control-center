@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { useI18n } from '@/lib/i18n';
 
 /**
  * Loading placeholder. It conveys the *shape* of what is coming and never
@@ -6,7 +7,7 @@ import type { CSSProperties } from 'react';
  * takes it at face value.
  *
  * The whole group is announced once as busy rather than each bar chattering,
- * so a screen reader hears "wird geladen", not seventeen empty boxes.
+ * so a screen reader hears "loading", not seventeen empty boxes.
  */
 export function Skeleton({ className = '', style }: { className?: string; style?: CSSProperties }) {
   return <div className={`skeleton ${className}`} style={style} aria-hidden />;
@@ -34,15 +35,18 @@ export function SkeletonText({
 }
 
 export function LoadingRegion({
-  label = 'Wird geladen',
+  label,
   children,
 }: {
+  /** Defaults to the translated "Loading …". */
   label?: string;
   children: React.ReactNode;
 }) {
+  const { t } = useI18n();
+
   return (
     <div role="status" aria-busy="true" aria-live="polite">
-      <span className="sr-only">{label}</span>
+      <span className="sr-only">{label ?? t('common.loading')}</span>
       {children}
     </div>
   );

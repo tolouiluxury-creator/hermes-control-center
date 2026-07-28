@@ -180,10 +180,13 @@ export function SkillsPage() {
       const name = skill.category ?? 'ohne';
       counts.set(name, (counts.get(name) ?? 0) + 1);
     }
-    return [...counts.entries()]
-      .map(([id, count]) => ({ id, label: id, count }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-  }, [skills]);
+    return (
+      [...counts.entries()]
+        // Category names come from Hermes; only our own "no category" bucket is ours to translate.
+        .map(([id, count]) => ({ id, label: id === 'ohne' ? t('skills.noCategory') : id, count }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+    );
+  }, [skills, t]);
 
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();

@@ -47,10 +47,10 @@ function Section({
 
 // --- Appearance -------------------------------------------------------------
 
-const THEME_OPTIONS: { id: ThemePreference; label: string; icon: typeof Moon }[] = [
-  { id: 'dark', label: 'Dunkel', icon: Moon },
-  { id: 'light', label: 'Hell', icon: Sun },
-  { id: 'system', label: 'System', icon: Monitor },
+const THEME_OPTIONS: { id: ThemePreference; icon: typeof Moon }[] = [
+  { id: 'dark', icon: Moon },
+  { id: 'light', icon: Sun },
+  { id: 'system', icon: Monitor },
 ];
 
 const THEME_LABEL_KEY: Record<ThemePreference, string> = {
@@ -150,7 +150,7 @@ function ToolsetRow({
         type="button"
         role="switch"
         aria-checked={toolset.enabled}
-        aria-label={`${toolset.label} ${toolset.enabled ? 'deaktivieren' : 'aktivieren'}`}
+        aria-label={`${toolset.label} ${toolset.enabled ? t('common.disable') : t('common.enable')}`}
         onClick={() => onToggle(toolset)}
         disabled={pending || !toolset.available}
         className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40"
@@ -230,27 +230,30 @@ function MaintenanceSection() {
     mutationFn: (paused: boolean) => setCuratorPaused(paused),
     onSuccess: async (_r, paused) => {
       await invalidateCurator();
-      toast.push({ tone: 'success', title: paused ? 'Kurator pausiert' : 'Kurator fortgesetzt' });
+      toast.push({
+        tone: 'success',
+        title: t(paused ? 'settings.curator.pausedToast' : 'settings.curator.resumedToast'),
+      });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.actionFailed'), description: e.message }),
   });
 
   const run = useMutation({
     mutationFn: () => runCurator(),
     onSuccess: async () => {
       await invalidateCurator();
-      toast.push({ tone: 'success', title: 'Kurator gestartet' });
+      toast.push({ tone: 'success', title: t('settings.curator.startedToast') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Start fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.actionFailed'), description: e.message }),
   });
 
   return (
     <Section title={t('settings.maintenance')} description={t('settings.maintenance.desc')}>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">
-          <p className="text-xs text-[var(--color-ink-faint)]">Version</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.version')}</p>
           {update.isPending ? (
             <SkeletonText lines={2} />
           ) : update.error ? (
@@ -455,10 +458,10 @@ function EnvSection() {
     onSuccess: async (_r, variables) => {
       setEditing(null);
       await invalidate();
-      toast.push({ tone: 'success', title: `${variables.key} gespeichert` });
+      toast.push({ tone: 'success', title: t('settings.env.savedToast', { key: variables.key }) });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Speichern fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
   });
 
   const remove = useMutation({
@@ -466,10 +469,10 @@ function EnvSection() {
     onSuccess: async (_r, key) => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: `${key} entfernt` });
+      toast.push({ tone: 'success', title: t('settings.env.removedToast', { key }) });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Entfernen fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.removeFailed'), description: e.message }),
   });
 
   const entries = useMemo(() => data ?? [], [data]);
@@ -504,16 +507,24 @@ function EnvSection() {
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <SearchField value={search} onChange={setSearch} label="Variablen durchsuchen" />
+            <SearchField
+              value={search}
+              onChange={setSearch}
+              label={t('settings.env.searchLabel')}
+            />
           </div>
           {search.trim() === '' && (
             <div className="mb-3">
               <FilterChips
-                label="Bereich"
+                label={t('settings.env.scope')}
                 value={category}
                 onChange={setCategory}
                 options={[
-                  { id: 'gesetzt', label: 'Gesetzt', count: entries.filter((e) => e.isSet).length },
+                  {
+                    id: 'gesetzt',
+                    label: t('settings.env.scope.set'),
+                    count: entries.filter((e) => e.isSet).length,
+                  },
                   ...categories.map((id) => ({
                     id,
                     label: ENV_CATEGORY_KEY[id] ? t(ENV_CATEGORY_KEY[id]) : id,
@@ -525,12 +536,12 @@ function EnvSection() {
           )}
 
           <p className="mb-2 text-xs text-[var(--color-ink-faint)]" role="status">
-            {visible.length} Variablen
+            {t('settings.env.count', { count: visible.length })}
           </p>
 
           {visible.length === 0 ? (
             <p className="card p-6 text-center text-sm text-[var(--color-ink-muted)]">
-              Keine Variable passt zu dieser Auswahl.
+              {t('settings.env.none')}
             </p>
           ) : (
             <ul className="card overflow-hidden p-0">
@@ -558,8 +569,8 @@ function EnvSection() {
                     <div className="px-3 pb-2">
                       <ConfirmInline
                         tone="danger"
-                        message={<>{entry.key} entfernen? Der Wert geht verloren.</>}
-                        confirmLabel="Entfernen"
+                        message={t('settings.env.removeConfirm', { key: entry.key })}
+                        confirmLabel={t('common.remove')}
                         pending={remove.isPending && remove.variables === entry.key}
                         onConfirm={() => remove.mutate(entry.key)}
                         onCancel={() => setConfirmDelete(null)}
@@ -572,7 +583,7 @@ function EnvSection() {
           )}
           {visible.length > 100 && (
             <p className="mt-2 text-xs text-[var(--color-ink-faint)]">
-              Nur die ersten 100 werden gezeigt — suche, um weitere zu finden.
+              {t('settings.env.limited')}
             </p>
           )}
         </>
@@ -603,10 +614,10 @@ function ConfigSection() {
       setConfirm(false);
       setEditing(false);
       await queryClient.invalidateQueries({ queryKey: queryKeys.configRaw });
-      toast.push({ tone: 'success', title: 'Konfiguration gespeichert' });
+      toast.push({ tone: 'success', title: t('settings.config.savedToast') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Speichern fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
   });
 
   return (

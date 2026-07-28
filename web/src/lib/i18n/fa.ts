@@ -44,6 +44,7 @@ export const fa: Dict = {
   'common.confirm': 'تأیید',
   'common.all': 'همه',
   'common.close': 'بستن',
+  'common.loading': 'در حال بارگذاری …',
 
   // Page descriptions
   'page.chats.desc':
@@ -116,7 +117,15 @@ export const fa: Dict = {
   'settings.env.none': 'هیچ متغیری با این انتخاب هم‌خوانی ندارد.',
   'settings.env.valueFor': 'مقدار برای {key}',
   'settings.env.removeConfirm': '{key} حذف شود؟ مقدار از دست می‌رود.',
+  'settings.env.searchLabel': 'جستجوی متغیرها',
+  'settings.env.scope': 'حوزه',
   'settings.env.scope.set': 'تنظیم‌شده',
+  'settings.env.savedToast': '{key} ذخیره شد',
+  'settings.env.removedToast': '{key} حذف شد',
+  'settings.curator.pausedToast': 'سرپرست حافظه متوقف شد',
+  'settings.curator.resumedToast': 'سرپرست حافظه ادامه یافت',
+  'settings.curator.startedToast': 'سرپرست حافظه آغاز شد',
+  'settings.config.savedToast': 'پیکربندی ذخیره شد',
   'settings.env.limited': 'فقط ۱۰۰ مورد اول نمایش داده می‌شود — برای یافتن بیشتر جستجو کنید.',
   'settings.config': 'پیکربندی خام (YAML)',
   'settings.config.desc':
@@ -164,6 +173,7 @@ export const fa: Dict = {
   'models.switch': 'تغییر',
   'models.switched': 'مدل به {model} تغییر کرد',
   'models.switchFailed': 'تغییر مدل ناموفق بود',
+  'models.providerOfActive': 'این ارائه‌دهنده، مدل فعال را تأمین می‌کند',
 
   // Tasks (cron)
   'tasks.count': '{total} کار، {active} فعال',
@@ -202,6 +212,7 @@ export const fa: Dict = {
   'skills.enabledToast': '«{name}» فعال شد',
   'skills.disabledToast': '«{name}» غیرفعال شد',
   'skills.usage': '{count}×',
+  'skills.noCategory': 'بدون دسته',
 
   // Knowledge
   'wissen.builtin': 'حافظه داخلی',

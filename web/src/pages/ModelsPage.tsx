@@ -74,7 +74,7 @@ export function ModelsPage() {
                   {provider.isCurrent && (
                     <span
                       className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[0.65rem] text-[var(--color-accent)]"
-                      title="Dieser Anbieter liefert das aktive Modell"
+                      title={t('models.providerOfActive')}
                     >
                       <Check size={11} aria-hidden />
                       {t('common.active')}

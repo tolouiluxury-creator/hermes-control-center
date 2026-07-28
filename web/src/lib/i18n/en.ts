@@ -44,6 +44,7 @@ export const en: Dict = {
   'common.confirm': 'Confirm',
   'common.all': 'All',
   'common.close': 'Close',
+  'common.loading': 'Loading …',
 
   // Page descriptions
   'page.chats.desc': 'Talk to your agent directly — over the running dashboard, no extra server.',
@@ -116,7 +117,15 @@ export const en: Dict = {
   'settings.env.none': 'No variable matches this selection.',
   'settings.env.valueFor': 'Value for {key}',
   'settings.env.removeConfirm': 'Remove {key}? The value is lost.',
+  'settings.env.searchLabel': 'Search variables',
+  'settings.env.scope': 'Area',
   'settings.env.scope.set': 'Set',
+  'settings.env.savedToast': '{key} saved',
+  'settings.env.removedToast': '{key} removed',
+  'settings.curator.pausedToast': 'Curator paused',
+  'settings.curator.resumedToast': 'Curator resumed',
+  'settings.curator.startedToast': 'Curator started',
+  'settings.config.savedToast': 'Configuration saved',
   'settings.env.limited': 'Only the first 100 are shown — search to find more.',
   'settings.config': 'Raw configuration (YAML)',
   'settings.config.desc':
@@ -163,6 +172,7 @@ export const en: Dict = {
   'models.switch': 'Switch',
   'models.switched': 'Switched model to {model}',
   'models.switchFailed': 'Model switch failed',
+  'models.providerOfActive': 'This provider supplies the active model',
 
   // Tasks (cron)
   'tasks.count': '{total} jobs, {active} active',
@@ -200,6 +210,7 @@ export const en: Dict = {
   'skills.enabledToast': '“{name}” enabled',
   'skills.disabledToast': '“{name}” disabled',
   'skills.usage': '{count}×',
+  'skills.noCategory': 'no category',
 
   // Knowledge
   'wissen.builtin': 'Built-in memory',

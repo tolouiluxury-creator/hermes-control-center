@@ -44,6 +44,7 @@ export const de: Dict = {
   'common.confirm': 'Bestätigen',
   'common.all': 'Alle',
   'common.close': 'Schließen',
+  'common.loading': 'Wird geladen …',
 
   // Page descriptions
   'page.chats.desc':
@@ -117,7 +118,15 @@ export const de: Dict = {
   'settings.env.none': 'Keine Variable passt zu dieser Auswahl.',
   'settings.env.valueFor': 'Wert für {key}',
   'settings.env.removeConfirm': '{key} entfernen? Der Wert geht verloren.',
+  'settings.env.searchLabel': 'Variablen durchsuchen',
+  'settings.env.scope': 'Bereich',
   'settings.env.scope.set': 'Gesetzt',
+  'settings.env.savedToast': '{key} gespeichert',
+  'settings.env.removedToast': '{key} entfernt',
+  'settings.curator.pausedToast': 'Kurator pausiert',
+  'settings.curator.resumedToast': 'Kurator fortgesetzt',
+  'settings.curator.startedToast': 'Kurator gestartet',
+  'settings.config.savedToast': 'Konfiguration gespeichert',
   'settings.env.limited': 'Nur die ersten 100 werden gezeigt — suche, um weitere zu finden.',
   'settings.config': 'Rohkonfiguration (YAML)',
   'settings.config.desc':
@@ -165,6 +174,7 @@ export const de: Dict = {
   'models.switch': 'Umstellen',
   'models.switched': 'Modell gewechselt zu {model}',
   'models.switchFailed': 'Modellwechsel fehlgeschlagen',
+  'models.providerOfActive': 'Dieser Anbieter liefert das aktive Modell',
 
   // Tasks (cron)
   'tasks.count': '{total} Jobs, davon {active} aktiv',
@@ -203,6 +213,7 @@ export const de: Dict = {
   'skills.enabledToast': '„{name}" aktiviert',
   'skills.disabledToast': '„{name}" deaktiviert',
   'skills.usage': '{count}×',
+  'skills.noCategory': 'ohne Kategorie',
 
   // Knowledge
   'wissen.builtin': 'Eingebautes Gedächtnis',

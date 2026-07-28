@@ -38,7 +38,7 @@ function buildSteps(snapshot: StatusSnapshot, t: TFunction): SetupStep[] {
           ? [
               '# in ~/.hermes/.env',
               'API_SERVER_ENABLED=true',
-              'API_SERVER_KEY=ein-langer-zufaelliger-string',
+              'API_SERVER_KEY=a-long-random-string',
             ]
           : ['hermes-control-center --init-config'],
     },
