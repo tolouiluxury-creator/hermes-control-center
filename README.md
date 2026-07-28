@@ -21,26 +21,33 @@ browser.
 > Not on npm yet. Until the first release is published, install from a clone — see
 > [Development](#development).
 
-> **Status: usable, incomplete.** The dashboard, the widget grid and six management pages work
-> against a live agent — everything shown below has been verified against Hermes 0.19.0. Chat and
-> write actions are not built yet; see [CHANGELOG.md](./CHANGELOG.md) for the exact line between the
-> two. Nothing here fakes data: a panel with no real source shows an explicit empty state instead of
-> a plausible-looking number.
+> **Status: feature-complete, not yet released.** Every navigation entry is a real page on real
+> data, verified against a live Hermes 0.19.0. Nothing here fakes data: a panel with no real source
+> shows an explicit empty state instead of a plausible-looking number.
 
 ## What you get
 
-- **An arrangeable dashboard.** Eleven widgets — system load with history, agent health, live logs,
-  scheduled jobs, skills, MCP servers, model, token and cost analytics, recent sessions, knowledge.
-  Drag them, resize them, or move them with the keyboard; the layout is saved.
-- **Management pages** for skills (searchable across a hundred or more), models with per-provider
-  authentication state, logs with level filters and a follow toggle, analytics broken down by day,
-  model and tool, scheduled tasks, and MCP servers.
+- **An arrangeable dashboard.** Twelve widgets — system load with history, mission status, agent
+  health, live logs, scheduled jobs, skills, MCP servers, model, token and cost analytics, recent
+  sessions, insights, knowledge. Drag them, resize them, or move them with the keyboard; the layout
+  is saved.
+- **Chat with your agent**, over the dashboard your Hermes is already running. No API server, no
+  gateway restart, and the bot stays online while you use it.
+- **Management pages** for skills (searchable across a hundred or more), MCP servers, models with
+  per-provider authentication state, scheduled tasks, knowledge and memory providers, API and
+  messaging integrations, logs with level filters and a follow toggle, and analytics broken down by
+  day, model and tool — each with the write actions that belong to it, behind a confirmation that
+  spells out the consequence.
+- **Agent presets and workflows.** Named bundles of model, toolset, skills and system prompt, and
+  ordered chains of prompts and scheduled jobs. Both live in the control center's own database.
 - **A prompt library** — your own reusable prompts with `{{placeholders}}`, tags and a use counter.
   Hermes has no such thing, so this lives in the control center's database.
 - **Rule-based insights**, not a chatbot: deterministic checks over your metrics, logs and
   configuration, each shown with the numbers that triggered it. It found a gateway restart loop on
   the first server it ran against.
 - **A command palette** (`Ctrl`/`Cmd` + `K`) that reaches every page, with fuzzy matching.
+- **English, German and Persian**, switchable in Settings, per device. Persian sets the whole
+  interface right-to-left. English is the default.
 - **Light and dark themes**, keyboard shortcuts, and a layout that works on a phone.
 
 ## Requirements
@@ -51,18 +58,18 @@ browser.
 
   | Surface | Start it with | Default | Provides |
   | --- | --- | --- | --- |
-  | Dashboard backend | `hermes dashboard --no-open` | `127.0.0.1:9119` | config, skills, MCP, models, cron, logs, metrics, sessions |
-  | API server | `hermes gateway` (with `API_SERVER_ENABLED=true`) | `127.0.0.1:8642` | chat, runs, jobs |
+  | Dashboard backend | `hermes dashboard --no-open` | `127.0.0.1:9119` | config, skills, MCP, models, cron, logs, metrics, sessions — **and chat** |
+  | API server | `hermes gateway` (with `API_SERVER_ENABLED=true`) | `127.0.0.1:8642` | optional; nothing here needs it |
 
-  **Only the dashboard backend is load-bearing.** It powers the widgets and every page listed above.
-  Running without the API server is a perfectly normal setup: you get a dismissible banner naming
-  what is unavailable, not a wall in front of a working cockpit.
+  **The dashboard backend is the only thing that matters.** It powers every widget, every page, and
+  chat — the control center talks to the same WebSocket the dashboard's own chat UI uses, so no
+  API server has to be enabled and no gateway has to be restarted to talk to your agent.
 
-  Neither is required to *start* the control center — `--doctor` and the setup screen tell you
+  It is not required to *start* the control center either — `--doctor` and the setup screen tell you
   exactly what is missing and which command fixes it.
 
-To enable the API server as well, add this to `~/.hermes/.env` (`%LOCALAPPDATA%\hermes\.env` on
-Windows) and restart the gateway:
+The API server is genuinely optional. If something *outside* this app expects it, enable it by
+adding this to `~/.hermes/.env` (`%LOCALAPPDATA%\hermes\.env` on Windows) and restarting the gateway:
 
 ```
 API_SERVER_ENABLED=true
@@ -95,19 +102,35 @@ to when you explicitly confirm a change in the UI.
 
 ## Remote Hermes, and exposing the control center
 
-If Hermes runs on a server rather than on your laptop, forward both ports over SSH and point the
-control center at localhost:
+If Hermes runs on a server rather than on your laptop, forward the dashboard port over SSH and point
+the control center at localhost:
 
 ```bash
-ssh -N -L 8642:127.0.0.1:8642 -L 9119:127.0.0.1:9119 you@your-server
+ssh -N -L 9119:127.0.0.1:9119 you@your-server
 ```
 
-Then create a local config file and put the server's `API_SERVER_KEY` into it, so no secret ever
-appears on a command line or in shell history:
+Add `-L 8642:127.0.0.1:8642` as well only if you have enabled the optional API server.
+
+Then create a local config file, so no secret ever appears on a command line or in shell history:
 
 ```bash
 npx hermes-control-center --init-config   # writes ~/.hermes-cc/config.json
 ```
+
+### Running it on the server instead
+
+To keep it running next to Hermes rather than tunnelling to it, build it, set a password, and put it
+behind your reverse proxy on its own hostname:
+
+```bash
+npm run build
+node dist/cli.js --set-password
+node dist/cli.js --host 0.0.0.0 --port 7777 --profile YOUR_PROFILE --no-open
+```
+
+Name the profile explicitly if your Hermes uses one — without `--profile` it reads the default
+profile, which is rarely the one you actually run. `--doctor` confirms what it found before you
+commit to a service unit.
 
 ### Password protection
 

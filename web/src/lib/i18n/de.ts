@@ -522,7 +522,7 @@ export const de: Dict = {
   'degraded.apiMissing': 'Der Hermes API-Server antwortet nicht.',
   'degraded.keyMissing': 'Für den Hermes API-Server ist kein Schlüssel hinterlegt.',
   'degraded.consequence':
-    'Chat, Sessions und Agent-Runs bleiben deshalb gesperrt. Alles andere — Metriken, Skills, MCP, Cron, Logs — funktioniert.',
+    'Das Control Center braucht ihn nicht: Chat, Metriken, Skills, MCP, Cron und Logs laufen alle über das Dashboard. Betroffen ist nur, was du außerhalb dieser App mit Hermes machst.',
   'degraded.dismiss': 'Hinweis ausblenden',
 
   // Command palette
@@ -625,7 +625,7 @@ export const de: Dict = {
   'insight.components.body': 'Hermes meldet diese Teile selbst als defekt.',
   'insight.apiServer.title': 'Der API-Server ist nicht aktiv',
   'insight.apiServer.body':
-    'Chat, Sitzungen und Agent-Runs bleiben dadurch gesperrt. Alles andere funktioniert. Aktivieren heißt: API_SERVER_ENABLED und API_SERVER_KEY in ~/.hermes/.env setzen und das Gateway neu starten.',
+    'Nichts im Control Center hängt davon ab — auch der Chat nicht, der über das Dashboard läuft. Nur relevant, wenn außerhalb dieser App etwas den API-Server erwartet. Aktivieren heißt: API_SERVER_ENABLED und API_SERVER_KEY in ~/.hermes/.env setzen und das Gateway neu starten.',
   'insight.logs.titleRepeating': 'Ein Fehler wiederholt sich {repeats}× im Log',
   'insight.logs.titleWidespread': '{errors} Fehlerzeilen im aktuellen Log',
   'insight.logs.bodyRepeating':

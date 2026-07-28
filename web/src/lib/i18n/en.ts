@@ -517,7 +517,7 @@ export const en: Dict = {
   'degraded.apiMissing': 'The Hermes API server is not responding.',
   'degraded.keyMissing': 'No key is stored for the Hermes API server.',
   'degraded.consequence':
-    'Chat, sessions and agent runs stay locked because of it. Everything else — metrics, skills, MCP, cron, logs — works.',
+    'The control center does not need it: chat, metrics, skills, MCP, cron and logs all run over the dashboard. Only Hermes features you use outside this app are affected.',
   'degraded.dismiss': 'Dismiss notice',
 
   // Command palette
@@ -619,7 +619,7 @@ export const en: Dict = {
   'insight.components.body': 'Hermes reports these parts as broken itself.',
   'insight.apiServer.title': 'The API server is not running',
   'insight.apiServer.body':
-    'Chat, sessions and agent runs stay locked because of it. Everything else works. To enable it: set API_SERVER_ENABLED and API_SERVER_KEY in ~/.hermes/.env and restart the gateway.',
+    'Nothing in the control center depends on it — chat included, which runs over the dashboard. Worth knowing only if something outside this app expects the API server. To enable it: set API_SERVER_ENABLED and API_SERVER_KEY in ~/.hermes/.env and restart the gateway.',
   'insight.logs.titleRepeating': 'One error repeats {repeats}× in the log',
   'insight.logs.titleWidespread': '{errors} error lines in the current log',
   'insight.logs.bodyRepeating':
