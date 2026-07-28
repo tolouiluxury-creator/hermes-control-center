@@ -16,6 +16,7 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import type { Agent, AgentInput } from '@/lib/hermesTypes';
 
 const ACCENTS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
@@ -39,6 +40,7 @@ function AgentEditor({
   const [skills, setSkills] = useState((agent?.skills ?? []).join(', '));
   const [systemPrompt, setSystemPrompt] = useState(agent?.systemPrompt ?? '');
   const [accent, setAccent] = useState(agent?.accent ?? ACCENTS[0]);
+  const { t } = useI18n();
 
   const options = useQuery({
     queryKey: queryKeys.models,
@@ -88,12 +90,14 @@ function AgentEditor({
       }}
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">{agent ? 'Preset bearbeiten' : 'Neues Preset'}</h3>
+        <h3 className="text-sm font-semibold">
+          {agent ? t('agents.editTitle') : t('agents.newTitle')}
+        </h3>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-          aria-label="Abbrechen"
+          aria-label={t('common.cancel')}
         >
           <X size={15} aria-hidden />
         </button>
@@ -101,7 +105,7 @@ function AgentEditor({
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className={label}>
-          Name
+          {t('agents.name')}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -112,13 +116,13 @@ function AgentEditor({
           />
         </label>
         <label className={label}>
-          Farbe
+          {t('agents.color')}
           <span className="mt-1 flex gap-1.5">
             {ACCENTS.map((color) => (
               <button
                 key={color}
                 type="button"
-                aria-label={`Farbe ${color}`}
+                aria-label={t('agents.colorAria', { color })}
                 onClick={() => setAccent(color)}
                 className="size-6 rounded-full transition-transform"
                 style={{
@@ -133,19 +137,19 @@ function AgentEditor({
       </div>
 
       <label className={`mt-3 ${label}`}>
-        Beschreibung
+        {t('agents.description')}
         <input
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={2000}
-          placeholder="Wofür ist dieses Preset?"
+          placeholder={t('agents.descPlaceholder')}
           className={field}
         />
       </label>
 
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <label className={label}>
-          Anbieter
+          {t('agents.provider')}
           <select
             value={provider}
             onChange={(e) => {
@@ -154,7 +158,7 @@ function AgentEditor({
             }}
             className={field}
           >
-            <option value="">— keiner —</option>
+            <option value="">{t('agents.none')}</option>
             {(options.data?.providers ?? []).map((p) => (
               <option key={p.slug} value={p.slug}>
                 {p.name}
@@ -163,12 +167,12 @@ function AgentEditor({
           </select>
         </label>
         <label className={label}>
-          Modell
+          {t('agents.model')}
           <input
             value={model}
             onChange={(e) => setModel(e.target.value)}
             list="agent-models"
-            placeholder="z. B. hermes-free"
+            placeholder={t('agents.modelPlaceholder')}
             className={field}
           />
           <datalist id="agent-models">
@@ -180,9 +184,9 @@ function AgentEditor({
       </div>
 
       <label className={`mt-3 ${label}`}>
-        Werkzeugsatz
+        {t('agents.toolset')}
         <select value={toolset} onChange={(e) => setToolset(e.target.value)} className={field}>
-          <option value="">— keiner —</option>
+          <option value="">{t('agents.none')}</option>
           {(toolsets.data ?? []).map((t) => (
             <option key={t.name} value={t.name}>
               {t.label}
@@ -192,12 +196,12 @@ function AgentEditor({
       </label>
 
       <label className={`mt-3 ${label}`}>
-        Skills, durch Komma getrennt
+        {t('agents.skills')}
         <input
           value={skills}
           onChange={(e) => setSkills(e.target.value)}
           list="agent-skills"
-          placeholder="pdf, canvas-design"
+          placeholder={t('agents.skillsPlaceholder')}
           className={`${field} font-mono text-xs`}
         />
         <datalist id="agent-skills">
@@ -208,12 +212,12 @@ function AgentEditor({
       </label>
 
       <label className={`mt-3 ${label}`}>
-        Systemprompt
+        {t('agents.systemPrompt')}
         <textarea
           value={systemPrompt}
           onChange={(e) => setSystemPrompt(e.target.value)}
           rows={5}
-          placeholder="Optionaler Systemprompt für dieses Preset."
+          placeholder={t('agents.systemPromptPlaceholder')}
           className={`${field} resize-y font-mono text-xs`}
         />
       </label>
@@ -225,14 +229,14 @@ function AgentEditor({
           className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
         >
           <Check size={14} aria-hidden />
-          {saving ? 'Speichere …' : 'Speichern'}
+          {saving ? t('common.saving') : t('common.save')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-xl border border-[var(--color-hairline)] px-4 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
         >
-          Abbrechen
+          {t('common.cancel')}
         </button>
       </div>
     </form>
@@ -242,6 +246,7 @@ function AgentEditor({
 export function AgentenPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const [editing, setEditing] = useState<Agent | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmApply, setConfirmApply] = useState<string | null>(null);
@@ -260,10 +265,10 @@ export function AgentenPage() {
     onSuccess: async () => {
       setEditing(undefined);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Preset gespeichert' });
+      toast.push({ tone: 'success', title: t('agents.saved') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Speichern fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
   });
 
   const remove = useMutation({
@@ -271,10 +276,10 @@ export function AgentenPage() {
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
-      toast.push({ tone: 'success', title: 'Preset gelöscht' });
+      toast.push({ tone: 'success', title: t('agents.deleted') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Löschen fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.deleteFailed'), description: e.message }),
   });
 
   const apply = useMutation({
@@ -283,18 +288,18 @@ export function AgentenPage() {
       setConfirmApply(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.model });
       await queryClient.invalidateQueries({ queryKey: queryKeys.models });
-      toast.push({ tone: 'success', title: `Modell aus „${agent.name}" angewendet` });
+      toast.push({ tone: 'success', title: t('agents.applied', { name: agent.name }) });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Anwenden fehlgeschlagen', description: e.message }),
+      toast.push({ tone: 'error', title: t('toast.applyFailed'), description: e.message }),
   });
 
   const agents = data?.agents ?? [];
 
   return (
     <PageShell
-      title="Agenten"
-      description="Benannte Presets: ein Bündel aus Modell, Werkzeugsatz, Skills und Systemprompt, das du speicherst und anwendest. Sie liegen im Control Center, nicht in Hermes."
+      title={t('nav.agenten')}
+      description={t('page.agenten.desc')}
       actions={
         <button
           type="button"
@@ -302,7 +307,7 @@ export function AgentenPage() {
           className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
         >
           <Plus size={14} aria-hidden />
-          Neu
+          {t('common.new')}
         </button>
       }
     >
@@ -331,10 +336,9 @@ export function AgentenPage() {
           >
             <Bot size={22} />
           </span>
-          <p className="mt-4 text-sm font-medium">Noch keine Presets</p>
+          <p className="mt-4 text-sm font-medium">{t('agents.empty.title')}</p>
           <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-ink-muted)]">
-            Lege eine benannte Kombination aus Modell, Werkzeugen und Skills an, um sie später mit
-            einem Klick anzuwenden.
+            {t('agents.empty.desc')}
           </p>
         </div>
       ) : (
@@ -360,7 +364,7 @@ export function AgentenPage() {
                     type="button"
                     onClick={() => setEditing(agent)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-                    aria-label={`${agent.name} bearbeiten`}
+                    aria-label={t('agents.editAria', { name: agent.name })}
                   >
                     <Pencil size={14} aria-hidden />
                   </button>
@@ -368,7 +372,7 @@ export function AgentenPage() {
                     type="button"
                     onClick={() => setConfirmDelete(agent.id)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
-                    aria-label={`${agent.name} löschen`}
+                    aria-label={t('agents.deleteAria', { name: agent.name })}
                   >
                     <Trash2 size={14} aria-hidden />
                   </button>
@@ -378,7 +382,7 @@ export function AgentenPage() {
               <dl className="mt-2 space-y-0.5 text-xs text-[var(--color-ink-muted)]">
                 {agent.model && (
                   <div className="flex gap-2">
-                    <dt className="text-[var(--color-ink-faint)]">Modell</dt>
+                    <dt className="text-[var(--color-ink-faint)]">{t('agents.metaModel')}</dt>
                     <dd className="font-mono">
                       {agent.model}
                       {agent.provider && ` · ${agent.provider}`}
@@ -387,13 +391,13 @@ export function AgentenPage() {
                 )}
                 {agent.toolset && (
                   <div className="flex gap-2">
-                    <dt className="text-[var(--color-ink-faint)]">Werkzeuge</dt>
+                    <dt className="text-[var(--color-ink-faint)]">{t('agents.metaTools')}</dt>
                     <dd>{agent.toolset}</dd>
                   </div>
                 )}
                 {agent.skills.length > 0 && (
                   <div className="flex gap-2">
-                    <dt className="text-[var(--color-ink-faint)]">Skills</dt>
+                    <dt className="text-[var(--color-ink-faint)]">{t('agents.metaSkills')}</dt>
                     <dd>{agent.skills.length}</dd>
                   </div>
                 )}
@@ -407,20 +411,15 @@ export function AgentenPage() {
                   className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-accent)] disabled:opacity-40"
                 >
                   <Wand2 size={13} aria-hidden />
-                  Modell anwenden
+                  {t('agents.applyModel')}
                 </button>
               )}
 
               {confirmApply === agent.id && (
                 <ConfirmInline
                   tone="warn"
-                  message={
-                    <>
-                      Agent auf „{agent.model}" umstellen? Alle neuen Sitzungen nutzen dann dieses
-                      Modell.
-                    </>
-                  }
-                  confirmLabel="Anwenden"
+                  message={t('models.switchConfirm', { model: agent.model ?? '' })}
+                  confirmLabel={t('common.apply')}
                   pending={apply.isPending}
                   onConfirm={() => apply.mutate(agent)}
                   onCancel={() => setConfirmApply(null)}
@@ -430,8 +429,8 @@ export function AgentenPage() {
               {confirmDelete === agent.id && (
                 <ConfirmInline
                   tone="danger"
-                  message={<>„{agent.name}" löschen? Das Preset ist dann weg.</>}
-                  confirmLabel="Löschen"
+                  message={t('agents.deleteConfirm', { name: agent.name })}
+                  confirmLabel={t('common.delete')}
                   pending={remove.isPending && remove.variables === agent.id}
                   onConfirm={() => remove.mutate(agent.id)}
                   onCancel={() => setConfirmDelete(null)}
