@@ -58,7 +58,6 @@ export interface InsightInput {
   host: HostMetrics | null;
   agent: AgentSummary | null;
   readiness: ReadinessCheck[];
-  apiServerReachable: boolean;
   logs: LogLine[] | null;
   skills: SkillSummary | null;
   analytics: AnalyticsSummary | null;
@@ -135,18 +134,6 @@ export function deriveInsights(input: InsightInput): Insight[] {
           ? { label: check.name, value: check.detail }
           : { label: check.name, valueKey: 'insight.error' },
       ),
-    });
-  }
-
-  if (!input.apiServerReachable) {
-    insights.push({
-      id: 'api-server-off',
-      severity: 'info',
-      titleKey: 'insight.apiServer.title',
-      bodyKey: 'insight.apiServer.body',
-      params: {},
-      evidence: [],
-      action: 'hermes gateway restart',
     });
   }
 

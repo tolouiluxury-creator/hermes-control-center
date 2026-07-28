@@ -215,7 +215,6 @@ export async function registerWorkspaceRoutes(
       host: snapshot.host,
       agent: snapshot.agent,
       readiness: snapshot.readiness,
-      apiServerReachable: snapshot.apiServer.reachable,
       logs: logs?.lines ?? null,
       skills,
       analytics,

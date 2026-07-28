@@ -156,7 +156,7 @@ export const de: Dict = {
   'mcp.empty.desc':
     'Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Eingerichtet werden sie in der Hermes-Konfiguration unter mcpServers; hier erscheinen sie dann mit Status und Werkzeugliste.',
   'mcp.tools': '{count} Werkzeuge',
-  'mcp.removeConfirm': '„{name}" entfernen? Der Agent verliert dessen Werkzeuge.',
+  'mcp.removeConfirm': '„{name}“ entfernen? Der Agent verliert dessen Werkzeuge.',
   'mcp.test': 'Test: {name}',
 
   // Models
@@ -170,7 +170,7 @@ export const de: Dict = {
   'models.currentModel': 'Aktives Modell',
   'models.notSignedIn': 'Anbieter nicht angemeldet',
   'models.switchConfirm':
-    'Agent auf „{model}" umstellen? Alle neuen Sitzungen nutzen dann dieses Modell.',
+    'Agent auf „{model}“ umstellen? Alle neuen Sitzungen nutzen dann dieses Modell.',
   'models.switch': 'Umstellen',
   'models.switched': 'Modell gewechselt zu {model}',
   'models.switchFailed': 'Modellwechsel fehlgeschlagen',
@@ -189,7 +189,7 @@ export const de: Dict = {
   'tasks.pauseAria': '{name} pausieren',
   'tasks.resumeAria': '{name} fortsetzen',
   'tasks.deleteAria': '{name} löschen',
-  'tasks.deleteConfirm': '„{name}" endgültig löschen? Das lässt sich nicht rückgängig machen.',
+  'tasks.deleteConfirm': '„{name}“ endgültig löschen? Das lässt sich nicht rückgängig machen.',
   'tasks.paused.toast': 'Job pausiert',
   'tasks.resumed.toast': 'Job fortgesetzt',
   'tasks.triggered.toast': 'Job ausgelöst',
@@ -209,9 +209,9 @@ export const de: Dict = {
   'skills.count': '{visible} von {total} Skills',
   'skills.noMatch': 'Kein Skill passt zu dieser Auswahl.',
   'skills.disableConfirm':
-    '„{name}" deaktivieren? Dein Agent kann diese Fähigkeit dann nicht mehr nutzen.',
-  'skills.enabledToast': '„{name}" aktiviert',
-  'skills.disabledToast': '„{name}" deaktiviert',
+    '„{name}“ deaktivieren? Dein Agent kann diese Fähigkeit dann nicht mehr nutzen.',
+  'skills.enabledToast': '„{name}“ aktiviert',
+  'skills.disabledToast': '„{name}“ deaktiviert',
   'skills.usage': '{count}×',
   'skills.noCategory': 'ohne Kategorie',
 
@@ -229,8 +229,8 @@ export const de: Dict = {
   'wissen.empty.desc':
     'Hermes nutzt derzeit nur seine eingebauten Notizdateien. Ein RAG-Anbieter wird in der Hermes-Konfiguration eingerichtet.',
   'wissen.activateConfirm':
-    '„{name}" als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann hierüber.',
-  'wissen.activatedToast': '„{name}" aktiviert',
+    '„{name}“ als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann hierüber.',
+  'wissen.activatedToast': '„{name}“ aktiviert',
   'wissen.status.ready': 'bereit',
   'wissen.status.unavailable': 'nicht verfügbar',
   'wissen.status.needs_config': 'Einrichtung nötig',
@@ -259,7 +259,7 @@ export const de: Dict = {
   'prompts.empty.noMatchDesc': 'Andere Suchbegriffe probieren.',
   'prompts.used': '{count}× verwendet · ',
   'prompts.changed': 'geändert {time}',
-  'prompts.deleteConfirm': '„{title}" endgültig löschen? Das lässt sich nicht rückgängig machen.',
+  'prompts.deleteConfirm': '„{title}“ endgültig löschen? Das lässt sich nicht rückgängig machen.',
   'prompts.keep': 'Behalten',
   'prompts.copyAria': '{title} kopieren',
   'prompts.editAria': '{title} bearbeiten',
@@ -285,12 +285,12 @@ export const de: Dict = {
   'agents.systemPromptPlaceholder': 'Optionaler Systemprompt für dieses Preset.',
   'agents.saved': 'Preset gespeichert',
   'agents.deleted': 'Preset gelöscht',
-  'agents.applied': 'Modell aus „{name}" angewendet',
+  'agents.applied': 'Modell aus „{name}“ angewendet',
   'agents.empty.title': 'Noch keine Presets',
   'agents.empty.desc':
     'Lege eine benannte Kombination aus Modell, Werkzeugen und Skills an, um sie später mit einem Klick anzuwenden.',
   'agents.applyModel': 'Modell anwenden',
-  'agents.deleteConfirm': '„{name}" löschen? Das Preset ist dann weg.',
+  'agents.deleteConfirm': '„{name}“ löschen? Das Preset ist dann weg.',
   'agents.metaModel': 'Modell',
   'agents.metaTools': 'Werkzeuge',
   'agents.metaSkills': 'Skills',
@@ -316,7 +316,7 @@ export const de: Dict = {
   'workflows.empty.title': 'Noch keine Workflows',
   'workflows.empty.desc':
     'Verkette Prompts und geplante Jobs zu einem benannten Ablauf, den du später mit einem Klick startest.',
-  'workflows.deleteConfirm': '„{name}" löschen? Der Ablauf ist dann weg.',
+  'workflows.deleteConfirm': '„{name}“ löschen? Der Ablauf ist dann weg.',
   'workflows.enableAria': '{name} aktivieren',
   'workflows.disableAria': '{name} deaktivieren',
   'workflows.editAria': '{name} bearbeiten',
@@ -337,14 +337,14 @@ export const de: Dict = {
   'integrations.docs': 'Doku',
   'integrations.test': 'Test: {name}',
   'integrations.enableConfirm':
-    '„{name}" aktivieren? Der Kanal geht online, sobald das Gateway neu lädt.',
+    '„{name}“ aktivieren? Der Kanal geht online, sobald das Gateway neu lädt.',
   'integrations.disableConfirm':
-    '„{name}" deaktivieren? Der Kanal geht offline und empfängt keine Nachrichten mehr.',
-  'integrations.enabledToast': '„{name}" aktiviert',
-  'integrations.disabledToast': '„{name}" deaktiviert',
+    '„{name}“ deaktivieren? Der Kanal geht offline und empfängt keine Nachrichten mehr.',
+  'integrations.enabledToast': '„{name}“ aktiviert',
+  'integrations.disabledToast': '„{name}“ deaktiviert',
   'integrations.empty.title': 'Keine Plattform eingerichtet',
   'integrations.empty.desc':
-    'Über „{all}" siehst du die {count} Plattformen, die dein Hermes anbinden kann. Eingerichtet werden sie in der Hermes-Konfiguration.',
+    'Über „{all}“ siehst du die {count} Plattformen, die dein Hermes anbinden kann. Eingerichtet werden sie in der Hermes-Konfiguration.',
   'integrations.webhooksAndPairing': 'Webhooks & Kopplung',
   'integrations.webhooks': 'Eingehende Webhooks',
   'integrations.webhooks.none':
@@ -401,7 +401,7 @@ export const de: Dict = {
   'dashboard.onDashboard': '{count}× auf dem Dashboard',
   'dashboard.empty.title': 'Keine Widgets auf dem Dashboard',
   'dashboard.empty.desc':
-    'Füge über „{arrange}" Widgets hinzu, oder setze das Layout auf die Standardansicht zurück.',
+    'Füge über „{arrange}“ Widgets hinzu, oder setze das Layout auf die Standardansicht zurück.',
   'dashboard.layoutReset': 'Layout zurückgesetzt',
   'dashboard.resetFailed': 'Zurücksetzen fehlgeschlagen',
   'dashboard.saveFailed': 'Layout konnte nicht gespeichert werden',
@@ -518,19 +518,12 @@ export const de: Dict = {
   'shell.collapseSidebar': 'Sidebar einklappen',
   'shell.expandSidebar': 'Sidebar ausklappen',
 
-  // Degraded banner
-  'degraded.apiMissing': 'Der Hermes API-Server antwortet nicht.',
-  'degraded.keyMissing': 'Für den Hermes API-Server ist kein Schlüssel hinterlegt.',
-  'degraded.consequence':
-    'Das Control Center braucht ihn nicht: Chat, Metriken, Skills, MCP, Cron und Logs laufen alle über das Dashboard. Betroffen ist nur, was du außerhalb dieser App mit Hermes machst.',
-  'degraded.dismiss': 'Hinweis ausblenden',
-
   // Command palette
   'palette.title': 'Befehle und Navigation',
   'palette.placeholder': 'Seite öffnen oder Aktion ausführen …',
   'palette.searchLabel': 'Befehl suchen',
   'palette.results': 'Ergebnisse',
-  'palette.noResults': 'Nichts gefunden für „{query}"',
+  'palette.noResults': 'Nichts gefunden für „{query}“',
   'palette.navigation': 'Navigation',
   'palette.actions': 'Aktionen',
   'palette.switchTheme': 'Erscheinungsbild wechseln',
@@ -620,12 +613,9 @@ export const de: Dict = {
   'insight.gateway.bodyWithReason':
     'Ohne Gateway erreichen dich keine Nachrichten über Telegram, Discord oder die anderen Plattformen. Zuletzt gemeldet: {reason}',
   'insight.gateway.state': 'Zustand',
-  'insight.components.titleOne': 'Komponente „{name}" meldet einen Fehler',
+  'insight.components.titleOne': 'Komponente „{name}“ meldet einen Fehler',
   'insight.components.titleMany': '{count} Komponenten melden Fehler',
   'insight.components.body': 'Hermes meldet diese Teile selbst als defekt.',
-  'insight.apiServer.title': 'Der API-Server ist nicht aktiv',
-  'insight.apiServer.body':
-    'Nichts im Control Center hängt davon ab — auch der Chat nicht, der über das Dashboard läuft. Nur relevant, wenn außerhalb dieser App etwas den API-Server erwartet. Aktivieren heißt: API_SERVER_ENABLED und API_SERVER_KEY in ~/.hermes/.env setzen und das Gateway neu starten.',
   'insight.logs.titleRepeating': 'Ein Fehler wiederholt sich {repeats}× im Log',
   'insight.logs.titleWidespread': '{errors} Fehlerzeilen im aktuellen Log',
   'insight.logs.bodyRepeating':

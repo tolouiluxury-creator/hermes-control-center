@@ -517,13 +517,6 @@ export const fa: Dict = {
   'shell.collapseSidebar': 'جمع کردن نوار کناری',
   'shell.expandSidebar': 'باز کردن نوار کناری',
 
-  // Degraded banner
-  'degraded.apiMissing': 'سرور API هرمس پاسخ نمی‌دهد.',
-  'degraded.keyMissing': 'برای سرور API هرمس هیچ کلیدی ذخیره نشده است.',
-  'degraded.consequence':
-    'کنترل‌سنتر به آن نیازی ندارد: گفتگو، سنجه‌ها، مهارت‌ها، MCP، کران و گزارش‌ها همگی از طریق داشبورد کار می‌کنند. تنها چیزی که تأثیر می‌گیرد، کارهایی است که بیرون از این برنامه با هرمس انجام می‌دهید.',
-  'degraded.dismiss': 'بستن این پیام',
-
   // Command palette
   'palette.title': 'فرمان‌ها و ناوبری',
   'palette.placeholder': 'یک صفحه باز کنید یا کاری را اجرا کنید …',
@@ -622,9 +615,6 @@ export const fa: Dict = {
   'insight.components.titleOne': 'مؤلفه «{name}» خطا گزارش می‌کند',
   'insight.components.titleMany': '{count} مؤلفه خطا گزارش می‌کنند',
   'insight.components.body': 'هرمس خودش این بخش‌ها را معیوب گزارش می‌کند.',
-  'insight.apiServer.title': 'سرور API فعال نیست',
-  'insight.apiServer.body':
-    'هیچ بخشی از کنترل‌سنتر به آن وابسته نیست — از جمله گفتگو، که از طریق داشبورد کار می‌کند. تنها زمانی مهم است که چیزی بیرون از این برنامه سرور API را انتظار داشته باشد. برای فعال‌سازی: API_SERVER_ENABLED و API_SERVER_KEY را در ~/.hermes/.env تنظیم کنید و درگاه را دوباره راه‌اندازی کنید.',
   'insight.logs.titleRepeating': 'یک خطا {repeats}× در گزارش تکرار می‌شود',
   'insight.logs.titleWidespread': '{errors} خط خطا در گزارش کنونی',
   'insight.logs.bodyRepeating':

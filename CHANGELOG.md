@@ -57,8 +57,9 @@ These are the details that took the most care, and the ones most likely to be wr
 - Byte counts are only rendered when the unit is unambiguous; an unlabelled small number is dropped
   rather than guessed at.
 - Log lines are only marked as errors when a level word appears near the start of the line.
-- A missing API server is a note, not a wall. Nothing in the control center depends on it — chat
-  included — because everything runs over the dashboard backend.
+- A missing API server is not reported at all in the interface. Nothing in the control center
+  depends on it — chat included — because everything runs over the dashboard backend, so a warning
+  would be a false alarm. `--doctor` still lists it, which is where a diagnostic belongs.
 - The interface language is a per-device browser preference, so the server never picks the wording.
   Rule-based insights travel as a key plus the values that triggered them, and the browser phrases
   them; numbers are grouped in the reader's locale rather than pre-formatted on the server.

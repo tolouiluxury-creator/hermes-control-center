@@ -5,7 +5,6 @@ const base: InsightInput = {
   host: null,
   agent: null,
   readiness: [],
-  apiServerReachable: true,
   logs: null,
   skills: null,
   analytics: null,
@@ -160,11 +159,6 @@ describe('deriveInsights', () => {
     });
   });
 
-  it('mentions the API server only when it is actually missing', () => {
-    expect(ids({ apiServerReachable: true })).not.toContain('api-server-off');
-    expect(ids({ apiServerReachable: false })).toContain('api-server-off');
-  });
-
   it('flags a library of skills that has never been used', () => {
     const unused = {
       total: 118,
@@ -240,8 +234,13 @@ describe('deriveInsights', () => {
   it('puts the most severe first', () => {
     const result = deriveInsights({
       ...base,
-      apiServerReachable: false,
       host: host({ diskPercent: 95 }),
+      skills: {
+        total: 118,
+        enabled: 118,
+        categories: [],
+        top: [{ name: 'pdf', usage: 0, enabled: true, category: null }],
+      },
       cron: [{ id: '1', name: 'x', schedule: null, paused: true, nextRun: null, lastRun: null }],
     });
 

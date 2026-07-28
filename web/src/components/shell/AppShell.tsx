@@ -3,7 +3,6 @@ import { Outlet, useLocation } from 'react-router';
 import { X } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { DegradedBanner } from './DegradedBanner';
 import { CommandPalette } from '@/components/CommandPalette';
 import { SkeletonText } from '@/components/Skeleton';
 import { useControlCenterStream } from '@/lib/stream';
@@ -124,8 +123,6 @@ export function AppShell() {
           onOpenSidebar={() => setDrawerOpen(true)}
           onOpenPalette={() => setPaletteOpen(true)}
         />
-
-        <DegradedBanner />
 
         <main id="hauptinhalt" className="min-h-0 flex-1 overflow-y-auto" tabIndex={-1}>
           <Suspense
