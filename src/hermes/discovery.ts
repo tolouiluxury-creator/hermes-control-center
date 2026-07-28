@@ -233,15 +233,20 @@ export function discoverHermes(
     (typeof profileApi.enabled === 'boolean' ? profileApi.enabled : null) ??
     (typeof rootApi.enabled === 'boolean' ? rootApi.enabled : null);
 
+  /*
+   * Both of these describe the optional API server, which the control center
+   * never calls — chat runs over the dashboard. They stay as notes so someone
+   * who does want it knows where to look, but they must not read as faults.
+   */
   if (enabled === false) {
     warnings.push(
-      'Hermes reports API_SERVER_ENABLED=false. Chat, sessions and runs stay unavailable until it is enabled.',
+      'Hermes reports API_SERVER_ENABLED=false. The optional API server is off; nothing here needs it.',
     );
   }
   if (!key) {
     warnings.push(
-      `No API_SERVER_KEY found. Put it in ${loadedConfig.path} as "apiKey", or in ~/.hermes/.env, ` +
-        'to reach the Hermes API server.',
+      `No API_SERVER_KEY found. Only needed for the optional API server — put it in ${loadedConfig.path} ` +
+        'as "apiKey", or in ~/.hermes/.env, if you want to reach it.',
     );
   }
 

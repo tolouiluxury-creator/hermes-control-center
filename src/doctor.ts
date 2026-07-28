@@ -13,11 +13,19 @@ export interface ProbeResult {
   status: number | null;
   detail: string;
   remedy: string[];
+  /** False for surfaces the control center works fine without. */
+  required: boolean;
 }
 
 const PROBE_TIMEOUT_MS = 2500;
 
+/*
+ * Optional, and genuinely so: nothing in the control center calls the API
+ * server. Chat included — that runs over the dashboard's own WebSocket. These
+ * lines are for someone who wants it for something else, not a fix-this list.
+ */
 const API_REMEDY = [
+  'Optional — nothing in the control center needs it. To enable it anyway:',
   'Add to ~/.hermes/.env:  API_SERVER_ENABLED=true',
   'Add to ~/.hermes/.env:  API_SERVER_KEY=<a-long-random-string>',
   'Then start it:          hermes gateway',
@@ -28,7 +36,12 @@ const DASHBOARD_REMEDY = [
   'Then start it:          hermes dashboard --no-open',
 ];
 
-async function probe(name: string, url: string, remedy: string[]): Promise<ProbeResult> {
+async function probe(
+  name: string,
+  url: string,
+  remedy: string[],
+  required: boolean,
+): Promise<ProbeResult> {
   try {
     const response = await fetch(url, {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS),
@@ -41,20 +54,30 @@ async function probe(name: string, url: string, remedy: string[]): Promise<Probe
       status: response.status,
       detail: response.ok ? 'responding' : `HTTP ${response.status}`,
       remedy: response.ok ? [] : remedy,
+      required,
     };
   } catch (error) {
-    return { name, url, reachable: false, status: null, detail: describeError(error), remedy };
+    return {
+      name,
+      url,
+      reachable: false,
+      status: null,
+      detail: describeError(error),
+      remedy,
+      required,
+    };
   }
 }
 
 export async function probeUpstreams(connection: HermesConnection): Promise<ProbeResult[]> {
   return Promise.all([
-    probe('Hermes API server', `${connection.apiServer.url}${API_HEALTH_PATH}`, API_REMEDY),
     probe(
       'Hermes dashboard',
       `${connection.dashboard.url}${DASHBOARD_STATUS_PATH}`,
       DASHBOARD_REMEDY,
+      true,
     ),
+    probe('Hermes API server', `${connection.apiServer.url}${API_HEALTH_PATH}`, API_REMEDY, false),
   ]);
 }
 
@@ -112,10 +135,11 @@ export async function runDoctor(options: CliOptions): Promise<number> {
     `  ${pc.dim('Dashboard URL')}    ${connection.dashboard.url} ${pc.dim(`(${describeSource(connection.dashboard.source)})`)}`,
   );
   log.plain(
+    // Not red when absent: both belong to the optional API server.
     `  ${pc.dim('API key')}          ${
       connection.apiServer.key
         ? pc.green(`present ${pc.dim(`(${describeSource(connection.apiServer.keySource)})`)}`)
-        : pc.red('missing')
+        : pc.dim('not set')
     }`,
   );
   log.plain(
@@ -124,7 +148,7 @@ export async function runDoctor(options: CliOptions): Promise<number> {
         ? pc.dim('unknown')
         : connection.apiServer.enabled
           ? pc.green('true')
-          : pc.red('false')
+          : pc.dim('false')
     }`,
   );
   log.plain();
@@ -138,36 +162,28 @@ export async function runDoctor(options: CliOptions): Promise<number> {
   for (const result of results) {
     if (result.reachable) {
       log.ok(`${result.name} — ${result.detail}  ${pc.dim(result.url)}`);
-    } else {
+    } else if (result.required) {
       log.error(`${result.name} — ${result.detail}  ${pc.dim(result.url)}`);
+      for (const line of result.remedy) log.plain(`     ${pc.dim(line)}`);
+    } else {
+      // Not a failure: reporting an optional surface with a red cross trains
+      // people to ignore the report, and this one is unreachable by default.
+      log.info(`${result.name} — ${result.detail} ${pc.dim('(optional)')}  ${pc.dim(result.url)}`);
       for (const line of result.remedy) log.plain(`     ${pc.dim(line)}`);
     }
   }
   log.plain();
 
-  const failures = results.filter((result) => !result.reachable);
-  const keyMissing = !connection.apiServer.key;
+  const failures = results.filter((result) => !result.reachable && result.required);
 
-  if (failures.length === 0 && !keyMissing) {
-    log.ok('Hermes is fully reachable.');
+  if (failures.length === 0) {
+    log.ok('Everything the control center needs is reachable.');
     log.plain();
     return 0;
   }
 
-  if (keyMissing) {
-    log.warn('No API key found — chat, sessions and runs stay locked.');
-    log.plain(`     ${pc.dim(`Set "apiKey" in ${connection.configPath}`)}`);
-    log.plain(`     ${pc.dim('to the value of API_SERVER_KEY from your Hermes installation.')}`);
-    log.plain(`     ${pc.dim('Run --init-config first if that file does not exist yet.')}`);
-    log.plain();
-  }
-
-  if (keyMissing && failures.length === 0) {
-    return 1;
-  }
-
   log.warn(
-    `${failures.length} of ${results.length} Hermes surfaces unreachable. ` +
+    `${failures.length} required Hermes surface${failures.length === 1 ? '' : 's'} unreachable. ` +
       'The control center still starts and shows a setup screen.',
   );
   log.plain();
