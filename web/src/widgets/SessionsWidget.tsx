@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSessions, queryKeys } from '@/lib/api';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 const LIMIT = 12;
@@ -15,6 +16,7 @@ const SOURCE_COLOR: Record<string, string> = {
 };
 
 export function SessionsWidget() {
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.sessions(LIMIT),
     queryFn: () => getSessions(LIMIT),
@@ -29,12 +31,12 @@ export function SessionsWidget() {
       isPending={isPending}
       error={error}
       isEmpty={sessions.length === 0}
-      emptyMessage="Noch keine Sitzungen"
+      emptyMessage={t('sessionsWidget.empty')}
     >
       <div className="flex h-full flex-col gap-2">
         {data?.total !== null && data?.total !== undefined && (
           <p className="text-[0.7rem] text-[var(--color-ink-faint)]">
-            {data.total} Sitzungen insgesamt
+            {t('sessionsWidget.total', { count: data.total })}
           </p>
         )}
 
@@ -59,7 +61,7 @@ export function SessionsWidget() {
                * for anyone who needs to look one up.
                */}
               <span className="min-w-0 flex-1 truncate" title={session.id}>
-                {session.title ?? formatDateTime(session.startedAt) ?? session.id}
+                {session.title ?? formatDateTime(session.startedAt, lang) ?? session.id}
               </span>
 
               {session.messages !== null && (
@@ -69,7 +71,7 @@ export function SessionsWidget() {
               )}
 
               <span className="w-16 shrink-0 text-right text-[var(--color-ink-faint)]">
-                {session.startedAt ? formatRelativeTime(session.startedAt) : '—'}
+                {session.startedAt ? formatRelativeTime(session.startedAt, lang) : '—'}
               </span>
             </li>
           ))}

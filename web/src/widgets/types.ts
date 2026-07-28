@@ -9,10 +9,11 @@ export interface WidgetSize {
 export interface WidgetDefinition {
   /** Stable across versions: it is written into the saved layout. */
   id: string;
-  title: string;
-  description: string;
+  /** Dictionary keys — the definitions live outside React and cannot call t(). */
+  titleKey: string;
+  descriptionKey: string;
   icon: LucideIcon;
-  category: 'System' | 'Agent' | 'Betrieb' | 'Wissen';
+  category: 'system' | 'agent' | 'ops' | 'knowledge';
   defaultSize: WidgetSize;
   minSize: WidgetSize;
   component: ComponentType;

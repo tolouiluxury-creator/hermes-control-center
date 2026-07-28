@@ -128,7 +128,7 @@ export function TasksPage() {
 
           <ul className="space-y-2">
             {jobs.map((job: CronJobSummary) => {
-              const described = describeCron(job.schedule);
+              const described = describeCron(job.schedule, t);
               const disabled = busy(job.id);
 
               return (

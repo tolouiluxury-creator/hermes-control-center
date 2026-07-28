@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAnalytics, queryKeys } from '@/lib/api';
 import { formatCompact, formatCost } from '@/lib/format';
 import { Sparkline } from '@/components/Sparkline';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -15,6 +16,7 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 }
 
 export function AnalyticsWidget() {
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.analytics,
     queryFn: getAnalytics,
@@ -29,19 +31,31 @@ export function AnalyticsWidget() {
       isPending={isPending}
       error={error}
       isEmpty={data !== undefined && daily.length === 0 && !data.totals.apiCalls}
-      emptyMessage="Noch keine Nutzungsdaten"
+      emptyMessage={t('analyticsWidget.empty')}
     >
       {data && (
         <div className="flex h-full flex-col gap-3">
           <div className="grid grid-cols-3 gap-3">
-            <Stat label="Eingabe" value={formatCompact(data.totals.inputTokens)} hint="Token" />
-            <Stat label="Ausgabe" value={formatCompact(data.totals.outputTokens)} hint="Token" />
             <Stat
-              label="Kosten"
-              value={formatCost(data.totals.cost)}
-              // Saying "geschätzt" matters: most providers here only estimate,
+              label={t('analyticsWidget.input')}
+              value={formatCompact(data.totals.inputTokens, lang)}
+              hint={t('analyticsWidget.tokens')}
+            />
+            <Stat
+              label={t('analyticsWidget.output')}
+              value={formatCompact(data.totals.outputTokens, lang)}
+              hint={t('analyticsWidget.tokens')}
+            />
+            <Stat
+              label={t('analytics.cost')}
+              value={formatCost(data.totals.cost, lang)}
+              // Saying "estimated" matters: most providers here only estimate,
               // and a number presented as fact would be trusted as one.
-              hint={data.totals.costIsEstimate ? 'geschätzt' : 'abgerechnet'}
+              hint={t(
+                data.totals.costIsEstimate
+                  ? 'analyticsWidget.estimated'
+                  : 'analyticsWidget.billedShort',
+              )}
             />
           </div>
 
@@ -50,12 +64,13 @@ export function AnalyticsWidget() {
               <Sparkline
                 values={tokensPerDay}
                 className="h-10 w-full"
-                label="Tokenverbrauch pro Tag"
+                label={t('analytics.tokensPerDay')}
               />
               <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                {daily.length} Tage
-                {data.periodDays ? ` von ${data.periodDays}` : ''} · {data.totals.apiCalls ?? 0}{' '}
-                API-Aufrufe
+                {data.periodDays
+                  ? t('analyticsWidget.daysOf', { days: daily.length, total: data.periodDays })
+                  : t('analyticsWidget.days', { days: daily.length })}{' '}
+                · {t('analyticsWidget.apiCalls', { count: data.totals.apiCalls ?? 0 })}
               </p>
             </div>
           )}
@@ -63,7 +78,7 @@ export function AnalyticsWidget() {
           {data.topTools.length > 0 && (
             <div className="min-h-0 flex-1 overflow-y-auto">
               <p className="mb-1 text-[0.7rem] text-[var(--color-ink-faint)]">
-                Meistgenutzte Tools
+                {t('analytics.topTools')}
               </p>
               <ul className="space-y-0.5">
                 {data.topTools.slice(0, 5).map((tool) => (

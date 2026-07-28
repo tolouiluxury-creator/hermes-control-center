@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { WidgetGrid } from '@/components/WidgetGrid';
 import { WidgetPicker } from '@/components/WidgetPicker';
 import { useToast } from '@/components/Toast';
+import { useI18n } from '@/lib/i18n';
 import { DEFAULT_LAYOUT, nextInstanceId, sanitizeLayout } from '@/widgets/registry';
 import type { DashboardLayout, WidgetDefinition } from '@/widgets/types';
 import type { MoveDirection } from '@/widgets/WidgetFrame';
@@ -24,6 +25,7 @@ const SAVE_DEBOUNCE_MS = 700;
 export function DashboardPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const { data: snapshot, isPending: statusPending, isFetching } = useStatus();
 
   const stored = useQuery({
@@ -48,8 +50,11 @@ export function DashboardPage() {
       queueMicrotask(() =>
         toast.push({
           tone: 'warning',
-          title: 'Unbekannte Widgets entfernt',
-          description: `Dein gespeichertes Layout nennt ${dropped.length} Widget(s), die diese Version nicht kennt: ${[...new Set(dropped)].join(', ')}.`,
+          title: t('dashboard.droppedWidgets'),
+          description: t('dashboard.droppedWidgets.desc', {
+            count: dropped.length,
+            names: [...new Set(dropped)].join(', '),
+          }),
         }),
       );
     }
@@ -60,7 +65,7 @@ export function DashboardPage() {
     onError: (error: Error) => {
       toast.push({
         tone: 'error',
-        title: 'Layout konnte nicht gespeichert werden',
+        title: t('dashboard.saveFailed'),
         description: error.message,
       });
     },
@@ -152,15 +157,15 @@ export function DashboardPage() {
         setLayout(DEFAULT_LAYOUT);
         return queryClient.invalidateQueries({ queryKey: queryKeys.dashboardLayout });
       })
-      .then(() => toast.push({ tone: 'success', title: 'Layout zurückgesetzt' }))
+      .then(() => toast.push({ tone: 'success', title: t('dashboard.layoutReset') }))
       .catch((error: Error) =>
         toast.push({
           tone: 'error',
-          title: 'Zurücksetzen fehlgeschlagen',
+          title: t('dashboard.resetFailed'),
           description: error.message,
         }),
       );
-  }, [queryClient, toast]);
+  }, [queryClient, toast, t]);
 
   if (statusPending || stored.isPending) {
     return (
@@ -202,7 +207,7 @@ export function DashboardPage() {
           }`}
         >
           {editing ? <Check size={14} aria-hidden /> : <LayoutGrid size={14} aria-hidden />}
-          {editing ? 'Fertig' : 'Anordnen'}
+          {editing ? t('dashboard.done') : t('dashboard.arrange')}
         </button>
 
         {editing && (
@@ -213,7 +218,7 @@ export function DashboardPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-hairline)] px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
             >
               <Plus size={14} aria-hidden />
-              Widget hinzufügen
+              {t('dashboard.addWidget')}
             </button>
 
             <button
@@ -222,12 +227,11 @@ export function DashboardPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-hairline)] px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
             >
               <RotateCcw size={14} aria-hidden />
-              Zurücksetzen
+              {t('dashboard.reset')}
             </button>
 
             <p className="ml-auto text-xs text-[var(--color-ink-faint)]" role="status">
-              Ziehen am Griff verschiebt, die Ecke unten rechts ändert die Größe. Ohne Maus: Menü im
-              Widget-Kopf.
+              {t('dashboard.arrangeHint')}
             </p>
           </>
         )}
@@ -235,10 +239,9 @@ export function DashboardPage() {
 
       {layout.widgets.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-sm font-medium">Keine Widgets auf dem Dashboard</p>
+          <p className="text-sm font-medium">{t('dashboard.empty.title')}</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
-            Füge über „Anordnen“ Widgets hinzu, oder setze das Layout auf die Standardansicht
-            zurück.
+            {t('dashboard.empty.desc', { arrange: t('dashboard.arrange') })}
           </p>
         </div>
       ) : (

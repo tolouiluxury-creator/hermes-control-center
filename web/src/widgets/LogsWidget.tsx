@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, Search } from 'lucide-react';
 import { getLogs, queryKeys } from '@/lib/api';
 import type { LogLevel } from '@/lib/hermesTypes';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 const LINE_COUNT = 200;
@@ -15,15 +16,16 @@ const LEVEL_COLOR: Record<LogLevel, string> = {
   plain: 'var(--color-ink-muted)',
 };
 
-const FILTERS: { id: 'all' | LogLevel; label: string }[] = [
-  { id: 'all', label: 'Alle' },
-  { id: 'error', label: 'Fehler' },
-  { id: 'warn', label: 'Warnungen' },
-  { id: 'info', label: 'Info' },
+const FILTERS: { id: 'all' | LogLevel; labelKey: string }[] = [
+  { id: 'all', labelKey: 'common.all' },
+  { id: 'error', labelKey: 'logs.level.error' },
+  { id: 'warn', labelKey: 'logs.level.warn' },
+  { id: 'info', labelKey: 'logs.level.info' },
 ];
 
 /** Live console. Filter, search, highlighted errors and a download. */
 export function LogsWidget() {
+  const { t } = useI18n();
   const [filter, setFilter] = useState<'all' | LogLevel>('all');
   const [search, setSearch] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
@@ -67,7 +69,7 @@ export function LogsWidget() {
                 : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]'
             }`}
           >
-            {entry.label}
+            {t(entry.labelKey)}
           </button>
         ))}
 
@@ -76,9 +78,9 @@ export function LogsWidget() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Suchen"
+            placeholder={t('common.search')}
             className="w-full bg-transparent text-[0.7rem] outline-none placeholder:text-[var(--color-ink-faint)]"
-            aria-label="Logzeilen durchsuchen"
+            aria-label={t('logs.searchLabel')}
           />
         </label>
 
@@ -87,8 +89,8 @@ export function LogsWidget() {
           onClick={download}
           disabled={!data || data.lines.length === 0}
           className="rounded-lg p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
-          aria-label="Logdatei herunterladen"
-          title="Herunterladen"
+          aria-label={t('logsWidget.downloadAria')}
+          title={t('logs.download')}
         >
           <Download size={13} aria-hidden />
         </button>
@@ -99,7 +101,7 @@ export function LogsWidget() {
         error={error}
         isEmpty={lines.length === 0}
         emptyMessage={
-          data && data.lines.length > 0 ? 'Keine Zeile passt zum Filter' : 'Noch keine Logzeilen'
+          data && data.lines.length > 0 ? t('logsWidget.noMatch') : t('logsWidget.empty')
         }
       >
         <div
@@ -108,7 +110,7 @@ export function LogsWidget() {
           // A log is a live region for a sighted reader, but announcing every
           // line would flood a screen reader; it stays readable on demand.
           role="log"
-          aria-label={`Logdatei ${data?.file ?? ''}`}
+          aria-label={t('logs.file', { file: data?.file ?? '' })}
         >
           {lines.map((line, index) => (
             <div

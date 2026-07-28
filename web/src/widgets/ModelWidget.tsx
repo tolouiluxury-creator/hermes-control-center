@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { getModelInfo, queryKeys } from '@/lib/api';
 import { formatCompact } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 export function ModelWidget() {
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.model,
     queryFn: getModelInfo,
@@ -22,14 +24,20 @@ export function ModelWidget() {
               {data.model ?? '—'}
             </p>
             {data.provider && (
-              <p className="text-xs text-[var(--color-ink-faint)]">über {data.provider}</p>
+              <p className="text-xs text-[var(--color-ink-faint)]">
+                {t('modelWidget.via', { name: data.provider })}
+              </p>
             )}
           </div>
 
           {data.contextLength !== null && (
             <div className="flex items-baseline justify-between gap-2 border-t border-[var(--color-hairline)] pt-2">
-              <span className="text-xs text-[var(--color-ink-faint)]">Kontextfenster</span>
-              <span className="font-mono text-sm">{formatCompact(data.contextLength)} Token</span>
+              <span className="text-xs text-[var(--color-ink-faint)]">
+                {t('modelWidget.contextWindow')}
+              </span>
+              <span className="font-mono text-sm">
+                {t('modelWidget.tokens', { count: formatCompact(data.contextLength, lang) })}
+              </span>
             </div>
           )}
 

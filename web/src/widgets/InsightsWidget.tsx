@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Info, ShieldAlert } from 'lucide-react';
 import { getInsights, queryKeys } from '@/lib/api';
 import type { InsightSeverity } from '@/lib/hermesTypes';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 const SEVERITY: Record<InsightSeverity, { icon: typeof Info; color: string }> = {
@@ -17,6 +18,7 @@ const SEVERITY: Record<InsightSeverity, { icon: typeof Info; color: string }> = 
  * of thresholds trains people to distrust everything else on the page.
  */
 export function InsightsWidget() {
+  const { t } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.insights,
     queryFn: getInsights,
@@ -31,7 +33,7 @@ export function InsightsWidget() {
       isPending={isPending}
       error={error}
       isEmpty={insights.length === 0}
-      emptyMessage="Nichts zu beanstanden"
+      emptyMessage={t('insightsWidget.empty')}
     >
       <div className="flex h-full flex-col">
         <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -69,7 +71,7 @@ export function InsightsWidget() {
         </ul>
 
         <p className="mt-2 shrink-0 border-t border-[var(--color-hairline)] pt-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-          Regelbasierte Prüfungen deiner Messwerte — kein Sprachmodell beteiligt.
+          {t('insightsWidget.footer')}
         </p>
       </div>
     </WidgetState>

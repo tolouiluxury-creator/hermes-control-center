@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getMetricSeries, queryKeys } from '@/lib/api';
 import { formatBytes, formatPercent } from '@/lib/format';
 import { useStatus } from '@/lib/useStatus';
+import { useI18n } from '@/lib/i18n';
 import { Sparkline } from '@/components/Sparkline';
 
 /** Colour follows severity, never decoration: green stays green until it matters. */
@@ -23,6 +24,7 @@ function Gauge({
   detail: string | null;
   metric: string;
 }) {
+  const { t } = useI18n();
   const { data } = useQuery({
     queryKey: queryKeys.metricSeries(metric),
     queryFn: () => getMetricSeries(metric),
@@ -49,7 +51,7 @@ function Gauge({
         aria-valuenow={percent ?? undefined}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={`${label} Auslastung`}
+        aria-label={t('systemWidget.utilisation', { name: label })}
       >
         <div
           className="h-full rounded-full transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-ui)]"
@@ -69,6 +71,7 @@ function Gauge({
 }
 
 export function SystemPerformanceWidget() {
+  const { t } = useI18n();
   const { data: snapshot } = useStatus();
   const host = snapshot?.host;
 
@@ -77,7 +80,7 @@ export function SystemPerformanceWidget() {
       <Gauge
         label="CPU"
         percent={host?.cpuPercent}
-        detail={host?.cpuCount ? `${host.cpuCount} Kerne` : null}
+        detail={host?.cpuCount ? t('systemWidget.cores', { count: host.cpuCount }) : null}
         metric="cpu"
       />
       <Gauge

@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMemory, queryKeys } from '@/lib/api';
 import { formatCompact } from '@/lib/format';
+import { useI18n, type TFunction } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
-const STATUS_LABEL: Record<string, string> = {
-  ready: 'bereit',
-  unavailable: 'nicht verfügbar',
-  needs_config: 'Einrichtung nötig',
-  error: 'Fehler',
+const STATUS_KEY: Record<string, string> = {
+  ready: 'wissen.status.ready',
+  unavailable: 'wissen.status.unavailable',
+  needs_config: 'wissen.status.needs_config',
+  error: 'wissen.status.error',
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -17,8 +18,15 @@ const STATUS_COLOR: Record<string, string> = {
   error: 'var(--color-danger)',
 };
 
+/** A status Hermes does not name stays verbatim rather than being dropped. */
+function statusLabel(t: TFunction, status: string | null): string {
+  const key = status ? STATUS_KEY[status] : undefined;
+  return key ? t(key) : (status ?? '');
+}
+
 /** What the agent remembers: its memory provider and the built-in note files. */
 export function KnowledgeWidget() {
+  const { t, lang } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.memory,
     queryFn: getMemory,
@@ -33,9 +41,11 @@ export function KnowledgeWidget() {
             <div className="flex gap-4">
               {data.files.map((file) => (
                 <div key={file.name} className="min-w-0">
-                  <p className="font-mono text-xl tracking-tight">{formatCompact(file.entries)}</p>
+                  <p className="font-mono text-xl tracking-tight">
+                    {formatCompact(file.entries, lang)}
+                  </p>
                   <p className="truncate text-[0.7rem] text-[var(--color-ink-faint)]">
-                    {file.name === 'memory' ? 'Erinnerungen' : file.name}
+                    {file.name === 'memory' ? t('wissen.files.memory') : file.name}
                   </p>
                 </div>
               ))}
@@ -44,13 +54,15 @@ export function KnowledgeWidget() {
 
           <div className="min-h-0 flex-1 overflow-y-auto border-t border-[var(--color-hairline)] pt-2">
             <p className="mb-1 text-[0.7rem] text-[var(--color-ink-faint)]">
-              Speicher-Anbieter
-              {data.active ? ` · aktiv: ${data.active}` : ' · keiner aktiv'}
+              {t('wissen.providers')}
+              {data.active
+                ? ` · ${t('wissen.activeProvider', { name: data.active })}`
+                : ` · ${t('wissen.noneActive')}`}
             </p>
 
             {data.configured.length === 0 ? (
               <p className="text-xs text-[var(--color-ink-faint)]">
-                Keiner eingerichtet — Hermes nutzt seine eingebauten Dateien.
+                {t('knowledgeWidget.noneConfigured')}
               </p>
             ) : (
               <ul className="space-y-0.5">
@@ -65,7 +77,7 @@ export function KnowledgeWidget() {
                     />
                     <span className="truncate">{provider.name}</span>
                     <span className="ml-auto shrink-0 text-[0.65rem] text-[var(--color-ink-faint)]">
-                      {STATUS_LABEL[provider.status ?? ''] ?? provider.status ?? ''}
+                      {statusLabel(t, provider.status)}
                     </span>
                   </li>
                 ))}

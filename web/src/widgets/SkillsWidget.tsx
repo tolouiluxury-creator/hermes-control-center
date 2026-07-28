@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { getSkills, queryKeys } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 export function SkillsWidget() {
+  const { t } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.skills,
     queryFn: getSkills,
@@ -16,8 +18,9 @@ export function SkillsWidget() {
           <div className="flex items-baseline gap-2">
             <span className="font-mono text-2xl tracking-tight">{data.total}</span>
             <span className="text-xs text-[var(--color-ink-faint)]">
-              Skills installiert
-              {data.enabled !== data.total && ` · ${data.enabled} aktiv`}
+              {t('skillsWidget.installed')}
+              {data.enabled !== data.total &&
+                ` · ${t('skillsWidget.active', { count: data.enabled })}`}
             </span>
           </div>
 

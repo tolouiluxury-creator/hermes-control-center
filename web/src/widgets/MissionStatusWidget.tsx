@@ -1,5 +1,6 @@
 import { useStatus } from '@/lib/useStatus';
 import { formatLatency } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 function StatusDot({ ok }: { ok: boolean | null }) {
   const color =
@@ -11,22 +12,23 @@ function StatusDot({ ok }: { ok: boolean | null }) {
 
 /** Reachability plus the agent's own component health, in one glance. */
 export function MissionStatusWidget() {
+  const { t } = useI18n();
   const { data: snapshot } = useStatus();
 
   if (!snapshot) return null;
 
   const upstreams = [
     {
-      name: 'Dashboard',
+      name: t('missionWidget.dashboard'),
       ok: snapshot.dashboard.reachable,
       detail: formatLatency(snapshot.dashboard.latencyMs),
     },
     {
-      name: 'API-Server',
+      name: t('missionWidget.apiServer'),
       ok: snapshot.apiServer.reachable,
       detail: snapshot.apiServer.reachable
         ? formatLatency(snapshot.apiServer.latencyMs)
-        : 'nicht aktiv',
+        : t('missionWidget.notRunning'),
     },
   ];
 
@@ -39,7 +41,9 @@ export function MissionStatusWidget() {
           <span className="ml-auto shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">
             {entry.detail}
           </span>
-          <span className="sr-only">{entry.ok ? 'erreichbar' : 'nicht erreichbar'}</span>
+          <span className="sr-only">
+            {entry.ok ? t('label.reachable') : t('label.unreachable')}
+          </span>
         </div>
       ))}
 

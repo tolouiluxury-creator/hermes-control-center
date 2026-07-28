@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { Pause, Play } from 'lucide-react';
 import { getCronJobs, queryKeys } from '@/lib/api';
+import { useI18n, type TFunction } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 /**
- * Turns the common cron expressions into German. Anything unusual is shown
+ * Puts the common cron expressions into words. Anything unusual is shown
  * verbatim rather than described wrongly — a schedule the user misreads is
  * worse than one they have to decode.
  */
-export function describeCron(expression: string | null): string | null {
+export function describeCron(expression: string | null, t: TFunction): string | null {
   if (!expression) return null;
 
   const parts = expression.trim().split(/\s+/);
@@ -24,30 +25,27 @@ export function describeCron(expression: string | null): string | null {
   const isNumber = (value: string): boolean => /^\d+$/.test(value);
   if (!isNumber(minute) || !isNumber(hour)) return expression;
 
-  const time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')} Uhr`;
-  const weekdays = [
-    'sonntags',
-    'montags',
-    'dienstags',
-    'mittwochs',
-    'donnerstags',
-    'freitags',
-    'samstags',
-  ];
+  const time = t('cron.time', {
+    hour: hour.padStart(2, '0'),
+    minute: minute.padStart(2, '0'),
+  });
 
-  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') return `täglich um ${time}`;
+  if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') return t('cron.daily', { time });
   if (dayOfMonth === '*' && month === '*' && isNumber(dayOfWeek)) {
-    const name = weekdays[Number(dayOfWeek) % 7];
-    return name ? `${name} um ${time}` : expression;
+    return t('cron.weekly', {
+      weekday: t(`cron.weekday.${Number(dayOfWeek) % 7}`),
+      time,
+    });
   }
   if (isNumber(dayOfMonth) && month === '*' && dayOfWeek === '*') {
-    return `am ${dayOfMonth}. jedes Monats um ${time}`;
+    return t('cron.monthly', { day: dayOfMonth, time });
   }
 
   return expression;
 }
 
 export function SchedulerWidget() {
+  const { t } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.cron,
     queryFn: getCronJobs,
@@ -61,11 +59,11 @@ export function SchedulerWidget() {
       isPending={isPending}
       error={error}
       isEmpty={jobs.length === 0}
-      emptyMessage="Keine geplanten Aufgaben"
+      emptyMessage={t('tasks.empty.title')}
     >
       <ul className="h-full space-y-1.5 overflow-y-auto">
         {jobs.map((job) => {
-          const described = describeCron(job.schedule);
+          const described = describeCron(job.schedule, t);
 
           return (
             <li
@@ -96,7 +94,7 @@ export function SchedulerWidget() {
 
               {job.paused && (
                 <span className="shrink-0 text-[0.65rem] text-[var(--color-ink-faint)]">
-                  pausiert
+                  {t('tasks.paused')}
                 </span>
               )}
             </li>

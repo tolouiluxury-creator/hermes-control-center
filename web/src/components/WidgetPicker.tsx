@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import { Check, Plus, X } from 'lucide-react';
 import { WIDGETS } from '@/widgets/registry';
+import { useI18n } from '@/lib/i18n';
 import type { DashboardLayout, WidgetDefinition } from '@/widgets/types';
 
 /**
@@ -17,6 +18,7 @@ export function WidgetPicker({
   onAdd: (definition: WidgetDefinition) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -79,14 +81,14 @@ export function WidgetPicker({
       >
         <div className="flex items-center gap-3 border-b border-[var(--color-hairline)] px-4 py-3">
           <h2 id="widget-picker-title" className="text-sm font-semibold">
-            Widget hinzufügen
+            {t('dashboard.addWidget')}
           </h2>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             className="ml-auto rounded-lg p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
-            aria-label="Schließen"
+            aria-label={t('common.close')}
           >
             <X size={15} aria-hidden />
           </button>
@@ -112,16 +114,16 @@ export function WidgetPicker({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2 text-sm font-medium">
-                      {definition.title}
+                      {t(definition.titleKey)}
                       {count > 0 && (
                         <span className="inline-flex items-center gap-1 text-[0.65rem] text-[var(--color-accent)]">
                           <Check size={11} aria-hidden />
-                          {count}× auf dem Dashboard
+                          {t('dashboard.onDashboard', { count })}
                         </span>
                       )}
                     </span>
                     <span className="mt-0.5 block text-xs text-[var(--color-ink-muted)]">
-                      {definition.description}
+                      {t(definition.descriptionKey)}
                     </span>
                   </span>
                   <Plus

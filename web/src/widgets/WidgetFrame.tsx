@@ -9,6 +9,7 @@ import {
   Trash2,
   TriangleAlert,
 } from 'lucide-react';
+import { useI18n, type TFunction } from '@/lib/i18n';
 import type { WidgetDefinition } from './types';
 
 /**
@@ -18,7 +19,8 @@ import type { WidgetDefinition } from './types';
  * anticipate must degrade to a single broken card, not a blank page.
  */
 class WidgetErrorBoundary extends Component<
-  { title: string; children: ReactNode },
+  // A class cannot call useI18n, so the translator comes down as a prop.
+  { title: string; t: TFunction; children: ReactNode },
   { error: Error | null }
 > {
   state: { error: Error | null } = { error: null };
@@ -37,7 +39,7 @@ class WidgetErrorBoundary extends Component<
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
         <TriangleAlert size={18} className="text-[var(--color-warn)]" aria-hidden />
-        <p className="text-sm font-medium">Dieses Widget konnte nicht dargestellt werden</p>
+        <p className="text-sm font-medium">{this.props.t('widget.failed')}</p>
         <p className="text-xs break-words text-[var(--color-ink-faint)]">
           {this.state.error.message}
         </p>
@@ -46,7 +48,7 @@ class WidgetErrorBoundary extends Component<
           onClick={() => this.setState({ error: null })}
           className="mt-1 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs transition-colors hover:border-[var(--color-hairline-strong)]"
         >
-          Erneut versuchen
+          {this.props.t('common.retry')}
         </button>
       </div>
     );
@@ -71,9 +73,11 @@ export function WidgetFrame({
   onRemove: () => void;
   onMove: (direction: MoveDirection) => void;
 }) {
+  const { t } = useI18n();
   const menuId = useId();
   const Icon = definition.icon;
   const Body = definition.component;
+  const title = t(definition.titleKey);
 
   return (
     <div className="card flex h-full flex-col overflow-hidden">
@@ -90,7 +94,7 @@ export function WidgetFrame({
         )}
 
         <Icon size={14} className="shrink-0 text-[var(--color-ink-faint)]" aria-hidden />
-        <h2 className="truncate text-sm font-medium">{definition.title}</h2>
+        <h2 className="truncate text-sm font-medium">{title}</h2>
 
         {editing && (
           <div className="relative ml-auto">
@@ -99,7 +103,7 @@ export function WidgetFrame({
               onClick={() => onToggleMenu(!menuOpen)}
               aria-expanded={menuOpen}
               aria-controls={menuId}
-              aria-label={`Optionen für ${definition.title}`}
+              aria-label={t('widget.options', { name: title })}
               className="rounded-lg p-1 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)]"
             >
               <MoreHorizontal size={15} aria-hidden />
@@ -132,12 +136,12 @@ export function WidgetFrame({
                  */}
                 {(
                   [
-                    ['up', 'Nach oben', ArrowUp],
-                    ['down', 'Nach unten', ArrowDown],
-                    ['left', 'Nach links', ArrowLeft],
-                    ['right', 'Nach rechts', ArrowRight],
+                    ['up', 'widget.move.up', ArrowUp],
+                    ['down', 'widget.move.down', ArrowDown],
+                    ['left', 'widget.move.left', ArrowLeft],
+                    ['right', 'widget.move.right', ArrowRight],
                   ] as const
-                ).map(([direction, label, DirectionIcon]) => (
+                ).map(([direction, labelKey, DirectionIcon]) => (
                   <button
                     key={direction}
                     type="button"
@@ -146,7 +150,7 @@ export function WidgetFrame({
                     className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-[var(--color-ink-muted)] transition-colors hover:bg-[var(--color-raised)] hover:text-[var(--color-ink)]"
                   >
                     <DirectionIcon size={13} aria-hidden />
-                    {label}
+                    {t(labelKey)}
                   </button>
                 ))}
 
@@ -162,7 +166,7 @@ export function WidgetFrame({
                   className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/10"
                 >
                   <Trash2 size={13} aria-hidden />
-                  Entfernen
+                  {t('common.remove')}
                 </button>
               </div>
             )}
@@ -171,7 +175,7 @@ export function WidgetFrame({
       </div>
 
       <div className="min-h-0 flex-1 overflow-auto p-3.5">
-        <WidgetErrorBoundary title={definition.title}>
+        <WidgetErrorBoundary title={title} t={t}>
           <Body />
         </WidgetErrorBoundary>
       </div>

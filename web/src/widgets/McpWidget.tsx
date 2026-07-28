@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMcpServers, queryKeys } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { WidgetState } from './WidgetState';
 
 const CONNECTED = ['connected', 'ok', 'ready', 'running', 'online'];
 
 export function McpWidget() {
+  const { t } = useI18n();
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.mcp,
     queryFn: getMcpServers,
@@ -18,7 +20,7 @@ export function McpWidget() {
       isPending={isPending}
       error={error}
       isEmpty={servers.length === 0}
-      emptyMessage="Keine MCP-Server eingerichtet"
+      emptyMessage={t('mcpWidget.empty')}
     >
       <ul className="h-full space-y-1.5 overflow-y-auto">
         {servers.map((server) => {
@@ -39,7 +41,7 @@ export function McpWidget() {
                 aria-hidden
               />
               <span className="truncate">{server.name}</span>
-              <span className="sr-only">{server.status ?? 'Status unbekannt'}</span>
+              <span className="sr-only">{server.status ?? t('label.statusUnknown')}</span>
 
               {server.transport && (
                 <span className="shrink-0 text-[0.65rem] text-[var(--color-ink-faint)]">
@@ -49,7 +51,7 @@ export function McpWidget() {
 
               {server.toolCount !== null && (
                 <span className="ml-auto shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">
-                  {server.toolCount} Tools
+                  {t('mcp.tools', { count: server.toolCount })}
                 </span>
               )}
             </li>
