@@ -171,7 +171,7 @@ function MessagingSection() {
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.messaging,
-    queryFn: getMessaging,
+    queryFn: () => getMessaging(),
     staleTime: 30_000,
   });
 

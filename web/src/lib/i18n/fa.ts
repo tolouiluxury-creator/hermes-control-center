@@ -17,6 +17,7 @@ export const fa: Dict = {
   'nav.browser': 'خودکارسازی مرورگر',
   'nav.dateien': 'فایل‌ها',
   'nav.prompts': 'کتابخانه پرامپت',
+  'nav.telegram': 'ØªÙÚ¯Ø±Ø§Ù',
   'nav.integrationen': 'API و یکپارچه‌سازی‌ها',
   'nav.analytics': 'تحلیل‌ها',
   'nav.logs': 'گزارش‌ها',
@@ -106,6 +107,33 @@ export const fa: Dict = {
   'profile.failed': 'انجام نشد',
   'page.prompts.desc':
     'قالب‌های خودتان. این‌ها در کنترل‌سنتر ذخیره می‌شوند، نه در هرمس — هرمس کتابخانه پرامپت ندارد.',
+  'page.telegram.desc':
+    'رباتی که تلگرام را به عامل شما وصل می‌کند: چگونگی اتصال و هرچه از راه آن گفته شده.',
+  'telegram.connection': 'اتصال',
+  'telegram.switchedOn': 'روشن',
+  'telegram.credentials': 'اعتبارنامه',
+  'telegram.reportedState': 'وضعیت گزارش‌شده',
+  'telegram.homeChannel': 'کانال خانگی',
+  'telegram.settings': 'تنظیمات',
+  'telegram.required': 'الزامی',
+  'telegram.isSet': 'تنظیم شده',
+  'telegram.notSet': 'تنظیم نشده',
+  'telegram.envNote':
+    'این‌ها در فایل .env نمایه قرار دارند. این صفحه فقط می‌گوید مقداری هست یا نه — نه اینکه چیست.',
+  'telegram.gatewayUp': 'دروازه در حال اجرا',
+  'telegram.conversations': 'گفتگوها',
+  'telegram.noChats': 'هنوز چیزی از راه ربات در این نمایه نیامده است.',
+  'telegram.pickChat': 'یک گفتگو را برای خواندن انتخاب کنید.',
+  'telegram.unknownChat': 'گفتگوی ناشناخته',
+  'telegram.continueHere': 'ادامه در اینجا',
+  'telegram.readOnlyNote':
+    'فقط خواندنی. پاسخ دادن از راه تلگرام کار ربات است — «ادامه در اینجا» گفتگو را در بخش گفتگوی همینجا ادامه می‌دهد.',
+  'telegram.enabled': 'تلگرام روشن شد',
+  'telegram.disabled': 'تلگرام خاموش شد',
+  'telegram.disableConfirm': 'تلگرام خاموش شود؟ ربات تا روشن‌شدن دوباره پاسخ نمی‌دهد.',
+  'telegram.tested': 'تلگرام آزمایش شد',
+  'telegram.actionFailed': 'انجام نشد',
+  'telegram.notAvailable': 'این هرمس پلتفرم تلگرام گزارش نمی‌کند.',
   'page.integrationen.desc':
     'اینکه ایجنت شما چگونه به دنیای بیرون می‌رسد: پلتفرم‌های پیام‌رسان، وب‌هوک‌های ورودی و کاربران مجاز برای آن‌ها.',
   'page.analytics.desc': 'میزان استفاده از ایجنت شما.',
@@ -681,6 +709,7 @@ export const fa: Dict = {
   'navKeywords.modelle': 'مدل‌ها ارائه‌دهنده هزینه زمینه llm',
   'navKeywords.profile': 'نمایه نمونه رونوشت soul عامل‌های جداگانه',
   'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
+  'navKeywords.telegram': 'ØªÙÚ¯Ø±Ø§Ù Ø±Ø¨Ø§Øª ØªØ§Ø±ÛØ®ÚÙ Ú¯ÙØªÚ¯Ù',
   'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
   'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',

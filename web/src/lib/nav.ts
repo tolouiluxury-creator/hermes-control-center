@@ -11,6 +11,7 @@ import {
   Plug,
   ScrollText,
   Server,
+  Send,
   Settings,
   UserRound,
   Workflow,
@@ -89,6 +90,11 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'prompts',
     path: '/prompts',
     icon: Library,
+  },
+  {
+    id: 'telegram',
+    path: '/telegram',
+    icon: Send,
   },
   {
     id: 'integrationen',

@@ -58,6 +58,27 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.auxiliary, () => ctx.dashboard.auxiliaryModels())),
   );
 
+  /**
+   * Conversations that came in over one platform, in one profile.
+   *
+   * Both parameters matter on a real install: the Telegram history lives in
+   * whichever profile runs the bot, which is not necessarily the profile the
+   * dashboard itself was launched with.
+   */
+  app.get('/api/hermes/sessions/by-source', async (request, reply) => {
+    const query = request.query as
+      { source?: string; profile?: string; limit?: string } | undefined;
+    const source = query?.source?.trim();
+    if (!source) return reply.code(400).send({ error: 'missing_source' });
+    const profile = query?.profile?.trim() || undefined;
+    const limit = readLimit(query?.limit, 50, 200);
+    return guard(reply, () =>
+      cache.get(`${sessionsCacheKey(limit, profile)}:${source}`, () =>
+        ctx.dashboard.sessions(limit, profile, source),
+      ),
+    );
+  });
+
   app.get('/api/hermes/profiles', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.profiles, () => ctx.dashboard.profiles())),
   );
@@ -82,9 +103,15 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.memory, () => ctx.dashboard.memory())),
   );
 
-  app.get('/api/hermes/messaging', async (_request, reply) =>
-    guard(reply, () => cache.get(CACHE_KEYS.messaging, () => ctx.dashboard.messagingPlatforms())),
-  );
+  app.get('/api/hermes/messaging', async (request, reply) => {
+    const profile =
+      (request.query as { profile?: string } | undefined)?.profile?.trim() || undefined;
+    return guard(reply, () =>
+      cache.get(`${CACHE_KEYS.messaging}:${profile ?? ''}`, () =>
+        ctx.dashboard.messagingPlatforms(profile),
+      ),
+    );
+  });
 
   app.get('/api/hermes/webhooks', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.webhooks, () => ctx.dashboard.webhooks())),

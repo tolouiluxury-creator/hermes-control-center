@@ -204,12 +204,21 @@ export class DashboardClient {
   sessions(
     limit: number,
     profile?: string | null,
+    source?: string | null,
     options?: RequestOptions,
   ): Promise<ReturnType<typeof normalizeSessions>> {
     return this.client
       .json(sessionsSchema, '/api/sessions', {
         ...options,
-        query: { ...options?.query, limit, order: 'created', profile: profile || undefined },
+        query: {
+          ...options?.query,
+          limit,
+          order: 'created',
+          profile: profile || undefined,
+          // Filtering upstream rather than here: a busy install can hold far
+          // more conversations than one platform's share of them.
+          source: source || undefined,
+        },
       })
       .then(normalizeSessions);
   }
@@ -246,9 +255,24 @@ export class DashboardClient {
       .then(normalizeSessionMessages);
   }
 
-  messagingPlatforms(options?: RequestOptions): Promise<MessagingOverview> {
+  /**
+   * Platform wiring, per profile.
+   *
+   * The profile is not optional detail here: a bot runs under one profile while
+   * the dashboard may have been launched under another, and the two report
+   * different `enabled`/`state` values for the same platform. Reading the
+   * unscoped view next to another profile's conversations is how you end up
+   * describing a bot that is not the one answering.
+   */
+  messagingPlatforms(
+    profile?: string | null,
+    options?: RequestOptions,
+  ): Promise<MessagingOverview> {
     return this.client
-      .json(messagingPlatformsSchema, '/api/messaging/platforms', options)
+      .json(messagingPlatformsSchema, '/api/messaging/platforms', {
+        ...options,
+        query: { ...options?.query, profile: profile || undefined },
+      })
       .then(normalizeMessagingPlatforms);
   }
 
@@ -571,24 +595,35 @@ export class DashboardClient {
     });
   }
 
-  /** Enable or disable a messaging platform (gateway channel). */
+  /**
+   * Enable or disable a messaging platform (gateway channel).
+   *
+   * Profile-scoped for the same reason the read is: switching Telegram on while
+   * looking at one profile must not quietly rewire another one's bot.
+   */
   setPlatformEnabled(
     id: string,
     enabled: boolean,
+    profile?: string | null,
     options?: RequestOptions,
   ): Promise<ActionResult> {
     return this.client.json(
       actionResultSchema,
       `/api/messaging/platforms/${encodeURIComponent(id)}`,
-      { ...options, method: 'PUT', body: { enabled } },
+      {
+        ...options,
+        method: 'PUT',
+        query: { ...options?.query, profile: profile || undefined },
+        body: { enabled },
+      },
     );
   }
 
-  testPlatform(id: string, options?: RequestOptions): Promise<TestResult> {
+  testPlatform(id: string, profile?: string | null, options?: RequestOptions): Promise<TestResult> {
     return this.client.json(
       testResultSchema,
       `/api/messaging/platforms/${encodeURIComponent(id)}/test`,
-      { ...options, method: 'POST' },
+      { ...options, method: 'POST', query: { ...options?.query, profile: profile || undefined } },
     );
   }
 

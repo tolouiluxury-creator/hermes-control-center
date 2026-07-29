@@ -170,14 +170,20 @@ export const deleteMcpServer = (name: string): Promise<ActionResult> =>
 export const setMemoryProvider = (provider: string): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/memory/provider', { method: 'PUT', ...jsonBody({ provider }) });
 
-export const setPlatformEnabled = (id: string, enabled: boolean): Promise<ActionResult> =>
-  apiRequest<ActionResult>(`/hermes/messaging/${encodeURIComponent(id)}/enabled`, {
-    method: 'PUT',
-    ...jsonBody({ enabled }),
-  });
+export const setPlatformEnabled = (
+  id: string,
+  enabled: boolean,
+  profile?: string | null,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(
+    withProfile(`/hermes/messaging/${encodeURIComponent(id)}/enabled`, profile),
+    { method: 'PUT', ...jsonBody({ enabled }) },
+  );
 
-export const testPlatform = (id: string): Promise<TestResult> =>
-  apiRequest<TestResult>(`/hermes/messaging/${encodeURIComponent(id)}/test`, { method: 'POST' });
+export const testPlatform = (id: string, profile?: string | null): Promise<TestResult> =>
+  apiRequest<TestResult>(withProfile(`/hermes/messaging/${encodeURIComponent(id)}/test`, profile), {
+    method: 'POST',
+  });
 
 // --- Settings ---------------------------------------------------------------
 
@@ -225,8 +231,10 @@ export const getAnalytics = (): Promise<AnalyticsSummary> =>
 
 export const getMemory = (): Promise<MemorySummary> => apiRequest<MemorySummary>('/hermes/memory');
 
-export const getMessaging = (): Promise<MessagingOverview> =>
-  apiRequest<MessagingOverview>('/hermes/messaging');
+export const getMessaging = (profile?: string | null): Promise<MessagingOverview> =>
+  apiRequest<MessagingOverview>(
+    profile ? `/hermes/messaging?profile=${encodeURIComponent(profile)}` : '/hermes/messaging',
+  );
 
 export const getWebhooks = (): Promise<WebhooksOverview> =>
   apiRequest<WebhooksOverview>('/hermes/webhooks');
@@ -288,6 +296,17 @@ export const getLogs = (lines = 100): Promise<LogsResponse> =>
 
 export const getSessions = (limit = 10): Promise<SessionsResponse> =>
   apiRequest<SessionsResponse>(`/hermes/sessions?limit=${limit}`);
+
+/** Conversations from one platform, in one profile. */
+export const getSessionsBySource = (
+  source: string,
+  profile?: string | null,
+  limit = 50,
+): Promise<SessionsResponse> => {
+  const params = new URLSearchParams({ source, limit: String(limit) });
+  if (profile) params.set('profile', profile);
+  return apiRequest<SessionsResponse>(`/hermes/sessions/by-source?${params.toString()}`);
+};
 
 export const getInsights = (): Promise<{ insights: Insight[]; generatedAt: number }> =>
   apiRequest<{ insights: Insight[]; generatedAt: number }>('/insights');
@@ -624,12 +643,15 @@ export const queryKeys = {
   auxiliary: ['hermes', 'models', 'auxiliary'] as const,
   skillContent: (name: string) => ['hermes', 'skills', 'content', name] as const,
   profileSoul: (name: string) => ['hermes', 'profiles', name, 'soul'] as const,
+  sessionsBySource: (source: string, profile: string | null) =>
+    ['hermes', 'sessions', 'source', source, profile ?? ''] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,
   model: ['hermes', 'model'] as const,
   analytics: ['hermes', 'analytics'] as const,
   memory: ['hermes', 'memory'] as const,
   messaging: ['hermes', 'messaging'] as const,
+  messagingFor: (profile: string | null) => ['hermes', 'messaging', profile ?? ''] as const,
   webhooks: ['hermes', 'webhooks'] as const,
   pairing: ['hermes', 'pairing'] as const,
   env: ['hermes', 'env'] as const,

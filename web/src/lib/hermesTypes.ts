@@ -133,7 +133,13 @@ export interface SessionSummary {
   source: string | null;
   model: string | null;
   profile: string | null;
+  /** Who the conversation is with; for Telegram, the person's name. */
   title: string | null;
+  conversationTitle: string | null;
+  preview: string | null;
+  lastActive: number | null;
+  chatId: string | null;
+  chatType: string | null;
   startedAt: number | null;
   messages: number | null;
   endReason: string | null;

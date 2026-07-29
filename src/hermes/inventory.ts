@@ -624,6 +624,12 @@ export const sessionsSchema = z.looseObject({
         end_reason: z.string().nullish(),
         message_count: numeric,
         profile_name: z.string().nullish(),
+        last_active: numeric,
+        preview: z.string().nullish(),
+        // Platform rows carry who and where: the Telegram chat and its kind.
+        chat_id: z.union([z.string(), z.number()]).nullish(),
+        chat_type: z.string().nullish(),
+        title: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -636,7 +642,17 @@ export interface SessionSummary {
   model: string | null;
   /** Null means the launch profile — that is Hermes' own convention for the column. */
   profile: string | null;
+  /**
+   * Who the conversation is with. For a Telegram row this is the person's
+   * name; the conversation's own generated title is `conversationTitle`.
+   */
   title: string | null;
+  conversationTitle: string | null;
+  preview: string | null;
+  lastActive: number | null;
+  /** The platform chat this conversation belongs to, for Telegram and friends. */
+  chatId: string | null;
+  chatType: string | null;
   /** Epoch milliseconds. Hermes reports seconds, which would be 1970 if passed on. */
   startedAt: number | null;
   messages: number | null;
@@ -668,6 +684,12 @@ export function normalizeSessions(raw: z.infer<typeof sessionsSchema>): {
       model: session.model ?? null,
       profile: session.profile_name ?? null,
       title: session.display_name?.trim() || null,
+      conversationTitle: session.title?.trim() || null,
+      preview: session.preview?.trim() || null,
+      lastActive: toEpochMs(session.last_active),
+      chatId:
+        session.chat_id === null || session.chat_id === undefined ? null : String(session.chat_id),
+      chatType: session.chat_type ?? null,
       startedAt: toEpochMs(session.started_at),
       messages: toNumber(session.message_count),
       endReason: session.end_reason ?? null,

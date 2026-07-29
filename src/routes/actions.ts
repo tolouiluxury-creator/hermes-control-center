@@ -290,15 +290,17 @@ export async function registerActionRoutes(
     const input = parse(reply, enabledSchema, request.body);
     if (!input) return reply;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.setPlatformEnabled(id, input.enabled);
-      cache.invalidate(CACHE_KEYS.messaging);
+      const profile = (request.query as { profile?: string } | undefined)?.profile?.trim();
+      const result = await ctx.dashboard.setPlatformEnabled(id, input.enabled, profile);
+      cache.invalidatePrefix(CACHE_KEYS.messaging);
       return result;
     });
   });
 
   app.post('/api/hermes/messaging/:id/test', async (request, reply) => {
     const { id } = request.params as { id: string };
-    return guard(reply, () => ctx.dashboard.testPlatform(id));
+    const profile = (request.query as { profile?: string } | undefined)?.profile?.trim();
+    return guard(reply, () => ctx.dashboard.testPlatform(id, profile));
   });
 
   // --- Environment variables and secrets ------------------------------------
@@ -396,7 +398,8 @@ export async function registerActionRoutes(
   app.post('/api/hermes/webhooks/enable', async (_request, reply) =>
     guard(reply, async () => {
       const result = await ctx.dashboard.enableWebhooks();
-      cache.invalidate(CACHE_KEYS.webhooks, CACHE_KEYS.messaging);
+      cache.invalidate(CACHE_KEYS.webhooks);
+      cache.invalidatePrefix(CACHE_KEYS.messaging);
       return result;
     }),
   );

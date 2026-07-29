@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { CheckSquare, MessagesSquare, Plus, Send, Square, Trash2 } from 'lucide-react';
 import {
   ApiError,
@@ -53,7 +54,13 @@ export function ChatsPage() {
    * conversation database.
    */
   const [modelPick, setModelPick] = useState<ModelPick | null>(null);
-  const [profile, setProfile] = useState<string | null>(null);
+  /**
+   * `?profile=` and `?session=` let another page hand a conversation over —
+   * the Telegram area continues a bot conversation here. Read once at mount so
+   * a later profile switch is not fought by the URL.
+   */
+  const [searchParams] = useSearchParams();
+  const [profile, setProfile] = useState<string | null>(() => searchParams.get('profile'));
   /**
    * The model a conversation started here was created with.
    *
@@ -268,6 +275,21 @@ export function ChatsPage() {
       setDeleting(false);
     }
   };
+
+  /**
+   * A conversation handed over from another page (`?session=`), opened once.
+   *
+   * Guarded by a ref rather than by the dependency list: `openExisting` is
+   * rebuilt whenever the profile changes, and without the guard a later profile
+   * switch would drag the handed-over conversation back onto the screen.
+   */
+  const handoverDone = useRef(false);
+  useEffect(() => {
+    const handover = searchParams.get('session');
+    if (handoverDone.current || !handover) return;
+    handoverDone.current = true;
+    void openExisting(handover);
+  }, [searchParams, openExisting]);
 
   // Only the list is fetched here. Nothing is created until the first message,
   // so arriving on this page leaves no trace on the agent. It re-runs on a
