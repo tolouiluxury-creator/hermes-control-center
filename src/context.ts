@@ -44,6 +44,13 @@ export function createContext(
   // Loaded once and shared: discovery reads the connection details from it, and
   // the auth service the password hash.
   const loadedConfig = loadControlCenterConfig(env);
+  // The config file is the ordinary place for the workspace root; a flag or env
+  // var still wins. Null keeps the workspace area closed rather than defaulting
+  // it to a directory nobody chose.
+  const resolved: CliOptions = {
+    ...options,
+    workspaceRoot: options.workspaceRoot ?? loadedConfig.config.workspaceRoot ?? null,
+  };
   const connection = discoverHermes(options, env, loadedConfig);
   const publicConnection = toPublicConnection(connection);
   const auth = new AuthService(loadedConfig.config.auth ?? null);
@@ -98,7 +105,7 @@ export function createContext(
   };
 
   return {
-    options,
+    options: resolved,
     connection,
     auth,
     api,

@@ -27,6 +27,16 @@ const configSchema = z.looseObject({
   port: z.number().int().min(1).max(65535).nullish(),
   host: z.string().min(1).nullish(),
   auth: authSchema.nullish(),
+  /**
+   * Absolute path on the Hermes host that the workspace area is confined to.
+   *
+   * There is no default, and that is deliberate. Hermes' own file endpoints are
+   * not sandboxed on every install — this one reports `locked_root: null` and
+   * happily lists `/etc` — so without a root of our own, a workspace page would
+   * be a delete-capable file browser over the whole server. Unset means the
+   * area stays closed rather than open to everything.
+   */
+  workspaceRoot: z.string().min(1).nullish(),
 });
 
 export type AuthConfig = z.infer<typeof authSchema>;

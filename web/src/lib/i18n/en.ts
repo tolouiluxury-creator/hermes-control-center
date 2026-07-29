@@ -19,6 +19,7 @@ export const en: Dict = {
   'nav.prompts': 'Prompt Library',
   'nav.telegram': 'Telegram',
   'nav.terminal': 'Terminal',
+  'nav.workspace': 'Workspace',
   'nav.integrationen': 'API & Integrations',
   'nav.analytics': 'Analytics',
   'nav.logs': 'Logs',
@@ -111,6 +112,26 @@ export const en: Dict = {
   'page.telegram.desc':
     'The bot that connects Telegram to your agent: how it is wired up, and everything said through it.',
   'page.terminal.desc': 'Your agent, typed rather than clicked.',
+  'page.workspace.desc': 'Files on the Hermes host, inside the folder you allowed.',
+  'workspace.notConfigured': 'No workspace folder is set.',
+  'workspace.notConfiguredWhy':
+    'Hermes’ file API is not limited to any folder on a stock install — it will list and delete anywhere the agent can reach. So this area stays closed until you name the one folder it may use. Add it to the config file and restart:',
+  'workspace.weConfine':
+    'Hermes itself is not limiting this. The boundary is enforced by the control center, and paths outside it are refused.',
+  'workspace.rootTitle': 'The folder this area is confined to',
+  'workspace.newFolder': 'New folder',
+  'workspace.folderName': 'folder name',
+  'workspace.create': 'Create',
+  'workspace.created': 'Folder created',
+  'workspace.up': 'Up one level',
+  'workspace.empty': 'This folder is empty.',
+  'workspace.pickFile': 'Pick a file to read it.',
+  'workspace.binary': 'Not text — nothing to show here.',
+  'workspace.deleteFileConfirm': 'Delete {name}? This cannot be undone.',
+  'workspace.deleteFolderConfirm':
+    'Delete the folder {name} and everything in it? This cannot be undone.',
+  'workspace.deleted': 'Deleted',
+  'workspace.failed': 'Action failed',
   'terminal.hint':
     'Type a message and press Enter. ↑ and ↓ walk back through what you sent. /clear empties the screen, /new starts a fresh conversation.',
   'terminal.placeholder': 'message the agent …',
@@ -721,6 +742,7 @@ export const en: Dict = {
   'navKeywords.prompts': 'templates library system prompt',
   'navKeywords.telegram': 'telegram bot chat history messenger',
   'navKeywords.terminal': 'terminal console command line prompt shell',
+  'navKeywords.workspace': 'files folders workspace directory browse',
   'navKeywords.integrationen': 'api webhooks telegram discord messaging',
   'navKeywords.analytics': 'statistics cost tokens usage report',
   'navKeywords.logs': 'log errors console events output',

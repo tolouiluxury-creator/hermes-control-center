@@ -9,6 +9,7 @@ import {
   ListTodo,
   MessagesSquare,
   Plug,
+  FolderTree,
   ScrollText,
   Server,
   SquareTerminal,
@@ -91,6 +92,11 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'prompts',
     path: '/prompts',
     icon: Library,
+  },
+  {
+    id: 'workspace',
+    path: '/workspace',
+    icon: FolderTree,
   },
   {
     id: 'terminal',

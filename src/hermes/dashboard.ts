@@ -27,6 +27,8 @@ import {
 import {
   activeProfileSchema,
   analyticsSchema,
+  managedFileSchema,
+  managedFilesSchema,
   auxiliaryModelsSchema,
   cronJobsSchema,
   logsSchema,
@@ -38,6 +40,7 @@ import {
   normalizeAuxiliaryModels,
   normalizeCronJobs,
   normalizeLogs,
+  normalizeManagedFiles,
   normalizeMcpServers,
   normalizeMemory,
   normalizeMessagingPlatforms,
@@ -64,6 +67,7 @@ import {
   type AnalyticsSummary,
   type AuxiliaryModels,
   type CronJobSummary,
+  type FileListing,
   type McpServerSummary,
   type MemorySummary,
   type MessagingOverview,
@@ -492,6 +496,41 @@ export class DashboardClient {
     return this.client.json(clearedResultSchema, '/api/pairing/clear-pending', {
       ...options,
       method: 'POST',
+    });
+  }
+
+  // --- Managed files --------------------------------------------------------
+  // Every path reaching these has already been checked against the workspace
+  // root by `src/routes/files.ts`. Hermes will not do it: `locked_root` is null
+  // on a stock install, so upstream these calls reach the whole filesystem.
+
+  listFiles(path: string, options?: RequestOptions): Promise<FileListing> {
+    return this.client
+      .json(managedFilesSchema, '/api/files', { ...options, query: { ...options?.query, path } })
+      .then(normalizeManagedFiles);
+  }
+
+  readFile(path: string, options?: RequestOptions): Promise<z.infer<typeof managedFileSchema>> {
+    return this.client.json(managedFileSchema, '/api/files/read', {
+      ...options,
+      query: { ...options?.query, path },
+    });
+  }
+
+  createDirectory(path: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/files/mkdir', {
+      ...options,
+      method: 'POST',
+      body: { path },
+    });
+  }
+
+  /** `recursive` is required for a non-empty directory; Hermes 409s without it. */
+  deleteFile(path: string, recursive: boolean, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/files', {
+      ...options,
+      method: 'DELETE',
+      body: { path, recursive },
     });
   }
 

@@ -18,6 +18,7 @@ import { ChatsPage } from '@/pages/ChatsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TelegramPage } from '@/pages/TelegramPage';
 import { TerminalPage } from '@/pages/TerminalPage';
+import { WorkspacePage } from '@/pages/WorkspacePage';
 import { NAV_ITEMS } from '@/lib/nav';
 import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
@@ -34,6 +35,7 @@ const PAGES: Record<string, ComponentType> = {
   modelle: ModelsPage,
   profile: ProfilePage,
   prompts: PromptsPage,
+  workspace: WorkspacePage,
   terminal: TerminalPage,
   telegram: TelegramPage,
   integrationen: IntegrationenPage,

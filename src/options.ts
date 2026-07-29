@@ -6,6 +6,8 @@ export interface CliOptions {
   host: string;
   open: boolean;
   profile: string | null;
+  /** Directory the workspace area is confined to; null keeps that area closed. */
+  workspaceRoot: string | null;
   hermesApiUrl: string | null;
   hermesDashboardUrl: string | null;
   apiKey: string | null;
@@ -69,6 +71,7 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
         'no-open': { type: 'boolean' },
         open: { type: 'boolean' },
         profile: { type: 'string', short: 'p' },
+        'workspace-root': { type: 'string' },
         'hermes-api': { type: 'string' },
         'hermes-dashboard': { type: 'string' },
         'api-key': { type: 'string' },
@@ -110,6 +113,7 @@ export function parseOptions(argv: string[], env: NodeJS.ProcessEnv = process.en
     host,
     open,
     profile: values.profile?.trim() || null,
+    workspaceRoot: values['workspace-root']?.trim() || env.HERMES_CC_WORKSPACE_ROOT?.trim() || null,
     hermesApiUrl:
       toUrl(values['hermes-api'], '--hermes-api') ??
       toUrl(env.HERMES_CC_API_URL, 'HERMES_CC_API_URL'),
@@ -133,6 +137,7 @@ export const HELP_TEXT = `
     --host <addr>            Bind address (default ${DEFAULT_HOST})
     --no-open                Do not open a browser on start
     -p, --profile <name>     Hermes profile to scope requests to
+    --workspace-root <dir>   Directory the workspace area may browse (nothing above it)
     --hermes-api <url>       Override Hermes API server URL (default http://127.0.0.1:8642)
     --hermes-dashboard <url> Override Hermes dashboard URL (default http://127.0.0.1:9119)
     --api-key <key>          Hermes API_SERVER_KEY (auto-detected from ~/.hermes/.env)

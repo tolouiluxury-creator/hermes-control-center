@@ -237,6 +237,74 @@ export function normalizeAuxiliaryModels(
   };
 }
 
+// --- Managed files -----------------------------------------------------------
+
+/**
+ * Hermes' managed-file listing.
+ *
+ * `locked_root` is the sandbox Hermes itself applies — and it is frequently
+ * null, which is why this control center enforces its own root on top. It is
+ * carried through so the workspace page can say whether Hermes is confining
+ * anything or only we are.
+ */
+export const managedFilesSchema = z.looseObject({
+  path: z.string().nullish(),
+  parent: z.string().nullish(),
+  locked_root: z.string().nullish(),
+  entries: z
+    .array(
+      z.looseObject({
+        name: z.string().nullish(),
+        path: z.string().nullish(),
+        is_directory: z.boolean().nullish(),
+        size: numeric,
+        mtime: numeric,
+        mime_type: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface FileEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number | null;
+  modified: number | null;
+  mimeType: string | null;
+}
+
+export interface FileListing {
+  path: string;
+  entries: FileEntry[];
+  /** What Hermes confines itself to; null means it confines nothing. */
+  hermesLockedRoot: string | null;
+}
+
+export function normalizeManagedFiles(raw: z.infer<typeof managedFilesSchema>): FileListing {
+  return {
+    path: raw.path ?? '',
+    hermesLockedRoot: raw.locked_root ?? null,
+    entries: (raw.entries ?? []).map((entry, index) => ({
+      name: entry.name ?? `entry-${index}`,
+      path: entry.path ?? '',
+      isDirectory: entry.is_directory === true,
+      size: toNumber(entry.size),
+      modified: toEpochMs(entry.mtime),
+      mimeType: entry.mime_type ?? null,
+    })),
+  };
+}
+
+/** A file's bytes arrive as a data URL; text is decoded from it on our side. */
+export const managedFileSchema = z.looseObject({
+  name: z.string().nullish(),
+  path: z.string().nullish(),
+  size: numeric,
+  mime_type: z.string().nullish(),
+  data_url: z.string().nullish(),
+});
+
 // --- Profiles ---------------------------------------------------------------
 
 export const profilesSchema = z.looseObject({

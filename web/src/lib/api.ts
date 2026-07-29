@@ -308,6 +308,61 @@ export const getSessionsBySource = (
   return apiRequest<SessionsResponse>(`/hermes/sessions/by-source?${params.toString()}`);
 };
 
+// --- Workspace (files on the Hermes host) -----------------------------------
+
+export interface WorkspaceRootInfo {
+  configured: boolean;
+  root: string | null;
+}
+
+export interface WorkspaceEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  size: number | null;
+  modified: number | null;
+  mimeType: string | null;
+}
+
+export interface WorkspaceListing {
+  path: string;
+  display: string;
+  atRoot: boolean;
+  entries: WorkspaceEntry[];
+  /** Null means Hermes confines nothing and only this control center does. */
+  hermesLockedRoot: string | null;
+}
+
+export interface WorkspaceFile {
+  name: string;
+  path: string;
+  size: number | null;
+  mimeType: string | null;
+  text: string | null;
+  binary: boolean;
+}
+
+export const getWorkspaceRoot = (): Promise<WorkspaceRootInfo> =>
+  apiRequest<WorkspaceRootInfo>('/workspace/root');
+
+export const listWorkspace = (path?: string): Promise<WorkspaceListing> =>
+  apiRequest<WorkspaceListing>(
+    path ? `/workspace/list?path=${encodeURIComponent(path)}` : '/workspace/list',
+  );
+
+export const readWorkspaceFile = (path: string): Promise<WorkspaceFile> =>
+  apiRequest<WorkspaceFile>(`/workspace/read?path=${encodeURIComponent(path)}`);
+
+export const createWorkspaceDirectory = (path: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/workspace/mkdir', { method: 'POST', ...jsonBody({ path }) });
+
+/** `recursive` is what makes a non-empty folder go; the caller confirms first. */
+export const deleteWorkspaceEntry = (path: string, recursive: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/workspace/file', {
+    method: 'DELETE',
+    ...jsonBody({ path, recursive }),
+  });
+
 export const getInsights = (): Promise<{ insights: Insight[]; generatedAt: number }> =>
   apiRequest<{ insights: Insight[]; generatedAt: number }>('/insights');
 
@@ -643,6 +698,9 @@ export const queryKeys = {
   auxiliary: ['hermes', 'models', 'auxiliary'] as const,
   skillContent: (name: string) => ['hermes', 'skills', 'content', name] as const,
   profileSoul: (name: string) => ['hermes', 'profiles', name, 'soul'] as const,
+  workspaceRoot: ['workspace', 'root'] as const,
+  workspaceList: (path: string) => ['workspace', 'list', path] as const,
+  workspaceFile: (path: string) => ['workspace', 'file', path] as const,
   sessionsBySource: (source: string, profile: string | null) =>
     ['hermes', 'sessions', 'source', source, profile ?? ''] as const,
   mcp: ['hermes', 'mcp'] as const,

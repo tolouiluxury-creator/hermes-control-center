@@ -19,6 +19,7 @@ export const fa: Dict = {
   'nav.prompts': 'کتابخانه پرامپت',
   'nav.telegram': 'ØªÙÚ¯Ø±Ø§Ù',
   'nav.terminal': 'ØªØ±ÙÛÙØ§Ù',
+  'nav.workspace': 'ÙØ¶Ø§Û Ú©Ø§Ø±',
   'nav.integrationen': 'API و یکپارچه‌سازی‌ها',
   'nav.analytics': 'تحلیل‌ها',
   'nav.logs': 'گزارش‌ها',
@@ -111,6 +112,25 @@ export const fa: Dict = {
   'page.telegram.desc':
     'رباتی که تلگرام را به عامل شما وصل می‌کند: چگونگی اتصال و هرچه از راه آن گفته شده.',
   'page.terminal.desc': 'عامل شما، تایپ‌شده نه کلیک‌شده.',
+  'page.workspace.desc': 'فایل‌ها روی میزبان هرمس، درون پوشه‌ای که اجازه داده‌اید.',
+  'workspace.notConfigured': 'هیچ پوشهٔ کاری تعیین نشده است.',
+  'workspace.notConfiguredWhy':
+    'رابط فایل هرمس در حالت پیش‌فرض به هیچ پوشه‌ای محدود نیست — هر جا که عامل دسترسی دارد فهرست و حذف می‌کند. پس این بخش بسته می‌ماند تا یک پوشه را نام ببرید. آن را در پیکربندی بگذارید و دوباره اجرا کنید:',
+  'workspace.weConfine':
+    'خود هرمس این را محدود نمی‌کند. مرز را کنترل‌سنتر می‌کشد و مسیرهای بیرون از آن رد می‌شوند.',
+  'workspace.rootTitle': 'پوشه‌ای که این بخش به آن محدود است',
+  'workspace.newFolder': 'پوشهٔ تازه',
+  'workspace.folderName': 'نام پوشه',
+  'workspace.create': 'ساختن',
+  'workspace.created': 'پوشه ساخته شد',
+  'workspace.up': 'یک سطح بالاتر',
+  'workspace.empty': 'این پوشه خالی است.',
+  'workspace.pickFile': 'یک فایل را برای خواندن انتخاب کنید.',
+  'workspace.binary': 'متن نیست — چیزی برای نمایش نیست.',
+  'workspace.deleteFileConfirm': '{name} حذف شود؟ برگشت‌ناپذیر است.',
+  'workspace.deleteFolderConfirm': 'پوشهٔ {name} و هرچه درون آن حذف شود؟ برگشت‌ناپذیر است.',
+  'workspace.deleted': 'حذف شد',
+  'workspace.failed': 'انجام نشد',
   'terminal.hint':
     'پیامی بنویسید و Enter بزنید. ↑ و ↓ در پیام‌های پیشین حرکت می‌کنند. /clear صفحه را پاک می‌کند، /new گفتگوی تازه می‌سازد.',
   'terminal.placeholder': 'پیام به عامل …',
@@ -720,6 +740,7 @@ export const fa: Dict = {
   'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
   'navKeywords.telegram': 'ØªÙÚ¯Ø±Ø§Ù Ø±Ø¨Ø§Øª ØªØ§Ø±ÛØ®ÚÙ Ú¯ÙØªÚ¯Ù',
   'navKeywords.terminal': 'ØªØ±ÙÛÙØ§Ù Ú©ÙØ³ÙÙ Ø®Ø· ÙØ±ÙØ§Ù',
+  'navKeywords.workspace': 'ÙØ§ÛÙ Ù¾ÙØ´Ù ÙØ¶Ø§Û Ú©Ø§Ø± ÙØ³ÛØ±',
   'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
   'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',

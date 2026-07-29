@@ -19,6 +19,7 @@ export const de: Dict = {
   'nav.prompts': 'Prompt-Bibliothek',
   'nav.telegram': 'Telegram',
   'nav.terminal': 'Terminal',
+  'nav.workspace': 'Workspace',
   'nav.integrationen': 'API & Integrationen',
   'nav.analytics': 'Analytics',
   'nav.logs': 'Logs',
@@ -112,6 +113,27 @@ export const de: Dict = {
   'page.telegram.desc':
     'Der Bot, der Telegram mit deinem Agenten verbindet: wie er angebunden ist, und alles, was darüber gesagt wurde.',
   'page.terminal.desc': 'Dein Agent, getippt statt geklickt.',
+  'page.workspace.desc':
+    'Dateien auf dem Hermes-Rechner, innerhalb des Ordners, den du freigegeben hast.',
+  'workspace.notConfigured': 'Es ist kein Workspace-Ordner gesetzt.',
+  'workspace.notConfiguredWhy':
+    'Die Datei-API von Hermes ist im Auslieferungszustand auf keinen Ordner begrenzt — sie listet und löscht überall, wo der Agent hinkommt. Deshalb bleibt dieser Bereich zu, bis du den einen Ordner nennst, den er benutzen darf. Trag ihn in die Konfiguration ein und starte neu:',
+  'workspace.weConfine':
+    'Hermes selbst begrenzt das hier nicht. Die Grenze zieht das Control Center, Pfade darüber hinaus werden abgelehnt.',
+  'workspace.rootTitle': 'Der Ordner, auf den dieser Bereich begrenzt ist',
+  'workspace.newFolder': 'Neuer Ordner',
+  'workspace.folderName': 'Ordnername',
+  'workspace.create': 'Anlegen',
+  'workspace.created': 'Ordner angelegt',
+  'workspace.up': 'Eine Ebene höher',
+  'workspace.empty': 'Dieser Ordner ist leer.',
+  'workspace.pickFile': 'Wähle eine Datei zum Lesen.',
+  'workspace.binary': 'Kein Text — hier gibt es nichts anzuzeigen.',
+  'workspace.deleteFileConfirm': '{name} löschen? Das lässt sich nicht rückgängig machen.',
+  'workspace.deleteFolderConfirm':
+    'Ordner {name} mit allem darin löschen? Das lässt sich nicht rückgängig machen.',
+  'workspace.deleted': 'Gelöscht',
+  'workspace.failed': 'Aktion fehlgeschlagen',
   'terminal.hint':
     'Nachricht tippen und Enter drücken. ↑ und ↓ gehen durch das zuletzt Gesendete. /clear leert den Bildschirm, /new beginnt eine neue Unterhaltung.',
   'terminal.placeholder': 'Nachricht an den Agenten …',
@@ -728,6 +750,7 @@ export const de: Dict = {
   'navKeywords.prompts': 'vorlagen templates systemprompt bibliothek',
   'navKeywords.telegram': 'telegram bot chatverlauf messenger',
   'navKeywords.terminal': 'terminal konsole kommandozeile eingabe shell',
+  'navKeywords.workspace': 'dateien ordner workspace verzeichnis durchsuchen',
   'navKeywords.integrationen': 'api webhooks telegram discord schnittstellen',
   'navKeywords.analytics': 'statistik kosten token auswertung nutzung',
   'navKeywords.logs': 'protokoll fehler konsole ereignisse ausgabe',
