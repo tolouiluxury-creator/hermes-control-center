@@ -2,6 +2,7 @@ import type { Meta, MetricSeries, PublicHermesConnection, StatusSnapshot } from 
 import type { DashboardLayout } from '@/widgets/types';
 import type {
   AnalyticsSummary,
+  AuxiliaryModels,
   CronJobSummary,
   Insight,
   LogsResponse,
@@ -390,6 +391,20 @@ export const switchChatModel = (
     ...jsonBody({ sessionId: liveId, model, provider, confirm }),
   });
 
+export const getAuxiliaryModels = (): Promise<AuxiliaryModels> =>
+  apiRequest<AuxiliaryModels>('/hermes/models/auxiliary');
+
+/** `provider: "auto"` hands a slot back to the main model; `task: "__reset__"` resets all. */
+export const setAuxiliaryModel = (
+  task: string,
+  provider: string,
+  model?: string,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/model/auxiliary', {
+    method: 'POST',
+    ...jsonBody({ task, provider, model }),
+  });
+
 export const getProfiles = (): Promise<ProfileOverview> =>
   apiRequest<ProfileOverview>('/hermes/profiles');
 
@@ -494,6 +509,7 @@ export const queryKeys = {
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,
   profiles: ['hermes', 'profiles'] as const,
+  auxiliary: ['hermes', 'models', 'auxiliary'] as const,
   profileSoul: (name: string) => ['hermes', 'profiles', name, 'soul'] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,

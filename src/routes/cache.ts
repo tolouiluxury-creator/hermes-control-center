@@ -74,6 +74,7 @@ export const CACHE_KEYS = {
   skillList: 'skills:list',
   models: 'models',
   profiles: 'profiles',
+  auxiliary: 'models:auxiliary',
   mcp: 'mcp',
   cron: 'cron',
   model: 'model',

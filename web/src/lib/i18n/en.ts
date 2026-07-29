@@ -85,6 +85,9 @@ export const en: Dict = {
   'profile.makeSticky': 'Make this the sticky profile',
   'profile.stickySet': '{name} is now the sticky profile',
   'profile.isDefault': 'Default',
+  'profile.model': 'Model',
+  'profile.modelNone': 'not set',
+  'profile.modelSet': 'Profile now uses {model}',
   'profile.gateway': 'Gateway running',
   'profile.gatewayHint':
     'This profile has a live gateway — a bot answering right now. It cannot be deleted from here.',
@@ -221,6 +224,15 @@ export const en: Dict = {
 
   // Models
   'models.active': 'Currently active',
+  'models.auxiliary': 'Auxiliary models',
+  'models.auxDesc':
+    'Side jobs your agent hands to a model other than the one you chat with: reading an image, compressing a long conversation, naming a session. Each one follows the main model unless you pin it.',
+  'models.auxAllInherit': 'all follow the main model',
+  'models.auxPinned': '{count} pinned',
+  'models.auxInherit': 'Follow the main model ({model})',
+  'models.auxMain': 'main model',
+  'models.auxSaved': 'Auxiliary model saved',
+  'models.auxFailed': 'Could not save the auxiliary model',
   'models.provider': 'Provider: {name}',
   'models.context': 'Context: {tokens} tokens',
   'models.authenticated': 'signed in',

@@ -88,6 +88,20 @@ export interface AnalyticsSummary {
   topTools: { tool: string; count: number }[];
 }
 
+export interface AuxiliaryTask {
+  task: string;
+  provider: string;
+  model: string;
+  /** True when this slot simply follows the main model. */
+  inherits: boolean;
+}
+
+export interface AuxiliaryModels {
+  tasks: AuxiliaryTask[];
+  mainModel: string | null;
+  mainProvider: string | null;
+}
+
 export interface ProfileSummary {
   name: string;
   path: string | null;

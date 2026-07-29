@@ -85,6 +85,9 @@ export const fa: Dict = {
   'profile.makeSticky': 'این را نمایهٔ چسبان کن',
   'profile.stickySet': '{name} اکنون نمایهٔ چسبان است',
   'profile.isDefault': 'پیش‌فرض',
+  'profile.model': 'مدل',
+  'profile.modelNone': 'تنظیم نشده',
+  'profile.modelSet': 'نمایه اکنون از {model} استفاده می‌کند',
   'profile.gateway': 'دروازه در حال اجرا',
   'profile.gatewayHint':
     'این نمایه دروازهٔ فعال دارد — رباتی که هم‌اکنون پاسخ می‌دهد. از اینجا حذف نمی‌شود.',
@@ -221,6 +224,15 @@ export const fa: Dict = {
 
   // Models
   'models.active': 'اکنون فعال',
+  'models.auxiliary': 'مدل‌های کمکی',
+  'models.auxDesc':
+    'کارهای جانبی که عامل شما به مدلی جز مدل گفتگو می‌سپارد: خواندن تصویر، فشرده‌کردن گفتگوی بلند، نام‌گذاری یک نشست. هرکدام تا وقتی تثبیتشان نکنید از مدل اصلی پیروی می‌کنند.',
+  'models.auxAllInherit': 'همه از مدل اصلی پیروی می‌کنند',
+  'models.auxPinned': '{count} تثبیت‌شده',
+  'models.auxInherit': 'پیروی از مدل اصلی ({model})',
+  'models.auxMain': 'مدل اصلی',
+  'models.auxSaved': 'مدل کمکی ذخیره شد',
+  'models.auxFailed': 'مدل کمکی ذخیره نشد',
   'models.provider': 'ارائه‌دهنده: {name}',
   'models.context': 'زمینه: {tokens} توکن',
   'models.authenticated': 'وارد شده',

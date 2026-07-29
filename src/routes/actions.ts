@@ -41,6 +41,17 @@ const modelSetSchema = z.object({
 
 const providerSchema = z.object({ provider: z.string().trim().min(1) });
 
+/**
+ * An auxiliary slot. `task` may be Hermes' `__reset__` sentinel or empty (all
+ * slots), so it is not required to name a known task; `model` may be empty when
+ * the provider is `auto`.
+ */
+const auxiliarySetSchema = z.object({
+  task: z.string().trim().max(64),
+  provider: z.string().trim().min(1).max(200),
+  model: z.string().trim().max(200).optional(),
+});
+
 const cronActions = new Set(['pause', 'resume', 'trigger']);
 
 const envSetSchema = z.object({
@@ -272,6 +283,27 @@ export async function registerActionRoutes(
     return guard(reply, async () => {
       const result = await ctx.dashboard.toggleToolset(name, input.enabled);
       cache.invalidate(CACHE_KEYS.toolsets);
+      return result;
+    });
+  });
+
+  /**
+   * Pin one auxiliary slot to a model, or hand it back to the main one.
+   *
+   * `provider: "auto"` is how Hermes spells "follow the main model", and the
+   * task name `__reset__` puts every slot back at once — both are its own
+   * sentinels, passed through rather than reinvented here.
+   */
+  app.post('/api/hermes/model/auxiliary', async (request, reply) => {
+    const input = parse(reply, auxiliarySetSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setAuxiliaryModel(
+        input.task,
+        input.provider,
+        input.model ?? '',
+      );
+      cache.invalidate(CACHE_KEYS.auxiliary, CACHE_KEYS.models, CACHE_KEYS.model);
       return result;
     });
   });

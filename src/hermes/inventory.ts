@@ -164,6 +164,61 @@ export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): 
   };
 }
 
+// --- Auxiliary models -------------------------------------------------------
+
+/**
+ * The side jobs Hermes farms out to a model other than the one you chat with:
+ * reading an image, compressing a long conversation, naming a session. Provider
+ * `auto` means "use the main model", which is the default for every slot.
+ */
+export const auxiliaryModelsSchema = z.looseObject({
+  tasks: z
+    .array(
+      z.looseObject({
+        task: z.string().nullish(),
+        provider: z.string().nullish(),
+        model: z.string().nullish(),
+        base_url: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+  main: z.looseObject({ provider: z.string().nullish(), model: z.string().nullish() }).nullish(),
+});
+
+export interface AuxiliaryTask {
+  task: string;
+  provider: string;
+  model: string;
+  /** True when this slot simply follows the main model. */
+  inherits: boolean;
+}
+
+export interface AuxiliaryModels {
+  tasks: AuxiliaryTask[];
+  mainModel: string | null;
+  mainProvider: string | null;
+}
+
+export function normalizeAuxiliaryModels(
+  raw: z.infer<typeof auxiliaryModelsSchema>,
+): AuxiliaryModels {
+  return {
+    tasks: (raw.tasks ?? []).map((entry, index) => {
+      const provider = entry.provider ?? '';
+      return {
+        task: entry.task ?? `task-${index}`,
+        provider,
+        model: entry.model ?? '',
+        // Hermes writes "auto" for an unpinned slot; an empty model means the
+        // same thing on installs that left the provider blank instead.
+        inherits: provider === '' || provider === 'auto' || (entry.model ?? '') === '',
+      };
+    }),
+    mainModel: raw.main?.model ?? null,
+    mainProvider: raw.main?.provider ?? null,
+  };
+}
+
 // --- Profiles ---------------------------------------------------------------
 
 export const profilesSchema = z.looseObject({

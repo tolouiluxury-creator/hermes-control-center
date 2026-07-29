@@ -11,9 +11,11 @@ import {
   saveProfileSoul,
   setActiveProfile,
   setProfileDescription,
+  setProfileModel,
+  getModelOptions,
   type ProfileCreateInput,
 } from '@/lib/api';
-import type { ProfileSummary } from '@/lib/hermesTypes';
+import type { ProfileSummary, ProviderSummary } from '@/lib/hermesTypes';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
@@ -50,6 +52,12 @@ export function ProfilePage() {
     queryKey: queryKeys.profiles,
     queryFn: getProfiles,
     staleTime: 30_000,
+  });
+
+  const models = useQuery({
+    queryKey: queryKeys.models,
+    queryFn: getModelOptions,
+    staleTime: 60_000,
   });
 
   const soul = useQuery({
@@ -236,6 +244,13 @@ export function ProfilePage() {
                     setSoulDraft('');
                   }}
                   onDelete={() => setConfirmDelete(profile.name)}
+                  providers={models.data?.providers ?? []}
+                  onModel={(provider, model) =>
+                    void run(
+                      () => setProfileModel(profile.name, provider, model),
+                      t('profile.modelSet', { model }),
+                    )
+                  }
                 />
 
                 {renaming?.name === profile.name && (
@@ -343,6 +358,8 @@ interface ProfileRowProps {
   onDescribe: () => void;
   onSoul: () => void;
   onDelete: () => void;
+  providers: ProviderSummary[];
+  onModel: (provider: string, model: string) => void;
 }
 
 function ProfileRow({
@@ -354,8 +371,13 @@ function ProfileRow({
   onDescribe,
   onSoul,
   onDelete,
+  providers,
+  onModel,
 }: ProfileRowProps) {
   const { t } = useI18n();
+  // A provider you cannot reach would only produce a profile that fails on its
+  // first turn, so the picker offers the ones that are signed in.
+  const choices = providers.filter((provider) => provider.authenticated !== false);
 
   return (
     <>
@@ -422,13 +444,37 @@ function ProfileRow({
         </span>
       </div>
 
-      <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[0.7rem] text-[var(--color-ink-faint)]">
-        {profile.model && (
-          <span className="font-mono">
-            {profile.model}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-[0.7rem] text-[var(--color-ink-faint)]">{t('profile.model')}</span>
+        <select
+          value={profile.model ? `${profile.provider ?? ''}|${profile.model}` : ''}
+          onChange={(event) => {
+            const [provider = '', model = ''] = event.target.value.split('|');
+            if (model !== '') onModel(provider, model);
+          }}
+          className="min-w-0 max-w-xs flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+        >
+          {/* The stored pair may name a provider slug the options list spells
+              differently (a custom endpoint), so the current value is always
+              offered back — otherwise the select would silently show something
+              this profile is not on. */}
+          <option value={profile.model ? `${profile.provider ?? ''}|${profile.model}` : ''}>
+            {profile.model ?? t('profile.modelNone')}
             {profile.provider ? ` · ${profile.provider}` : ''}
-          </span>
-        )}
+          </option>
+          {choices.flatMap((provider) =>
+            provider.models
+              .filter((model) => !(model === profile.model && provider.slug === profile.provider))
+              .map((model) => (
+                <option key={`${provider.slug}|${model}`} value={`${provider.slug}|${model}`}>
+                  {model} · {provider.name}
+                </option>
+              )),
+          )}
+        </select>
+      </div>
+
+      <p className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[0.7rem] text-[var(--color-ink-faint)]">
         {profile.skillCount !== null && (
           <span>{t('profile.skills', { count: profile.skillCount })}</span>
         )}

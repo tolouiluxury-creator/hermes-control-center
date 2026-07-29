@@ -27,6 +27,7 @@ import {
 import {
   activeProfileSchema,
   analyticsSchema,
+  auxiliaryModelsSchema,
   cronJobsSchema,
   logsSchema,
   mcpServersSchema,
@@ -34,6 +35,7 @@ import {
   messagingPlatformsSchema,
   modelInfoSchema,
   normalizeAnalytics,
+  normalizeAuxiliaryModels,
   normalizeCronJobs,
   normalizeLogs,
   normalizeMcpServers,
@@ -58,6 +60,7 @@ import {
   skillsSchema,
   webhooksSchema,
   type AnalyticsSummary,
+  type AuxiliaryModels,
   type CronJobSummary,
   type McpServerSummary,
   type MemorySummary,
@@ -246,6 +249,32 @@ export class DashboardClient {
     return this.client.json(actionResultSchema, `/api/cron/jobs/${encodeURIComponent(id)}`, {
       ...options,
       method: 'DELETE',
+    });
+  }
+
+  auxiliaryModels(options?: RequestOptions): Promise<AuxiliaryModels> {
+    return this.client
+      .json(auxiliaryModelsSchema, '/api/model/auxiliary', options)
+      .then(normalizeAuxiliaryModels);
+  }
+
+  /**
+   * Pin one side job to a model, or hand it back to the main one.
+   *
+   * Hermes reads two sentinels here rather than taking a flag: an empty `task`
+   * means every slot, and the task `__reset__` puts them all back on auto.
+   * Provider `auto` is how a single slot goes back to following the main model.
+   */
+  setAuxiliaryModel(
+    task: string,
+    provider: string,
+    model: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/model/set', {
+      ...options,
+      method: 'POST',
+      body: { scope: 'auxiliary', task, provider, model, confirm_expensive_model: true },
     });
   }
 

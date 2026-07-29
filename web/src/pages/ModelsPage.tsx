@@ -1,7 +1,15 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Check, Lock, LockOpen } from 'lucide-react';
-import { getModelInfo, getModelOptions, queryKeys, setMainModel } from '@/lib/api';
+import {
+  getAuxiliaryModels,
+  getModelInfo,
+  getModelOptions,
+  queryKeys,
+  setAuxiliaryModel,
+  setMainModel,
+} from '@/lib/api';
+import type { ProviderSummary } from '@/lib/hermesTypes';
 import { formatCompact } from '@/lib/format';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
@@ -66,6 +74,8 @@ export function ModelsPage() {
               )}
             </div>
           </section>
+
+          <AuxiliarySection providers={options.data?.providers ?? []} />
 
           <ul className="space-y-3">
             {(options.data?.providers ?? []).map((provider) => (
@@ -173,5 +183,108 @@ export function ModelsPage() {
         </>
       )}
     </PageShell>
+  );
+}
+
+/**
+ * The side jobs Hermes farms out to a model other than the one you chat with:
+ * reading an image, compressing a long conversation, naming a session.
+ *
+ * Every slot defaults to following the main model, and that default is the
+ * right answer for almost everyone — so the section states which slots are
+ * pinned rather than presenting eleven dropdowns as a decision to make.
+ */
+function AuxiliarySection({ providers }: { providers: ProviderSummary[] }) {
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  const auxiliary = useQuery({
+    queryKey: queryKeys.auxiliary,
+    queryFn: getAuxiliaryModels,
+    staleTime: 60_000,
+  });
+
+  const pin = useMutation({
+    mutationFn: ({ task, provider, model }: { task: string; provider: string; model: string }) =>
+      setAuxiliaryModel(task, provider, model),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.auxiliary });
+      toast.push({ tone: 'success', title: t('models.auxSaved') });
+    },
+    onError: (error: Error) =>
+      toast.push({ tone: 'error', title: t('models.auxFailed'), description: error.message }),
+  });
+
+  const tasks = auxiliary.data?.tasks ?? [];
+  const pinned = tasks.filter((task) => !task.inherits);
+
+  // Only providers you can actually reach are worth offering here.
+  const choices = providers.filter((provider) => provider.authenticated !== false);
+
+  return (
+    <section className="card mb-4 p-5">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 text-start"
+      >
+        <span className="text-sm font-medium">{t('models.auxiliary')}</span>
+        <span className="text-xs text-[var(--color-ink-faint)]">
+          {pinned.length === 0
+            ? t('models.auxAllInherit')
+            : t('models.auxPinned', { count: pinned.length })}
+        </span>
+        <span className="ms-auto text-xs text-[var(--color-ink-faint)]">
+          {open ? t('common.close') : t('common.edit')}
+        </span>
+      </button>
+
+      <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{t('models.auxDesc')}</p>
+
+      {open &&
+        (auxiliary.isPending ? (
+          <div className="mt-3">
+            <SkeletonText lines={4} />
+          </div>
+        ) : (
+          <ul className="mt-3 space-y-1.5">
+            {tasks.map((task) => (
+              <li key={task.task} className="flex flex-wrap items-center gap-2">
+                <span className="w-44 shrink-0 font-mono text-xs">{task.task}</span>
+                <select
+                  value={task.inherits ? '' : `${task.provider}|${task.model}`}
+                  disabled={pin.isPending}
+                  onChange={(event) => {
+                    const raw = event.target.value;
+                    if (raw === '') {
+                      pin.mutate({ task: task.task, provider: 'auto', model: '' });
+                      return;
+                    }
+                    const [provider = '', model = ''] = raw.split('|');
+                    pin.mutate({ task: task.task, provider, model });
+                  }}
+                  className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1 text-xs outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-50"
+                >
+                  <option value="">
+                    {t('models.auxInherit', {
+                      model: auxiliary.data?.mainModel ?? t('models.auxMain'),
+                    })}
+                  </option>
+                  {choices.map((provider) =>
+                    provider.models.map((model) => (
+                      <option key={`${provider.slug}|${model}`} value={`${provider.slug}|${model}`}>
+                        {model} · {provider.name}
+                      </option>
+                    )),
+                  )}
+                </select>
+              </li>
+            ))}
+          </ul>
+        ))}
+    </section>
   );
 }

@@ -86,6 +86,9 @@ export const de: Dict = {
   'profile.makeSticky': 'Zum sticky Profil machen',
   'profile.stickySet': '{name} ist jetzt das sticky Profil',
   'profile.isDefault': 'Standard',
+  'profile.model': 'Modell',
+  'profile.modelNone': 'nicht gesetzt',
+  'profile.modelSet': 'Profil nutzt jetzt {model}',
   'profile.gateway': 'Gateway läuft',
   'profile.gatewayHint':
     'Dieses Profil hat ein laufendes Gateway — ein Bot, der gerade antwortet. Es lässt sich hier nicht löschen.',
@@ -222,6 +225,15 @@ export const de: Dict = {
 
   // Models
   'models.active': 'Aktuell aktiv',
+  'models.auxiliary': 'Hilfsmodelle',
+  'models.auxDesc':
+    'Nebenaufgaben, die dein Agent einem anderen Modell gibt als dem, mit dem du sprichst: ein Bild lesen, eine lange Unterhaltung verdichten, eine Sitzung benennen. Jede folgt dem Hauptmodell, solange du sie nicht festlegst.',
+  'models.auxAllInherit': 'alle folgen dem Hauptmodell',
+  'models.auxPinned': '{count} festgelegt',
+  'models.auxInherit': 'Dem Hauptmodell folgen ({model})',
+  'models.auxMain': 'Hauptmodell',
+  'models.auxSaved': 'Hilfsmodell gespeichert',
+  'models.auxFailed': 'Hilfsmodell konnte nicht gespeichert werden',
   'models.provider': 'Anbieter: {name}',
   'models.context': 'Kontext: {tokens} Token',
   'models.authenticated': 'angemeldet',

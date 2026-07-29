@@ -54,6 +54,10 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.models, () => ctx.dashboard.modelOptions())),
   );
 
+  app.get('/api/hermes/models/auxiliary', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.auxiliary, () => ctx.dashboard.auxiliaryModels())),
+  );
+
   app.get('/api/hermes/profiles', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.profiles, () => ctx.dashboard.profiles())),
   );
