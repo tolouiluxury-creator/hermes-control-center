@@ -457,6 +457,39 @@ export const en: Dict = {
   'integrations.pairedUsers': 'Paired users',
   'integrations.pairing.none':
     'Nobody paired yet. New users are cleared through DM pairing on the respective platform.',
+  'integrations.actionFailed': 'Action failed',
+  'integrations.webhooks.add': 'Add route',
+  'integrations.webhooks.create': 'Create',
+  'integrations.webhooks.namePlaceholder': 'name (lowercase, dashes)',
+  'integrations.webhooks.descPlaceholder': 'What sends to this route?',
+  'integrations.webhooks.eventsPlaceholder': 'events, comma separated (optional)',
+  'integrations.webhooks.enabled': 'Webhooks enabled',
+  'integrations.webhooks.enableConfirm':
+    'Enabling webhooks restarts the gateway. Every messaging platform — your Telegram bot included — goes offline for a moment. Continue?',
+  'integrations.webhooks.restartManual':
+    'Hermes could not restart the gateway itself. Restart it on the server.',
+  'integrations.webhooks.removed': 'Route removed',
+  'integrations.webhooks.removeConfirm':
+    'Remove route {name}? Anything posting to it will start failing.',
+  'integrations.webhooks.secretOnce':
+    'Signing secret for {name} — shown once. Copy it now; it cannot be read back.',
+  'integrations.webhooks.secretCopied': 'I have it',
+  'integrations.pairing.approve': 'Approve',
+  'integrations.pairing.approved': 'User approved',
+  'integrations.pairing.platform': 'platform',
+  'integrations.pairing.code': 'code',
+  'integrations.pairing.codeHint':
+    'Enter the code the person was shown in their app. The list holds only a hash of it, so it cannot be filled in for you.',
+  'integrations.pairing.codeHintTitle': 'First characters of the hashed code — not the code itself',
+  'integrations.pairing.age': '{count} min old',
+  'integrations.pairing.clear': 'Clear pending',
+  'integrations.pairing.clearConfirm':
+    'Discard all pending requests? Anyone waiting has to ask again.',
+  'integrations.pairing.cleared': '{count} pending requests cleared',
+  'integrations.pairing.revoke': 'Revoke',
+  'integrations.pairing.revoked': 'Access revoked',
+  'integrations.pairing.revokeConfirm':
+    'Revoke access for {name}? They can no longer reach the agent.',
   'integrations.pending': 'Waiting for approval',
   'integrations.approved': 'Approved',
   'integrations.unknownUser': 'Unknown',

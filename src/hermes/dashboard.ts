@@ -117,6 +117,28 @@ const spawnedActionSchema = z.looseObject({
 });
 export type SpawnedAction = z.infer<typeof spawnedActionSchema>;
 
+/** Enabling webhooks bounces the gateway; this says whether Hermes managed it. */
+const webhookEnableSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  enabled: z.boolean().nullish(),
+  needs_restart: z.boolean().nullish(),
+});
+export type WebhookEnableResult = z.infer<typeof webhookEnableSchema>;
+
+/** Create is the one and only time the route's HMAC secret is returned. */
+const webhookCreatedSchema = z.looseObject({
+  name: z.string().nullish(),
+  url: z.string().nullish(),
+  secret: z.string().nullish(),
+});
+export type WebhookCreated = z.infer<typeof webhookCreatedSchema>;
+
+const clearedResultSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  cleared: z.number().nullish(),
+});
+export type ClearedResult = z.infer<typeof clearedResultSchema>;
+
 export type CronAction = 'pause' | 'resume' | 'trigger';
 
 /**
@@ -362,6 +384,90 @@ export class DashboardClient {
       ...options,
       method: 'POST',
       body: { scope: 'main', provider, model, confirm_expensive_model: true },
+    });
+  }
+
+  // --- Webhooks and pairing -------------------------------------------------
+
+  /**
+   * Turn the webhook platform on.
+   *
+   * This restarts the gateway. Every messaging platform the agent runs — the
+   * Telegram bot included — goes down for the duration, so the caller has to
+   * say so before asking. `needs_restart` in the reply means Hermes could not
+   * restart it itself and a human has to.
+   */
+  enableWebhooks(options?: RequestOptions): Promise<WebhookEnableResult> {
+    return this.client.json(webhookEnableSchema, '/api/webhooks/enable', {
+      ...options,
+      method: 'POST',
+    });
+  }
+
+  /**
+   * Add a webhook route.
+   *
+   * The reply carries the route's HMAC secret, and this is the only time it is
+   * ever returned — every read masks it down to `secret_set: true`. Whatever
+   * shows it must say that too.
+   */
+  createWebhook(
+    input: { name: string; description?: string; events?: string[]; prompt?: string },
+    options?: RequestOptions,
+  ): Promise<WebhookCreated> {
+    return this.client.json(webhookCreatedSchema, '/api/webhooks', {
+      ...options,
+      method: 'POST',
+      body: {
+        name: input.name,
+        description: input.description || null,
+        events: input.events ?? [],
+        prompt: input.prompt || null,
+      },
+    });
+  }
+
+  deleteWebhook(name: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/webhooks/${encodeURIComponent(name)}`, {
+      ...options,
+      method: 'DELETE',
+    });
+  }
+
+  /** A disabled route stays on file; the gateway answers its events with 403. */
+  setWebhookEnabled(
+    name: string,
+    enabled: boolean,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/webhooks/${encodeURIComponent(name)}/enabled`,
+      { ...options, method: 'PUT', body: { enabled } },
+    );
+  }
+
+  /** Let a pending user talk to the agent. The code is the one they were shown. */
+  approvePairing(platform: string, code: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/pairing/approve', {
+      ...options,
+      method: 'POST',
+      body: { platform, code },
+    });
+  }
+
+  revokePairing(platform: string, userId: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/pairing/revoke', {
+      ...options,
+      method: 'POST',
+      body: { platform, user_id: userId },
+    });
+  }
+
+  clearPendingPairing(options?: RequestOptions): Promise<ClearedResult> {
+    return this.client.json(clearedResultSchema, '/api/pairing/clear-pending', {
+      ...options,
+      method: 'POST',
     });
   }
 

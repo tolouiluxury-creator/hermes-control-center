@@ -301,6 +301,9 @@ export interface PairedUser {
   userId: string | null;
   userName: string | null;
   at: number | null;
+  /** First 8 characters of the code's hash — never the code itself. */
+  codeHint: string | null;
+  ageMinutes: number | null;
 }
 
 export interface PairingOverview {

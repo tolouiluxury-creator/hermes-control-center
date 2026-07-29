@@ -234,6 +234,55 @@ export const getWebhooks = (): Promise<WebhooksOverview> =>
 export const getPairing = (): Promise<PairingOverview> =>
   apiRequest<PairingOverview>('/hermes/pairing');
 
+/**
+ * Turn the webhook platform on. Restarts the gateway upstream, which takes
+ * every messaging platform down for a moment — warn before calling.
+ */
+export const enableWebhooks = (): Promise<{ ok?: boolean; needs_restart?: boolean }> =>
+  apiRequest<{ ok?: boolean; needs_restart?: boolean }>('/hermes/webhooks/enable', {
+    method: 'POST',
+  });
+
+export interface WebhookCreated {
+  name?: string | null;
+  url?: string | null;
+  /** Returned exactly once, on create. Every later read masks it away. */
+  secret?: string | null;
+}
+
+export const createWebhook = (input: {
+  name: string;
+  description?: string;
+  events?: string[];
+  prompt?: string;
+}): Promise<WebhookCreated> =>
+  apiRequest<WebhookCreated>('/hermes/webhooks', { method: 'POST', ...jsonBody(input) });
+
+export const deleteWebhook = (name: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/webhooks/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
+export const setWebhookEnabled = (name: string, enabled: boolean): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/webhooks/${encodeURIComponent(name)}/enabled`, {
+    method: 'PUT',
+    ...jsonBody({ enabled }),
+  });
+
+/** The code is the one the person was shown; the list only holds a hash prefix. */
+export const approvePairing = (platform: string, code: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/pairing/approve', {
+    method: 'POST',
+    ...jsonBody({ platform, code }),
+  });
+
+export const revokePairing = (platform: string, userId: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/pairing/revoke', {
+    method: 'POST',
+    ...jsonBody({ platform, userId }),
+  });
+
+export const clearPendingPairing = (): Promise<{ cleared?: number }> =>
+  apiRequest<{ cleared?: number }>('/hermes/pairing/clear-pending', { method: 'POST' });
+
 export const getLogs = (lines = 100): Promise<LogsResponse> =>
   apiRequest<LogsResponse>(`/hermes/logs?lines=${lines}`);
 

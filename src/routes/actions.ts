@@ -66,6 +66,33 @@ const mcpCreateSchema = z
     message: 'Give either a URL or a command, not both.',
   });
 
+/**
+ * Hermes lowercases the name and rejects anything outside this shape; matching
+ * it here means the user sees the rule while typing, not after a 400.
+ */
+const webhookCreateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .min(1)
+    .max(64)
+    .regex(/^[a-z0-9][a-z0-9_-]*$/),
+  description: z.string().trim().max(500).optional(),
+  events: z.array(z.string().trim().max(120)).max(50).optional(),
+  prompt: z.string().max(10_000).optional(),
+});
+
+const pairingApproveSchema = z.object({
+  platform: z.string().trim().min(1).max(64),
+  code: z.string().trim().min(1).max(64),
+});
+
+const pairingRevokeSchema = z.object({
+  platform: z.string().trim().min(1).max(64),
+  userId: z.string().trim().min(1).max(200),
+});
+
 /** Only the fields being changed. Omitted ones are left alone upstream. */
 const mcpUpdateSchema = z.object({
   url: z.string().trim().max(2000).optional(),
@@ -362,6 +389,76 @@ export async function registerActionRoutes(
       return result;
     });
   });
+
+  // --- Webhooks and pairing -------------------------------------------------
+
+  /** Restarts the gateway upstream — the UI warns before it gets here. */
+  app.post('/api/hermes/webhooks/enable', async (_request, reply) =>
+    guard(reply, async () => {
+      const result = await ctx.dashboard.enableWebhooks();
+      cache.invalidate(CACHE_KEYS.webhooks, CACHE_KEYS.messaging);
+      return result;
+    }),
+  );
+
+  app.post('/api/hermes/webhooks', async (request, reply) => {
+    const input = parse(reply, webhookCreateSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.createWebhook(input);
+      cache.invalidate(CACHE_KEYS.webhooks);
+      // The secret rides back to the browser once and is never stored here.
+      return result;
+    });
+  });
+
+  app.delete('/api/hermes/webhooks/:name', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.deleteWebhook(name);
+      cache.invalidate(CACHE_KEYS.webhooks);
+      return result;
+    });
+  });
+
+  app.put('/api/hermes/webhooks/:name/enabled', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, enabledSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setWebhookEnabled(name, input.enabled);
+      cache.invalidate(CACHE_KEYS.webhooks);
+      return result;
+    });
+  });
+
+  app.post('/api/hermes/pairing/approve', async (request, reply) => {
+    const input = parse(reply, pairingApproveSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.approvePairing(input.platform, input.code);
+      cache.invalidate(CACHE_KEYS.pairing);
+      return result;
+    });
+  });
+
+  app.post('/api/hermes/pairing/revoke', async (request, reply) => {
+    const input = parse(reply, pairingRevokeSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.revokePairing(input.platform, input.userId);
+      cache.invalidate(CACHE_KEYS.pairing);
+      return result;
+    });
+  });
+
+  app.post('/api/hermes/pairing/clear-pending', async (_request, reply) =>
+    guard(reply, async () => {
+      const result = await ctx.dashboard.clearPendingPairing();
+      cache.invalidate(CACHE_KEYS.pairing);
+      return result;
+    }),
+  );
 
   // --- MCP: authoring -------------------------------------------------------
 

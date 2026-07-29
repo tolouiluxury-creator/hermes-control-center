@@ -462,6 +462,39 @@ export const de: Dict = {
   'integrations.pairedUsers': 'Gekoppelte Nutzer',
   'integrations.pairing.none':
     'Noch niemand gekoppelt. Neue Nutzer werden über DM-Pairing auf der jeweiligen Plattform freigegeben.',
+  'integrations.actionFailed': 'Aktion fehlgeschlagen',
+  'integrations.webhooks.add': 'Route hinzufügen',
+  'integrations.webhooks.create': 'Anlegen',
+  'integrations.webhooks.namePlaceholder': 'Name (klein, Bindestriche)',
+  'integrations.webhooks.descPlaceholder': 'Wer sendet an diese Route?',
+  'integrations.webhooks.eventsPlaceholder': 'Ereignisse, kommagetrennt (optional)',
+  'integrations.webhooks.enabled': 'Webhooks aktiviert',
+  'integrations.webhooks.enableConfirm':
+    'Webhooks zu aktivieren startet das Gateway neu. Alle Messaging-Plattformen — auch dein Telegram-Bot — sind kurz offline. Fortfahren?',
+  'integrations.webhooks.restartManual':
+    'Hermes konnte das Gateway nicht selbst neu starten. Starte es auf dem Server neu.',
+  'integrations.webhooks.removed': 'Route entfernt',
+  'integrations.webhooks.removeConfirm':
+    'Route {name} entfernen? Was dorthin sendet, läuft danach ins Leere.',
+  'integrations.webhooks.secretOnce':
+    'Signatur-Geheimnis für {name} — wird nur einmal gezeigt. Jetzt kopieren; es ist später nicht mehr auslesbar.',
+  'integrations.webhooks.secretCopied': 'Habe ich',
+  'integrations.pairing.approve': 'Freigeben',
+  'integrations.pairing.approved': 'Nutzer freigegeben',
+  'integrations.pairing.platform': 'Plattform',
+  'integrations.pairing.code': 'Code',
+  'integrations.pairing.codeHint':
+    'Gib den Code ein, den die Person in ihrer App gesehen hat. Die Liste enthält davon nur einen Hash, er lässt sich also nicht für dich ausfüllen.',
+  'integrations.pairing.codeHintTitle': 'Erste Zeichen des gehashten Codes — nicht der Code selbst',
+  'integrations.pairing.age': 'vor {count} Min.',
+  'integrations.pairing.clear': 'Wartende verwerfen',
+  'integrations.pairing.clearConfirm':
+    'Alle wartenden Anfragen verwerfen? Wer wartet, muss erneut anfragen.',
+  'integrations.pairing.cleared': '{count} wartende Anfragen verworfen',
+  'integrations.pairing.revoke': 'Entziehen',
+  'integrations.pairing.revoked': 'Zugang entzogen',
+  'integrations.pairing.revokeConfirm':
+    'Zugang von {name} entziehen? Die Person erreicht den Agenten danach nicht mehr.',
   'integrations.pending': 'Wartet auf Freigabe',
   'integrations.approved': 'Freigegeben',
   'integrations.unknownUser': 'Unbekannt',

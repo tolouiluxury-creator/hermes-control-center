@@ -953,6 +953,9 @@ const pairedUserSchema = z.looseObject({
   user_name: z.string().nullish(),
   approved_at: numeric,
   requested_at: numeric,
+  /** Hash prefix, not the code itself — see PairedUser.codeHint. */
+  code: z.string().nullish(),
+  age_minutes: numeric,
 });
 
 export const pairingSchema = z.looseObject({
@@ -966,6 +969,16 @@ export interface PairedUser {
   userName: string | null;
   /** Epoch milliseconds; Hermes reports seconds. */
   at: number | null;
+  /**
+   * NOT the pairing code — the first 8 characters of its hash.
+   *
+   * Hermes stores codes hashed and says why in `list_pending`: the display
+   * value exists so an admin can tell two pending requests apart "without
+   * revealing the original code". Approving needs the real code, which only
+   * the person requesting it ever saw, so it has to be typed in.
+   */
+  codeHint: string | null;
+  ageMinutes: number | null;
 }
 
 export interface PairingOverview {
@@ -979,6 +992,8 @@ function normalizePairedUser(user: z.infer<typeof pairedUserSchema>): PairedUser
     userId: user.user_id ?? null,
     userName: user.user_name?.trim() || null,
     at: toEpochMs(user.approved_at ?? user.requested_at),
+    codeHint: user.code ?? null,
+    ageMinutes: toNumber(user.age_minutes),
   };
 }
 

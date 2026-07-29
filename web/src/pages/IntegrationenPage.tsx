@@ -1,10 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plug, Users, Webhook } from 'lucide-react';
+import { ExternalLink, Plug, Plus, Trash2, Users, Webhook } from 'lucide-react';
 import {
   getMessaging,
+  approvePairing,
+  clearPendingPairing,
+  createWebhook,
+  deleteWebhook,
+  enableWebhooks,
   getPairing,
   getWebhooks,
+  revokePairing,
+  setWebhookEnabled,
   queryKeys,
   setPlatformEnabled,
   testPlatform,
@@ -281,10 +288,77 @@ function MessagingSection() {
 
 function WebhooksSection() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({ name: '', description: '', events: '' });
+  const [confirmEnable, setConfirmEnable] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /**
+   * The HMAC secret, held only until the user dismisses it. Hermes returns it
+   * once on create and masks it in every read afterwards, so this is the single
+   * moment it can be copied — and the page has to say so.
+   */
+  const [freshSecret, setFreshSecret] = useState<{ name: string; secret: string } | null>(null);
+
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.webhooks,
     queryFn: getWebhooks,
     staleTime: 30_000,
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.webhooks });
+  const fail = (e: Error) =>
+    toast.push({ tone: 'error', title: t('integrations.actionFailed'), description: e.message });
+
+  const enable = useMutation({
+    mutationFn: enableWebhooks,
+    onSuccess: async (result) => {
+      setConfirmEnable(false);
+      await invalidate();
+      toast.push({
+        tone: result.needs_restart ? 'warning' : 'success',
+        title: t('integrations.webhooks.enabled'),
+        description: result.needs_restart ? t('integrations.webhooks.restartManual') : undefined,
+      });
+    },
+    onError: fail,
+  });
+
+  const add = useMutation({
+    mutationFn: () =>
+      createWebhook({
+        name: draft.name,
+        description: draft.description || undefined,
+        events: draft.events
+          .split(',')
+          .map((event) => event.trim())
+          .filter((event) => event !== ''),
+      }),
+    onSuccess: async (created) => {
+      setAdding(false);
+      setDraft({ name: '', description: '', events: '' });
+      if (created.secret) setFreshSecret({ name: created.name ?? '', secret: created.secret });
+      await invalidate();
+    },
+    onError: fail,
+  });
+
+  const remove = useMutation({
+    mutationFn: deleteWebhook,
+    onSuccess: async () => {
+      setConfirmDelete(null);
+      await invalidate();
+      toast.push({ tone: 'success', title: t('integrations.webhooks.removed') });
+    },
+    onError: fail,
+  });
+
+  const toggle = useMutation({
+    mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
+      setWebhookEnabled(name, enabled),
+    onSuccess: invalidate,
+    onError: fail,
   });
 
   if (isPending) return <SkeletonText lines={2} />;
@@ -313,11 +387,100 @@ function WebhooksSection() {
           {data.enabled ? t('common.active') : t('common.inactive')}
         </span>
         {data.baseUrl && (
-          <span className="ml-auto font-mono text-[0.7rem] text-[var(--color-ink-faint)]">
+          <span className="font-mono text-[0.7rem] text-[var(--color-ink-faint)]">
             {data.baseUrl}
           </span>
         )}
+        <span className="ms-auto flex items-center gap-1">
+          {!data.enabled ? (
+            <button
+              type="button"
+              onClick={() => setConfirmEnable(true)}
+              className="rounded-lg border border-[var(--color-hairline)] px-2 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            >
+              {t('common.enable')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding((open) => !open)}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-hairline)] px-2 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            >
+              <Plus size={12} aria-hidden />
+              {t('integrations.webhooks.add')}
+            </button>
+          )}
+        </span>
       </div>
+
+      {confirmEnable && (
+        <ConfirmInline
+          tone="warn"
+          message={t('integrations.webhooks.enableConfirm')}
+          confirmLabel={t('common.enable')}
+          pending={enable.isPending}
+          onConfirm={() => enable.mutate()}
+          onCancel={() => setConfirmEnable(false)}
+        />
+      )}
+
+      {freshSecret && (
+        <div className="mt-2 rounded-lg border border-[var(--color-warn)]/40 bg-[var(--color-warn)]/5 p-3">
+          <p className="text-xs font-medium text-[var(--color-warn)]">
+            {t('integrations.webhooks.secretOnce', { name: freshSecret.name })}
+          </p>
+          <p className="mt-1 font-mono text-xs break-all">{freshSecret.secret}</p>
+          <button
+            type="button"
+            onClick={() => setFreshSecret(null)}
+            className="mt-2 rounded-lg border border-[var(--color-hairline)] px-2 py-1 text-xs text-[var(--color-ink-muted)]"
+          >
+            {t('integrations.webhooks.secretCopied')}
+          </button>
+        </div>
+      )}
+
+      {adding && (
+        <div className="mt-2 space-y-2 rounded-lg border border-[var(--color-hairline)] p-3">
+          <input
+            value={draft.name}
+            onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+            placeholder={t('integrations.webhooks.namePlaceholder')}
+            className="w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+          />
+          <input
+            value={draft.description}
+            onChange={(event) => setDraft({ ...draft, description: event.target.value })}
+            placeholder={t('integrations.webhooks.descPlaceholder')}
+            className="w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 text-xs outline-none focus-visible:border-[var(--color-accent)]"
+          />
+          <input
+            value={draft.events}
+            onChange={(event) => setDraft({ ...draft, events: event.target.value })}
+            placeholder={t('integrations.webhooks.eventsPlaceholder')}
+            className="w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={
+                add.isPending || !/^[a-z0-9][a-z0-9_-]*$/.test(draft.name.trim().toLowerCase())
+              }
+              onClick={() => add.mutate()}
+              className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
+            >
+              {t('integrations.webhooks.create')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {data.subscriptions.length === 0 ? (
         <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
@@ -346,6 +509,39 @@ function WebhooksSection() {
                   {t('common.disabled')}
                 </span>
               )}
+              {sub.name && (
+                <span className="ms-auto flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggle.mutate({ name: sub.name!, enabled: !sub.enabled })}
+                    disabled={toggle.isPending}
+                    className="rounded-lg px-1.5 py-0.5 text-[0.7rem] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] disabled:opacity-40"
+                  >
+                    {sub.enabled ? t('common.disable') : t('common.enable')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(sub.name)}
+                    aria-label={t('common.remove')}
+                    title={t('common.remove')}
+                    className="rounded-lg p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
+                  >
+                    <Trash2 size={12} aria-hidden />
+                  </button>
+                </span>
+              )}
+              {confirmDelete === sub.name && (
+                <div className="w-full">
+                  <ConfirmInline
+                    tone="danger"
+                    message={t('integrations.webhooks.removeConfirm', { name: sub.name ?? '' })}
+                    confirmLabel={t('common.remove')}
+                    pending={remove.isPending}
+                    onConfirm={() => remove.mutate(sub.name!)}
+                    onCancel={() => setConfirmDelete(null)}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -356,10 +552,54 @@ function WebhooksSection() {
 
 function PairingSection() {
   const { t, lang } = useI18n();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [approving, setApproving] = useState({ platform: '', code: '' });
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
+
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.pairing,
     queryFn: getPairing,
     staleTime: 30_000,
+  });
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.pairing });
+  const fail = (e: Error) =>
+    toast.push({ tone: 'error', title: t('integrations.actionFailed'), description: e.message });
+
+  const approve = useMutation({
+    mutationFn: () => approvePairing(approving.platform, approving.code),
+    onSuccess: async () => {
+      setApproving({ platform: '', code: '' });
+      await invalidate();
+      toast.push({ tone: 'success', title: t('integrations.pairing.approved') });
+    },
+    onError: fail,
+  });
+
+  const revoke = useMutation({
+    mutationFn: ({ platform, userId }: { platform: string; userId: string }) =>
+      revokePairing(platform, userId),
+    onSuccess: async () => {
+      setConfirmRevoke(null);
+      await invalidate();
+      toast.push({ tone: 'success', title: t('integrations.pairing.revoked') });
+    },
+    onError: fail,
+  });
+
+  const clear = useMutation({
+    mutationFn: clearPendingPairing,
+    onSuccess: async (result) => {
+      setConfirmClear(false);
+      await invalidate();
+      toast.push({
+        tone: 'success',
+        title: t('integrations.pairing.cleared', { count: result.cleared ?? 0 }),
+      });
+    },
+    onError: fail,
   });
 
   if (isPending) return <SkeletonText lines={2} />;
@@ -402,9 +642,73 @@ function PairingSection() {
                         {user.platform}
                       </span>
                     )}
+                    {user.codeHint && (
+                      <span
+                        className="font-mono text-[0.65rem] text-[var(--color-ink-faint)]"
+                        title={t('integrations.pairing.codeHintTitle')}
+                      >
+                        #{user.codeHint}
+                      </span>
+                    )}
+                    {user.ageMinutes !== null && (
+                      <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
+                        {t('integrations.pairing.age', { count: user.ageMinutes })}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
+
+              {/* Approving needs the code the person was actually shown. The
+                  list only carries a hash prefix, on purpose, so there is
+                  nothing here to turn into a one-click approve. */}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  value={approving.platform}
+                  onChange={(event) => setApproving({ ...approving, platform: event.target.value })}
+                  placeholder={t('integrations.pairing.platform')}
+                  className="w-28 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1 text-xs outline-none focus-visible:border-[var(--color-accent)]"
+                />
+                <input
+                  value={approving.code}
+                  onChange={(event) => setApproving({ ...approving, code: event.target.value })}
+                  placeholder={t('integrations.pairing.code')}
+                  className="w-32 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+                />
+                <button
+                  type="button"
+                  disabled={
+                    approve.isPending ||
+                    approving.platform.trim() === '' ||
+                    approving.code.trim() === ''
+                  }
+                  onClick={() => approve.mutate()}
+                  className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
+                >
+                  {t('integrations.pairing.approve')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClear(true)}
+                  className="rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]"
+                >
+                  {t('integrations.pairing.clear')}
+                </button>
+              </div>
+              <p className="mt-1 text-[0.65rem] text-[var(--color-ink-faint)]">
+                {t('integrations.pairing.codeHint')}
+              </p>
+
+              {confirmClear && (
+                <ConfirmInline
+                  tone="warn"
+                  message={t('integrations.pairing.clearConfirm')}
+                  confirmLabel={t('integrations.pairing.clear')}
+                  pending={clear.isPending}
+                  onConfirm={() => clear.mutate()}
+                  onCancel={() => setConfirmClear(false)}
+                />
+              )}
             </div>
           )}
           {data.approved.length > 0 && (
@@ -432,9 +736,37 @@ function PairingSection() {
                       </span>
                     )}
                     {user.at && (
-                      <span className="ml-auto text-[0.65rem] text-[var(--color-ink-faint)]">
+                      <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
                         {formatRelativeTime(user.at, lang)}
                       </span>
+                    )}
+                    {user.platform && user.userId && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRevoke(user.userId)}
+                        className="ms-auto rounded-lg px-1.5 py-0.5 text-[0.7rem] text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
+                      >
+                        {t('integrations.pairing.revoke')}
+                      </button>
+                    )}
+                    {confirmRevoke === user.userId && (
+                      <div className="w-full">
+                        <ConfirmInline
+                          tone="danger"
+                          message={t('integrations.pairing.revokeConfirm', {
+                            name: user.userName ?? user.userId ?? '',
+                          })}
+                          confirmLabel={t('integrations.pairing.revoke')}
+                          pending={revoke.isPending}
+                          onConfirm={() =>
+                            revoke.mutate({
+                              platform: user.platform ?? '',
+                              userId: user.userId ?? '',
+                            })
+                          }
+                          onCancel={() => setConfirmRevoke(null)}
+                        />
+                      </div>
                     )}
                   </li>
                 ))}
