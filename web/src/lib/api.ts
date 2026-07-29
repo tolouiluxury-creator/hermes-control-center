@@ -328,11 +328,25 @@ export const getChatSessions = (
 ): Promise<{ sessions: ChatSessionSummary[] }> =>
   apiRequest<{ sessions: ChatSessionSummary[] }>(withProfile('/chat/sessions', profile));
 
+/**
+ * A conversation has two ids and they are not interchangeable.
+ *
+ * `liveId` is the gateway's handle for the attached session — prompts, streamed
+ * events and model switches speak it, and reopening a conversation mints a new
+ * one. `storedId` names the row: the list, the transcript and deleting speak
+ * that. Sending the stored id where the live one belongs fails silently as
+ * "session not found".
+ */
+export interface ChatSessionIds {
+  liveId: string | null;
+  storedId: string | null;
+}
+
 export const resumeChatSession = (
   sessionId: string,
   profile?: ChatProfile,
-): Promise<{ ok: boolean }> =>
-  apiRequest<{ ok: boolean }>('/chat/resume', {
+): Promise<ChatSessionIds & { ok: boolean }> =>
+  apiRequest<ChatSessionIds & { ok: boolean }>('/chat/resume', {
     method: 'POST',
     ...jsonBody({ sessionId, profile: profile ?? undefined }),
   });
@@ -344,16 +358,36 @@ export interface CreateChatSessionInput {
   profile?: ChatProfile;
 }
 
-export const createChatSession = (
-  input: CreateChatSessionInput = {},
-): Promise<{ sessionId: string }> =>
-  apiRequest<{ sessionId: string }>('/chat/session', {
+export const createChatSession = (input: CreateChatSessionInput = {}): Promise<ChatSessionIds> =>
+  apiRequest<ChatSessionIds>('/chat/session', {
     method: 'POST',
     ...jsonBody({
       model: input.model || undefined,
       provider: input.provider || undefined,
       profile: input.profile ?? undefined,
     }),
+  });
+
+export interface ModelSwitchResult {
+  ok: boolean;
+  model: string;
+  /** "session" when the change stayed local, which is the only value we ask for. */
+  scope: string | null;
+  warning: string | null;
+  confirmRequired: boolean;
+  confirmMessage: string | null;
+}
+
+/** Repoint a live conversation at another model. Never writes the agent's default. */
+export const switchChatModel = (
+  liveId: string,
+  model: string,
+  provider?: string,
+  confirm?: boolean,
+): Promise<ModelSwitchResult> =>
+  apiRequest<ModelSwitchResult>('/chat/model', {
+    method: 'POST',
+    ...jsonBody({ sessionId: liveId, model, provider, confirm }),
   });
 
 export const getProfiles = (): Promise<ProfileOverview> =>

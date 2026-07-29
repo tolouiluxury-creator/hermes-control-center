@@ -16,13 +16,17 @@ interface ChatToolbarProps {
   /** Null means the profile the running dashboard was launched with. */
   profile: string | null;
   onProfile: (profile: string | null) => void;
-  /**
-   * The model an already-open conversation runs on. Hermes fixes this at
-   * creation — no call re-points a live conversation at another model — so while
-   * one is open the chip reports instead of offering.
-   */
+  /** The model the open conversation runs on, read back from its stored row. */
   openConversationModel?: string | null;
   conversationOpen: boolean;
+  /**
+   * Repoint the open conversation. Separate from {@link onModelPick} because it
+   * reaches the agent immediately, where the other only prepares the next chat.
+   */
+  onLiveModelPick: (pick: ModelPick) => void;
+  /** Hermes refuses to swap a model mid-turn, so the chip waits for the answer. */
+  streaming: boolean;
+  switching: boolean;
 }
 
 export function ChatToolbar({
@@ -32,6 +36,9 @@ export function ChatToolbar({
   onProfile,
   openConversationModel,
   conversationOpen,
+  onLiveModelPick,
+  streaming,
+  switching,
 }: ChatToolbarProps) {
   const { t } = useI18n();
 
@@ -52,6 +59,9 @@ export function ChatToolbar({
    * A pick is a provider *and* a model — the same model name can appear under
    * two providers — so the menu is keyed by position rather than by name. That
    * also spares the value string an escaping scheme it would otherwise need.
+   *
+   * Index 0 is "inherit the profile default", which only makes sense before a
+   * conversation exists; an open one is always on some concrete model.
    */
   const picks: (ModelPick | null)[] = [
     null,
@@ -60,27 +70,39 @@ export function ChatToolbar({
     ),
   ];
 
-  const modelOptions: ChipMenuOption[] = [
-    {
-      value: '0',
-      label: t('chat.toolbar.inherit'),
-      hint: inheritedModel ?? t('chat.toolbar.inheritHint'),
-    },
-    ...(models.data?.providers ?? []).flatMap((provider) =>
-      provider.models.map((model) => ({
-        value: String(picks.findIndex((p) => p?.provider === provider.slug && p.model === model)),
-        label: model,
-        hint: provider.name,
-        // An unauthenticated provider is listed so the choice is visible, but
-        // picking it would only buy a failed turn.
-        disabled: provider.authenticated === false,
-      })),
-    ),
-  ];
+  const concreteOptions: ChipMenuOption[] = (models.data?.providers ?? []).flatMap((provider) =>
+    provider.models.map((model) => ({
+      value: String(picks.findIndex((p) => p?.provider === provider.slug && p.model === model)),
+      label: model,
+      hint: provider.name,
+      // An unauthenticated provider is listed so the choice is visible, but
+      // picking it would only buy a failed turn.
+      disabled: provider.authenticated === false,
+    })),
+  );
 
-  const selectedIndex = modelPick
-    ? picks.findIndex((p) => p?.provider === modelPick.provider && p.model === modelPick.model)
-    : 0;
+  const modelOptions: ChipMenuOption[] = conversationOpen
+    ? concreteOptions
+    : [
+        {
+          value: '0',
+          label: t('chat.toolbar.inherit'),
+          hint: inheritedModel ?? t('chat.toolbar.inheritHint'),
+        },
+        ...concreteOptions,
+      ];
+
+  // With a conversation open the chip reflects what that conversation runs on,
+  // not a staged pick — so the checkmark has to be found by model name.
+  const selectedValue = conversationOpen
+    ? (concreteOptions.find((option) => option.label === openConversationModel)?.value ?? '')
+    : String(
+        modelPick
+          ? picks.findIndex(
+              (p) => p?.provider === modelPick.provider && p.model === modelPick.model,
+            )
+          : 0,
+      );
 
   // The launch profile is where a conversation lands when no profile is sent, so
   // it is offered as the unscoped choice rather than under its name.
@@ -100,18 +122,28 @@ export function ChatToolbar({
     ? (openConversationModel ?? t('chat.toolbar.modelUnknown'))
     : (modelPick?.model ?? inheritedModel ?? t('chat.toolbar.inherit'));
 
+  const modelBusy = conversationOpen && (streaming || switching);
+
   return (
     <div className="ms-auto flex shrink-0 items-center gap-1.5">
       <ChipMenu
         icon={<Cpu size={12} />}
         label={modelLabel}
-        title={t('chat.toolbar.modelTitle')}
+        title={conversationOpen ? t('chat.toolbar.modelLive') : t('chat.toolbar.modelTitle')}
         options={modelOptions}
-        value={String(selectedIndex < 0 ? 0 : selectedIndex)}
-        onChange={(value) => onModelPick(picks[Number(value)] ?? null)}
-        disabled={conversationOpen || modelOptions.length <= 1}
+        value={selectedValue}
+        onChange={(value) => {
+          const pick = picks[Number(value)] ?? null;
+          if (!conversationOpen) onModelPick(pick);
+          else if (pick) onLiveModelPick(pick);
+        }}
+        disabled={modelBusy || modelOptions.length === 0}
         disabledHint={
-          conversationOpen ? t('chat.toolbar.modelLocked') : t('chat.toolbar.modelUnavailable')
+          streaming
+            ? t('chat.toolbar.modelBusy')
+            : switching
+              ? t('chat.toolbar.modelSwitching')
+              : t('chat.toolbar.modelUnavailable')
         }
       />
       <ChipMenu

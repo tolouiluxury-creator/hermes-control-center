@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckSquare, MessagesSquare, Plus, Send, Square, Trash2 } from 'lucide-react';
 import {
+  ApiError,
   createChatSession,
   deleteChatSessions,
   getChatHistory,
   getChatSessions,
   resumeChatSession,
   sendChatPrompt,
+  switchChatModel,
   type ChatMessage,
   type ChatSessionSummary,
 } from '@/lib/api';
@@ -29,6 +31,11 @@ export function ChatsPage() {
   const { t, lang } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [listPending, setListPending] = useState(true);
+  /**
+   * The row this conversation is: what the list highlights, what the transcript
+   * and a delete are asked for. See {@link ChatSessionIds} — the gateway wants a
+   * different id, held in `liveRef`.
+   */
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
@@ -56,8 +63,22 @@ export function ChatsPage() {
    * value takes over as soon as it exists.
    */
   const [startedWithModel, setStartedWithModel] = useState<string | null>(null);
+  const [switchingModel, setSwitchingModel] = useState(false);
+  /** Hermes asked before switching to an expensive model; its wording is shown verbatim. */
+  const [confirmModel, setConfirmModel] = useState<{
+    pick: ModelPick;
+    message: string | null;
+  } | null>(null);
 
   const sessionRef = useRef<string | null>(null);
+  /**
+   * The gateway's handle for the attached session: prompts, streamed events and
+   * model switches all speak this, and reopening a conversation mints a new one.
+   * Held in a ref because the event listener is installed once and must always
+   * compare against the conversation that is on screen now.
+   */
+  const liveRef = useRef<string | null>(null);
+  const [liveId, setLiveId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -102,7 +123,9 @@ export function ChatsPage() {
    */
   const startNew = useCallback(() => {
     sessionRef.current = null;
+    liveRef.current = null;
     setSessionId(null);
+    setLiveId(null);
     setConnectionError(null);
     setMessages([]);
     setStartedWithModel(null);
@@ -113,16 +136,24 @@ export function ChatsPage() {
   const openExisting = useCallback(
     async (id: string) => {
       sessionRef.current = id;
+      liveRef.current = null;
       setSessionId(id);
+      setLiveId(null);
       setConnecting(true);
       setConnectionError(null);
       setMessages([]);
       setStartedWithModel(null);
       try {
-        await resumeChatSession(id, profile);
+        // Reopening attaches a fresh live session to the same row. Keeping its
+        // id is what makes sending — and the streamed answer — work at all.
+        const { liveId: attached } = await resumeChatSession(id, profile);
         const { messages: history } = await getChatHistory(id, profile);
         // Guard against a race where the user clicked another session meanwhile.
-        if (sessionRef.current === id) setMessages(history);
+        if (sessionRef.current === id) {
+          liveRef.current = attached;
+          setLiveId(attached);
+          setMessages(history);
+        }
       } catch (error) {
         setConnectionError(error instanceof Error ? error.message : t('chat.openFailed'));
       } finally {
@@ -147,6 +178,55 @@ export function ChatsPage() {
   };
 
   const openSession = sessions.find((session) => session.id === sessionId) ?? null;
+
+  /**
+   * Repoint the open conversation at another model.
+   *
+   * Sent with `--session` server-side, so it changes this conversation and
+   * never the agent's configured default. Hermes may answer that the model is
+   * expensive and wants confirming — that comes back as a state, not an error,
+   * and is put in front of the user before anything switches.
+   */
+  const applyLiveModel = async (pick: ModelPick, confirm = false) => {
+    const live = liveRef.current;
+    if (!live) return;
+    setSwitchingModel(true);
+    try {
+      const result = await switchChatModel(live, pick.model, pick.provider, confirm);
+      if (result.confirmRequired) {
+        setConfirmModel({ pick, message: result.confirmMessage });
+        return;
+      }
+      setConfirmModel(null);
+      // The stored row is what the chip reads, so show the new model at once
+      // rather than waiting for the next list refresh.
+      setStartedWithModel(result.model);
+      setSessions((current) =>
+        current.map((session) =>
+          session.id === sessionRef.current ? { ...session, model: result.model } : session,
+        ),
+      );
+      toast.push({
+        tone: result.warning ? 'warning' : 'success',
+        title: t('chat.toolbar.switched', { model: result.model }),
+        description: result.warning ?? undefined,
+      });
+    } catch (error) {
+      setConfirmModel(null);
+      toast.push({
+        tone: 'error',
+        title: t('chat.toolbar.switchFailed'),
+        description:
+          error instanceof ApiError && error.code === 'session_not_live'
+            ? t('chat.toolbar.notLive')
+            : error instanceof Error
+              ? error.message
+              : undefined,
+      });
+    } finally {
+      setSwitchingModel(false);
+    }
+  };
 
   const toggleSelected = (id: string) =>
     setSelected((current) => {
@@ -218,7 +298,9 @@ export function ChatsPage() {
     const forSession = (raw: string): GatewayEventData | null => {
       try {
         const data = JSON.parse(raw) as GatewayEventData;
-        if (data.sessionId && data.sessionId !== sessionRef.current) return null;
+        // Events carry the live id, never the stored one — comparing against the
+        // row id would drop every token of a reopened conversation.
+        if (data.sessionId && data.sessionId !== liveRef.current) return null;
         return data;
       } catch {
         return null;
@@ -268,23 +350,25 @@ export function ChatsPage() {
     try {
       // The conversation starts here, not when the page opened — that is what
       // keeps unused sessions from piling up on the agent.
-      let id = sessionRef.current;
-      if (!id) {
+      let live = liveRef.current;
+      if (!live) {
         // The toolbar's picks only ever reach Hermes here. Both are per-session
         // overrides on session.create, so starting a chat with another model
         // leaves the agent's configured default untouched.
-        id = (
-          await createChatSession({
-            model: modelPick?.model,
-            provider: modelPick?.provider,
-            profile,
-          })
-        ).sessionId;
-        sessionRef.current = id;
-        setSessionId(id);
+        const ids = await createChatSession({
+          model: modelPick?.model,
+          provider: modelPick?.provider,
+          profile,
+        });
+        if (!ids.liveId) throw new Error(t('chat.sendFailed'));
+        live = ids.liveId;
+        liveRef.current = live;
+        setLiveId(live);
+        sessionRef.current = ids.storedId ?? null;
+        setSessionId(ids.storedId ?? null);
         setStartedWithModel(modelPick?.model ?? null);
       }
-      await sendChatPrompt(id, text);
+      await sendChatPrompt(live, text);
     } catch (error) {
       setStreaming(false);
       setMessages((current) => current.slice(0, -1));
@@ -469,10 +553,27 @@ export function ChatsPage() {
                   onModelPick={setModelPick}
                   profile={profile}
                   onProfile={switchProfile}
-                  openConversationModel={openSession?.model ?? startedWithModel}
-                  conversationOpen={sessionId !== null}
+                  openConversationModel={startedWithModel ?? openSession?.model ?? null}
+                  conversationOpen={liveId !== null}
+                  onLiveModelPick={(pick) => void applyLiveModel(pick)}
+                  streaming={streaming}
+                  switching={switchingModel}
                 />
               </div>
+
+              {confirmModel && (
+                <ConfirmInline
+                  tone="warn"
+                  message={
+                    confirmModel.message ??
+                    t('chat.toolbar.switchConfirm', { model: confirmModel.pick.model })
+                  }
+                  confirmLabel={t('chat.toolbar.switchAnyway')}
+                  pending={switchingModel}
+                  onConfirm={() => void applyLiveModel(confirmModel.pick, true)}
+                  onCancel={() => setConfirmModel(null)}
+                />
+              )}
 
               <div
                 ref={threadRef}

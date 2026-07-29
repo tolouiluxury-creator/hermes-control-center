@@ -40,9 +40,35 @@ const CHAT_SOURCE = 'desktop';
  */
 const MODEL_LOOKUP_LIMIT = 100;
 
+/**
+ * What `session.create` and `session.resume` answer with.
+ *
+ * The two ids are not interchangeable and mixing them up is silent: the gateway
+ * keeps live sessions in a map keyed by `session_id`, a short-lived handle it
+ * mints per attach, while `stored_session_id` (`session_key`) names the row in
+ * the database. Prompts, streamed events and model switches all speak the live
+ * id; listing, transcripts and deletes all speak the stored one. Reopening a
+ * conversation mints a *new* live id for the same row.
+ */
+interface GatewaySessionResult {
+  session_id?: string;
+  stored_session_id?: string;
+  session_key?: string;
+  resumed?: string;
+}
+
 const promptSchema = z.object({
   sessionId: z.string().trim().min(1),
   text: z.string().trim().min(1).max(100_000),
+});
+
+const modelSwitchSchema = z.object({
+  /** The live id — `config.set` looks the session up without resolving. */
+  sessionId: z.string().trim().min(1),
+  model: z.string().trim().min(1).max(200),
+  provider: z.string().trim().max(200).optional(),
+  /** Repeat the call with this after Hermes asked about an expensive model. */
+  confirm: z.boolean().optional(),
 });
 
 /**
@@ -131,12 +157,18 @@ export async function registerChatRoutes(
     const parsed = resumeSchema.safeParse(request.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: 'missing_session' });
     try {
-      await ctx.gateway.request('session.resume', {
+      const result = await ctx.gateway.request<GatewaySessionResult>('session.resume', {
         session_id: parsed.data.sessionId,
         cols: 80,
         ...(parsed.data.profile ? { profile: parsed.data.profile } : {}),
       });
-      return { ok: true };
+      // Reopening mints a NEW live id; the stored one only names the row.
+      // Returning it is what lets the browser prompt into this conversation.
+      return {
+        ok: true,
+        liveId: result.session_id ?? null,
+        storedId: result.session_key ?? result.resumed ?? parsed.data.sessionId,
+      };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }
@@ -151,7 +183,7 @@ export async function registerChatRoutes(
     }
     const { model, provider, profile } = parsed.data;
     try {
-      const result = await ctx.gateway.request<{ session_id?: string }>('session.create', {
+      const result = await ctx.gateway.request<GatewaySessionResult>('session.create', {
         cols: 80,
         source: CHAT_SOURCE,
         // Each of these is a per-session override in Hermes' own words: it is
@@ -169,7 +201,7 @@ export async function registerChatRoutes(
       // The new conversation is not in the cached session list yet, and the
       // sidebar reloads right after the first message lands.
       cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
-      return { sessionId: result.session_id };
+      return { liveId: result.session_id, storedId: result.stored_session_id ?? null };
     } catch (error) {
       return reply
         .code(503)
@@ -190,6 +222,74 @@ export async function registerChatRoutes(
         text: parsed.data.text,
       });
       return { ok: true };
+    } catch (error) {
+      return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
+    }
+  });
+
+  /**
+   * Repoint a live conversation at another model.
+   *
+   * `config.set` parses `value` the way the `/model` command line is parsed, so
+   * the flags matter more than they look:
+   *
+   * - `--session` is not optional decoration. Without it the decision falls to
+   *   `model.persist_switch_by_default` in the user's config.yaml, and a user
+   *   who set that to true would have their agent's default rewritten by what
+   *   looks like a per-chat pick. The promise this control center makes is that
+   *   picking a model here changes this conversation and nothing else.
+   * - `--provider` is only sent when the slug survives the whitespace split the
+   *   parser does; otherwise the model name alone resolves it.
+   *
+   * Hermes refuses mid-turn (its own comment: the worker thread reads the model
+   * and base URL on every iteration, so a swap mid-flight can send the new URL
+   * with the old model), and can demand confirmation for an expensive model.
+   * Both come back as an honest state rather than a thrown error.
+   *
+   * The `session.status` probe first is not ceremony. `config.set` looks the id
+   * up with a plain map read and, finding nothing, quietly switches a throwaway
+   * dictionary instead — it answers `ok` with `scope: "session"` for a session
+   * that does not exist. Verified against the running server. Without the probe
+   * a stale id (a reaped or expired session) would be reported to the user as a
+   * completed switch that never happened.
+   */
+  app.post('/api/chat/model', async (request, reply) => {
+    const parsed = modelSwitchSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'invalid_model', message: parsed.error.issues[0]?.message ?? 'invalid' });
+    }
+    const { sessionId, model, provider, confirm } = parsed.data;
+    const flags = provider && !/\s/.test(provider) ? ` --provider ${provider}` : '';
+    try {
+      try {
+        await ctx.gateway.request('session.status', { session_id: sessionId });
+      } catch {
+        return reply
+          .code(409)
+          .send({ error: 'session_not_live', message: 'This conversation is no longer attached.' });
+      }
+      const result = await ctx.gateway.request<{
+        value?: string;
+        scope?: string;
+        warning?: string;
+        confirm_required?: boolean;
+        confirm_message?: string;
+      }>('config.set', {
+        session_id: sessionId,
+        key: 'model',
+        value: `${model}${flags} --session`,
+        ...(confirm ? { confirm_expensive_model: true } : {}),
+      });
+      return {
+        ok: result.confirm_required !== true,
+        model: result.value ?? model,
+        scope: result.scope ?? null,
+        warning: result.warning || null,
+        confirmRequired: result.confirm_required === true,
+        confirmMessage: result.confirm_message || null,
+      };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }
