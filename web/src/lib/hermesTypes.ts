@@ -48,6 +48,13 @@ export interface McpServerSummary {
   status: string | null;
   toolCount: number | null;
   transport: string | null;
+  url: string | null;
+  command: string | null;
+  args: string[];
+  /** Variable names only. The values in `maskedEnv` are redacted upstream. */
+  envKeys: string[];
+  maskedEnv: Record<string, string>;
+  auth: string | null;
 }
 
 export interface CronJobSummary {

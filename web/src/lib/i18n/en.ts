@@ -219,6 +219,22 @@ export const en: Dict = {
   'mcp.empty.desc':
     'Your Hermes has no MCP server configured right now. They are set up in the Hermes configuration under mcpServers; they then appear here with status and tool list.',
   'mcp.tools': '{count} tools',
+  'mcp.new': 'Add server',
+  'mcp.name': 'Name',
+  'mcp.nameInvalid': 'Letters, digits, dot, dash and underscore only.',
+  'mcp.overHttp': 'Over HTTP',
+  'mcp.overCommand': 'Runs a command',
+  'mcp.url': 'URL',
+  'mcp.command': 'Command',
+  'mcp.args': 'Arguments',
+  'mcp.env': 'Environment variables',
+  'mcp.envExisting': 'Already set (values are masked and cannot be read back):',
+  'mcp.envHintNew': 'One KEY=value per line.',
+  'mcp.envHintEdit':
+    'One KEY=value per line. Only what you type here is written — every variable you leave out keeps its current value.',
+  'mcp.added': 'Server {name} added',
+  'mcp.saved': 'Server {name} saved',
+  'mcp.saveFailed': 'Could not save the server',
   'mcp.removeConfirm': 'Remove “{name}”? The agent loses its tools.',
   'mcp.test': 'Test: {name}',
 

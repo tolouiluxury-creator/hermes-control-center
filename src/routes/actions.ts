@@ -43,6 +43,38 @@ const skillContentSchema = skillNameSchema.extend({
 });
 
 /**
+ * An MCP server is reached over http (`url`) or by running a process
+ * (`command`) — never both, and never neither. Hermes rejects the ambiguous
+ * case too; catching it here keeps the message specific.
+ */
+const mcpCreateSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .regex(/^[A-Za-z0-9._-]+$/),
+    url: z.string().trim().max(2000).optional(),
+    command: z.string().trim().max(500).optional(),
+    args: z.array(z.string().max(500)).max(50).optional(),
+    env: z.record(z.string(), z.string().max(4000)).optional(),
+    auth: z.enum(['none', 'oauth', 'header']).optional(),
+    bearerToken: z.string().max(4000).optional(),
+  })
+  .refine((value) => Boolean(value.url) !== Boolean(value.command), {
+    message: 'Give either a URL or a command, not both.',
+  });
+
+/** Only the fields being changed. Omitted ones are left alone upstream. */
+const mcpUpdateSchema = z.object({
+  url: z.string().trim().max(2000).optional(),
+  command: z.string().trim().max(500).optional(),
+  args: z.array(z.string().max(500)).max(50).optional(),
+  env: z.record(z.string(), z.string().max(4000)).optional(),
+});
+
+/**
  * Hermes caps a batch at 500 and answers 400 above it. Rejecting here keeps the
  * failure local and specific rather than surfacing an upstream error.
  */
@@ -327,6 +359,34 @@ export async function registerActionRoutes(
         input.model ?? '',
       );
       cache.invalidate(CACHE_KEYS.auxiliary, CACHE_KEYS.models, CACHE_KEYS.model);
+      return result;
+    });
+  });
+
+  // --- MCP: authoring -------------------------------------------------------
+
+  app.post('/api/hermes/mcp', async (request, reply) => {
+    const input = parse(reply, mcpCreateSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.createMcpServer(input);
+      cache.invalidate(CACHE_KEYS.mcp);
+      return result;
+    });
+  });
+
+  /**
+   * Edit a server. The body carries only what changed; anything omitted keeps
+   * its value upstream, which is the whole point — see `updateMcpServer` for
+   * why a full replace would destroy the env secrets it cannot read back.
+   */
+  app.put('/api/hermes/mcp/:name', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, mcpUpdateSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.updateMcpServer(name, input);
+      cache.invalidate(CACHE_KEYS.mcp);
       return result;
     });
   });

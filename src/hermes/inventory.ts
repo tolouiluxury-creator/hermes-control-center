@@ -337,6 +337,9 @@ export const mcpServersSchema = z.looseObject({
         transport: z.string().nullish(),
         command: z.string().nullish(),
         url: z.string().nullish(),
+        args: z.array(z.string()).nullish(),
+        env: z.record(z.string(), z.string()).nullish(),
+        auth: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -348,16 +351,39 @@ export interface McpServerSummary {
   status: string | null;
   toolCount: number | null;
   transport: string | null;
+  url: string | null;
+  command: string | null;
+  args: string[];
+  /**
+   * Environment variable NAMES, with the values Hermes returns.
+   *
+   * Those values are masked: `_redact_mcp_env` runs `redact_key` over every one
+   * before it leaves the server. They are safe to display and must never be
+   * written back — see `updateMcpServer` in dashboard.ts for what that would
+   * cost.
+   */
+  envKeys: string[];
+  maskedEnv: Record<string, string>;
+  auth: string | null;
 }
 
 export function normalizeMcpServers(raw: z.infer<typeof mcpServersSchema>): McpServerSummary[] {
-  return (raw.servers ?? []).map((server, index) => ({
-    name: server.name ?? `Server ${index + 1}`,
-    enabled: server.enabled !== false,
-    status: server.status ?? (server.connected === true ? 'connected' : null),
-    toolCount: Array.isArray(server.tools) ? server.tools.length : toNumber(server.tools),
-    transport: server.transport ?? (server.url ? 'http' : server.command ? 'stdio' : null),
-  }));
+  return (raw.servers ?? []).map((server, index) => {
+    const env = server.env ?? {};
+    return {
+      name: server.name ?? `Server ${index + 1}`,
+      enabled: server.enabled !== false,
+      status: server.status ?? (server.connected === true ? 'connected' : null),
+      toolCount: Array.isArray(server.tools) ? server.tools.length : toNumber(server.tools),
+      transport: server.transport ?? (server.url ? 'http' : server.command ? 'stdio' : null),
+      url: server.url ?? null,
+      command: server.command ?? null,
+      args: server.args ?? [],
+      envKeys: Object.keys(env).sort(),
+      maskedEnv: env,
+      auth: server.auth ?? null,
+    };
+  });
 }
 
 // --- Cron jobs --------------------------------------------------------------

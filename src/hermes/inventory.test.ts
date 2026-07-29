@@ -149,6 +149,45 @@ describe('normalizeSessions', () => {
   });
 });
 
+describe('normalizeMcpServers', () => {
+  // Trimmed from a real GET /api/mcp/servers. Note the env value: Hermes runs
+  // every one through redact_key before answering.
+  const real = {
+    servers: [
+      {
+        name: 'context7',
+        transport: 'stdio',
+        command: 'npx',
+        args: ['-y', '@upstash/context7-mcp'],
+        env: { CONTEXT7_API_KEY: 'ctx7…9f2a' },
+        auth: null,
+        enabled: true,
+        url: null,
+      },
+    ],
+  };
+
+  it('keeps the fields an edit needs', () => {
+    const [server] = normalizeMcpServers(real);
+
+    expect(server?.command).toBe('npx');
+    expect(server?.args).toEqual(['-y', '@upstash/context7-mcp']);
+    expect(server?.transport).toBe('stdio');
+  });
+
+  /**
+   * The masked value is kept for display and named so nobody mistakes it for a
+   * secret they may write back. Putting it into a save would replace the real
+   * API key with the mask.
+   */
+  it('separates env key names from their masked values', () => {
+    const [server] = normalizeMcpServers(real);
+
+    expect(server?.envKeys).toEqual(['CONTEXT7_API_KEY']);
+    expect(server?.maskedEnv.CONTEXT7_API_KEY).toBe('ctx7…9f2a');
+  });
+});
+
 describe('normalizeProfiles', () => {
   // Trimmed from a real GET /api/profiles + GET /api/profiles/active.
   const list = {

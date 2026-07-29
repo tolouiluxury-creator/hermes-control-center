@@ -365,6 +365,75 @@ export class DashboardClient {
     });
   }
 
+  // --- MCP: authoring -------------------------------------------------------
+
+  /**
+   * Add an MCP server. Either `url` (http) or `command` (stdio), not both.
+   *
+   * `bearerToken` is provisioning input only: Hermes writes it into the
+   * profile's `.env` and stores a reference in `headers`, so the token never
+   * lands in config.yaml and never comes back out of a read.
+   */
+  createMcpServer(
+    input: {
+      name: string;
+      url?: string;
+      command?: string;
+      args?: string[];
+      env?: Record<string, string>;
+      auth?: string;
+      bearerToken?: string;
+    },
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/mcp/servers', {
+      ...options,
+      method: 'POST',
+      body: {
+        name: input.name,
+        url: input.url || null,
+        command: input.command || null,
+        args: input.args ?? [],
+        env: input.env ?? {},
+        auth: input.auth || null,
+        bearer_token: input.bearerToken || null,
+      },
+    });
+  }
+
+  /**
+   * Change one MCP server's fields.
+   *
+   * Deliberately NOT `PUT /api/mcp/servers`, which replaces the whole server
+   * map. The only way to read that map is `GET /api/mcp/servers`, and it runs
+   * every env value through `redact_key` first — so rebuilding the map from a
+   * read and putting it back would write `sk-…abcd` over the real API key of
+   * every stdio server at once. Verified in the Hermes source
+   * (`_redact_mcp_env`).
+   *
+   * `PUT /api/config` deep-merges instead: dicts merge recursively, everything
+   * else is replaced. So `args` is set wholesale (which is what editing a
+   * command line means) while any `env` key not mentioned keeps its real value.
+   * The price of that choice is that a merge cannot *remove* an env key —
+   * that would need the whole-map endpoint, which is not offered here.
+   */
+  updateMcpServer(
+    name: string,
+    patch: {
+      url?: string | null;
+      command?: string | null;
+      args?: string[];
+      env?: Record<string, string>;
+    },
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/config', {
+      ...options,
+      method: 'PUT',
+      body: { config: { mcp_servers: { [name]: patch } } },
+    });
+  }
+
   setMcpEnabled(name: string, enabled: boolean, options?: RequestOptions): Promise<ActionResult> {
     return this.client.json(
       actionResultSchema,

@@ -220,6 +220,22 @@ export const de: Dict = {
   'mcp.empty.desc':
     'Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Eingerichtet werden sie in der Hermes-Konfiguration unter mcpServers; hier erscheinen sie dann mit Status und Werkzeugliste.',
   'mcp.tools': '{count} Werkzeuge',
+  'mcp.new': 'Server hinzufügen',
+  'mcp.name': 'Name',
+  'mcp.nameInvalid': 'Nur Buchstaben, Ziffern, Punkt, Bindestrich und Unterstrich.',
+  'mcp.overHttp': 'Über HTTP',
+  'mcp.overCommand': 'Startet einen Befehl',
+  'mcp.url': 'URL',
+  'mcp.command': 'Befehl',
+  'mcp.args': 'Argumente',
+  'mcp.env': 'Umgebungsvariablen',
+  'mcp.envExisting': 'Bereits gesetzt (Werte sind maskiert und nicht auslesbar):',
+  'mcp.envHintNew': 'Eine KEY=Wert-Zeile pro Variable.',
+  'mcp.envHintEdit':
+    'Eine KEY=Wert-Zeile pro Variable. Geschrieben wird nur, was hier steht — jede weggelassene Variable behält ihren Wert.',
+  'mcp.added': 'Server {name} hinzugefügt',
+  'mcp.saved': 'Server {name} gespeichert',
+  'mcp.saveFailed': 'Server konnte nicht gespeichert werden',
   'mcp.removeConfirm': '„{name}“ entfernen? Der Agent verliert dessen Werkzeuge.',
   'mcp.test': 'Test: {name}',
 

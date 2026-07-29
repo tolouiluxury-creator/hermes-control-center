@@ -138,6 +138,32 @@ export const setMcpEnabled = (name: string, enabled: boolean): Promise<ActionRes
 export const testMcpServer = (name: string): Promise<TestResult> =>
   apiRequest<TestResult>(`/hermes/mcp/${encodeURIComponent(name)}/test`, { method: 'POST' });
 
+export interface McpServerInput {
+  name: string;
+  url?: string;
+  command?: string;
+  args?: string[];
+  env?: Record<string, string>;
+  auth?: 'none' | 'oauth' | 'header';
+  bearerToken?: string;
+}
+
+export const createMcpServer = (input: McpServerInput): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/mcp', { method: 'POST', ...jsonBody(input) });
+
+/**
+ * Change one server's fields. Only what is sent is written — env variables left
+ * out keep their real values, which is why this never posts a full server map.
+ */
+export const updateMcpServer = (
+  name: string,
+  patch: { url?: string; command?: string; args?: string[]; env?: Record<string, string> },
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/mcp/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    ...jsonBody(patch),
+  });
+
 export const deleteMcpServer = (name: string): Promise<ActionResult> =>
   apiRequest<ActionResult>(`/hermes/mcp/${encodeURIComponent(name)}`, { method: 'DELETE' });
 
