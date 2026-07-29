@@ -286,6 +286,26 @@ export const de: Dict = {
   'skills.enabledToast': '„{name}“ aktiviert',
   'skills.disabledToast': '„{name}“ deaktiviert',
   'skills.usage': '{count}×',
+  'skills.new': 'Neuer Skill',
+  'skills.name': 'Name',
+  'skills.categoryField': 'Kategorie (optional)',
+  'skills.nameInvalid':
+    'Nur Buchstaben, Ziffern, Punkt, Bindestrich und Unterstrich — der Name wird ein Ordner.',
+  'skills.edit': 'SKILL.md bearbeiten',
+  'skills.remove': 'Entfernen',
+  'skills.removeConfirm':
+    'Skill {name} entfernen? Hermes führt die Deinstallation im Hintergrund aus.',
+  'skills.removeStarted':
+    'Entfernen von {name} gestartet — die Liste aktualisiert sich, sobald es fertig ist.',
+  'skills.removeFailed': 'Entfernen konnte nicht gestartet werden',
+  'skills.created': 'Skill {name} angelegt',
+  'skills.saved': 'Skill {name} gespeichert',
+  'skills.saveFailed': 'Speichern fehlgeschlagen',
+  'skills.loadFailed': 'SKILL.md konnte nicht geladen werden',
+  'skills.descHint':
+    'Ein neuer Skill braucht eine Beschreibung von höchstens {limit} Zeichen — daran erkennt der Agent, wann er danach greift.',
+  'skills.descTooLong':
+    'Beschreibung hat {count} Zeichen; ein neuer Skill erlaubt {limit}. Hermes kürzt den Index, längere verlieren also genau das Signal, das den Skill auslöst.',
   'skills.noCategory': 'ohne Kategorie',
 
   // Knowledge

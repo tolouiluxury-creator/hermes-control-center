@@ -96,6 +96,24 @@ export function normalizeSkillList(raw: z.infer<typeof skillsSchema>): SkillEntr
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** One skill's raw SKILL.md, for the editor. */
+export const skillContentSchema = z.looseObject({
+  name: z.string().nullish(),
+  content: z.string().nullish(),
+  path: z.string().nullish(),
+});
+
+export interface SkillContent {
+  name: string;
+  content: string;
+  /** Where the file lives — the only hint of which profile a skill came from. */
+  path: string | null;
+}
+
+export function normalizeSkillContent(raw: z.infer<typeof skillContentSchema>): SkillContent {
+  return { name: raw.name ?? '', content: raw.content ?? '', path: raw.path ?? null };
+}
+
 // --- Model options ----------------------------------------------------------
 
 export const modelOptionsSchema = z.looseObject({

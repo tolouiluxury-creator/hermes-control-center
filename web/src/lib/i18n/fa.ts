@@ -285,6 +285,23 @@ export const fa: Dict = {
   'skills.enabledToast': '«{name}» فعال شد',
   'skills.disabledToast': '«{name}» غیرفعال شد',
   'skills.usage': '{count}×',
+  'skills.new': 'مهارت تازه',
+  'skills.name': 'نام',
+  'skills.categoryField': 'دسته (اختیاری)',
+  'skills.nameInvalid': 'تنها حرف، رقم، نقطه، خط تیره و زیرخط — این نام به یک پوشه تبدیل می‌شود.',
+  'skills.edit': 'ویرایش SKILL.md',
+  'skills.remove': 'حذف',
+  'skills.removeConfirm': 'مهارت {name} حذف شود؟ هرمس حذف را در پس‌زمینه انجام می‌دهد.',
+  'skills.removeStarted': 'حذف {name} آغاز شد — فهرست پس از پایان به‌روز می‌شود.',
+  'skills.removeFailed': 'حذف آغاز نشد',
+  'skills.created': 'مهارت {name} ساخته شد',
+  'skills.saved': 'مهارت {name} ذخیره شد',
+  'skills.saveFailed': 'ذخیره ناموفق بود',
+  'skills.loadFailed': 'SKILL.md بارگذاری نشد',
+  'skills.descHint':
+    'یک مهارت تازه به توضیحی حداکثر {limit} نویسه نیاز دارد — عامل از همین می‌فهمد کِی سراغ آن برود.',
+  'skills.descTooLong':
+    'توضیح {count} نویسه است؛ مهارت تازه {limit} نویسه اجازه دارد. هرمس فهرست را کوتاه می‌کند، پس توضیح بلندتر همان نشانه‌ای را از دست می‌دهد که مهارت را فعال می‌کند.',
   'skills.noCategory': 'بدون دسته',
 
   // Knowledge

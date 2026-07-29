@@ -1,7 +1,15 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Package, Sparkles, Store } from 'lucide-react';
-import { getSkillList, queryKeys, toggleSkill } from '@/lib/api';
+import { Package, Pencil, Plus, Sparkles, Store, Trash2 } from 'lucide-react';
+import {
+  createSkill,
+  getSkillContent,
+  getSkillList,
+  queryKeys,
+  toggleSkill,
+  uninstallSkill,
+  updateSkillContent,
+} from '@/lib/api';
 import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
@@ -49,6 +57,37 @@ function ToggleSwitch({
   );
 }
 
+/**
+ * Hermes truncates the skill index to this many characters, and refuses to
+ * create a skill whose description overruns it — an over-long description would
+ * silently lose the routing signal that makes the agent reach for the skill at
+ * all. Existing skills are exempt, so this is checked only when authoring.
+ */
+const NEW_SKILL_DESCRIPTION_LIMIT = 60;
+
+/** A minimal SKILL.md that passes Hermes' frontmatter validation as written. */
+function skillTemplate(name: string): string {
+  return `---
+name: ${name || 'my-skill'}
+description: One sentence, trigger first, ends with a period.
+---
+
+# ${name || 'my-skill'}
+
+Describe what the agent should do when this skill applies.
+`;
+}
+
+/** Reads the `description:` line out of frontmatter, for the length check. */
+function frontmatterDescription(content: string): string | null {
+  // A leading BOM (Windows editors) sits before the fence; Hermes tolerates it,
+  // so this has to as well or it would find no frontmatter at all.
+  const match = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content.replace(/^\uFEFF/, ''));
+  if (!match) return null;
+  const line = /^description:\s*(.*)$/m.exec(match[1] ?? '');
+  return line ? (line[1] ?? '').trim().replace(/^['"]|['"]$/g, '') : null;
+}
+
 function SkillRow({
   skill,
   confirming,
@@ -56,6 +95,8 @@ function SkillRow({
   onToggle,
   onConfirmDisable,
   onCancel,
+  onEdit,
+  onRemove,
 }: {
   skill: SkillEntry;
   confirming: boolean;
@@ -63,6 +104,8 @@ function SkillRow({
   onToggle: (skill: SkillEntry) => void;
   onConfirmDisable: (skill: SkillEntry) => void;
   onCancel: () => void;
+  onEdit: (skill: SkillEntry) => void;
+  onRemove: (skill: SkillEntry) => void;
 }) {
   const { t } = useI18n();
   const provenance = skill.provenance ? PROVENANCE_META[skill.provenance] : undefined;
@@ -105,6 +148,31 @@ function SkillRow({
           {skill.usage > 0 ? t('skills.usage', { count: skill.usage }) : '—'}
         </span>
 
+        <span className="mt-0.5 flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onEdit(skill)}
+            title={t('skills.edit')}
+            aria-label={`${t('skills.edit')} ${skill.name}`}
+            className="rounded-lg border border-[var(--color-hairline)] p-1 text-[var(--color-ink-muted)] transition-colors hover:border-[var(--color-accent)]/40 hover:text-[var(--color-ink)]"
+          >
+            <Pencil size={12} aria-hidden />
+          </button>
+          {/* Bundled skills ship with Hermes and come back on the next update,
+              so removing one is offered only where it actually sticks. */}
+          {skill.provenance !== 'bundled' && (
+            <button
+              type="button"
+              onClick={() => onRemove(skill)}
+              title={t('skills.remove')}
+              aria-label={`${t('skills.remove')} ${skill.name}`}
+              className="rounded-lg border border-[var(--color-hairline)] p-1 text-[var(--color-danger)] transition-colors hover:border-[var(--color-danger)]/40"
+            >
+              <Trash2 size={12} aria-hidden />
+            </button>
+          )}
+        </span>
+
         <ToggleSwitch
           enabled={skill.enabled}
           disabled={pending}
@@ -143,6 +211,75 @@ export function SkillsPage() {
   const [category, setCategory] = useState<string>('alle');
   /** The skill whose disable is awaiting confirmation, if any. */
   const [confirming, setConfirming] = useState<string | null>(null);
+  /**
+   * The editor. `name` empty means authoring a new skill; otherwise it is an
+   * existing one whose SKILL.md was loaded for rewriting.
+   */
+  const [editor, setEditor] = useState<{
+    name: string;
+    category: string;
+    content: string;
+    isNew: boolean;
+  } | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  const openEditor = async (skill: SkillEntry) => {
+    setEditor({ name: skill.name, category: skill.category ?? '', content: '', isNew: false });
+    try {
+      const loaded = await getSkillContent(skill.name);
+      // Only fill in if the user has not moved on to another skill meanwhile.
+      setEditor((current) =>
+        current && current.name === skill.name ? { ...current, content: loaded.content } : current,
+      );
+    } catch (loadError) {
+      setEditor(null);
+      toast.push({
+        tone: 'error',
+        title: t('skills.loadFailed'),
+        description: loadError instanceof Error ? loadError.message : undefined,
+      });
+    }
+  };
+
+  const save = useMutation({
+    mutationFn: () => {
+      if (!editor) throw new Error('no editor');
+      return editor.isNew
+        ? createSkill(editor.name, editor.content, editor.category || undefined)
+        : updateSkillContent(editor.name, editor.content);
+    },
+    onSuccess: async () => {
+      const wasNew = editor?.isNew === true;
+      const name = editor?.name ?? '';
+      setEditor(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+      toast.push({
+        tone: 'success',
+        title: wasNew ? t('skills.created', { name }) : t('skills.saved', { name }),
+      });
+    },
+    onError: (saveError: Error) =>
+      toast.push({ tone: 'error', title: t('skills.saveFailed'), description: saveError.message }),
+  });
+
+  const remove = useMutation({
+    mutationFn: (name: string) => uninstallSkill(name),
+    onSuccess: async (_result, name) => {
+      setRemoving(null);
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+      // Hermes spawns the CLI and answers before it has finished, so this says
+      // the removal started. Claiming success would be a guess.
+      toast.push({ tone: 'info', title: t('skills.removeStarted', { name }) });
+    },
+    onError: (removeError: Error) =>
+      toast.push({
+        tone: 'error',
+        title: t('skills.removeFailed'),
+        description: removeError.message,
+      }),
+  });
 
   const toggle = useMutation({
     mutationFn: (skill: SkillEntry) => toggleSkill(skill.name, !skill.enabled),
@@ -216,7 +353,21 @@ export function SkillsPage() {
     <PageShell
       title={t('nav.skills')}
       description={t('page.skills.desc')}
-      actions={<SearchField value={search} onChange={setSearch} label={t('skills.searchLabel')} />}
+      actions={
+        <div className="flex items-center gap-2">
+          <SearchField value={search} onChange={setSearch} label={t('skills.searchLabel')} />
+          <button
+            type="button"
+            onClick={() =>
+              setEditor({ name: '', category: '', content: skillTemplate(''), isNew: true })
+            }
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20"
+          >
+            <Plus size={14} aria-hidden />
+            {t('skills.new')}
+          </button>
+        </div>
+      }
     >
       {isPending ? (
         <SkeletonText lines={10} />
@@ -226,6 +377,16 @@ export function SkillsPage() {
         </p>
       ) : (
         <>
+          {editor && (
+            <SkillEditor
+              editor={editor}
+              onChange={setEditor}
+              onSave={() => save.mutate()}
+              onCancel={() => setEditor(null)}
+              pending={save.isPending}
+            />
+          )}
+
           <div className="mb-3 flex flex-wrap gap-x-4 gap-y-2">
             <FilterChips
               label={t('skills.origin')}
@@ -260,20 +421,150 @@ export function SkillsPage() {
           ) : (
             <ul className="card overflow-hidden p-0">
               {visible.map((skill) => (
-                <SkillRow
-                  key={skill.name}
-                  skill={skill}
-                  confirming={confirming === skill.name}
-                  pending={toggle.isPending && toggle.variables?.name === skill.name}
-                  onToggle={onToggle}
-                  onConfirmDisable={(target) => toggle.mutate(target)}
-                  onCancel={() => setConfirming(null)}
-                />
+                <div key={skill.name}>
+                  <SkillRow
+                    skill={skill}
+                    confirming={confirming === skill.name}
+                    pending={toggle.isPending && toggle.variables?.name === skill.name}
+                    onToggle={onToggle}
+                    onConfirmDisable={(target) => toggle.mutate(target)}
+                    onCancel={() => setConfirming(null)}
+                    onEdit={(target) => void openEditor(target)}
+                    onRemove={(target) => setRemoving(target.name)}
+                  />
+                  {removing === skill.name && (
+                    <div className="px-3 pb-2.5">
+                      <ConfirmInline
+                        tone="danger"
+                        message={t('skills.removeConfirm', { name: skill.name })}
+                        confirmLabel={t('skills.remove')}
+                        pending={remove.isPending}
+                        onConfirm={() => remove.mutate(skill.name)}
+                        onCancel={() => setRemoving(null)}
+                      />
+                    </div>
+                  )}
+                </div>
               ))}
             </ul>
           )}
         </>
       )}
     </PageShell>
+  );
+}
+
+interface EditorState {
+  name: string;
+  category: string;
+  content: string;
+  isNew: boolean;
+}
+
+/**
+ * SKILL.md is the skill — Hermes has no structured form behind it, so this is a
+ * plain text editor with the two checks that decide whether a save can succeed
+ * at all, made visible before the round trip rather than after it.
+ */
+function SkillEditor({
+  editor,
+  onChange,
+  onSave,
+  onCancel,
+  pending,
+}: {
+  editor: EditorState;
+  onChange: (next: EditorState) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  pending: boolean;
+}) {
+  const { t } = useI18n();
+
+  const description = frontmatterDescription(editor.content);
+  const tooLong =
+    editor.isNew && description !== null && description.length > NEW_SKILL_DESCRIPTION_LIMIT;
+  const nameOk = /^[A-Za-z0-9._-]+$/.test(editor.name);
+  const canSave = !pending && nameOk && editor.content.trim() !== '' && !tooLong;
+
+  return (
+    <section className="card mb-4 space-y-3 p-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="min-w-0 flex-1">
+          <span className="text-xs text-[var(--color-ink-faint)]">{t('skills.name')}</span>
+          <input
+            value={editor.name}
+            // The name is the directory; renaming would be a move, not an edit.
+            disabled={!editor.isNew}
+            onChange={(event) => {
+              const name = event.target.value;
+              const templateUnchanged = editor.content === skillTemplate(editor.name);
+              onChange({
+                ...editor,
+                name,
+                content: templateUnchanged ? skillTemplate(name) : editor.content,
+              });
+            }}
+            placeholder="my-skill"
+            className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
+          />
+        </label>
+        {editor.isNew && (
+          <label className="min-w-0 flex-1">
+            <span className="text-xs text-[var(--color-ink-faint)]">
+              {t('skills.categoryField')}
+            </span>
+            <input
+              value={editor.category}
+              onChange={(event) => onChange({ ...editor, category: event.target.value })}
+              className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm outline-none focus-visible:border-[var(--color-accent)]"
+            />
+          </label>
+        )}
+      </div>
+
+      {editor.name !== '' && !nameOk && (
+        <p className="text-xs text-[var(--color-danger)]">{t('skills.nameInvalid')}</p>
+      )}
+
+      <textarea
+        value={editor.content}
+        onChange={(event) => onChange({ ...editor, content: event.target.value })}
+        rows={18}
+        spellCheck={false}
+        className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+      />
+
+      {tooLong ? (
+        <p className="text-xs text-[var(--color-danger)]">
+          {t('skills.descTooLong', {
+            count: description?.length ?? 0,
+            limit: NEW_SKILL_DESCRIPTION_LIMIT,
+          })}
+        </p>
+      ) : (
+        <p className="text-xs text-[var(--color-ink-faint)]">
+          {editor.isNew ? t('skills.descHint', { limit: NEW_SKILL_DESCRIPTION_LIMIT }) : ''}
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={!canSave}
+          onClick={onSave}
+          className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] disabled:opacity-40"
+        >
+          {pending ? t('common.saving') : t('common.save')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-sm text-[var(--color-ink-muted)]"
+        >
+          {t('common.cancel')}
+        </button>
+      </div>
+    </section>
   );
 }

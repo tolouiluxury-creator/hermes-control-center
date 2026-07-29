@@ -391,6 +391,43 @@ export const switchChatModel = (
     ...jsonBody({ sessionId: liveId, model, provider, confirm }),
   });
 
+export interface SkillContent {
+  name: string;
+  content: string;
+  path: string | null;
+}
+
+export const getSkillContent = (name: string): Promise<SkillContent> =>
+  apiRequest<SkillContent>(`/hermes/skills/content?name=${encodeURIComponent(name)}`);
+
+export const createSkill = (
+  name: string,
+  content: string,
+  category?: string,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/skills', {
+    method: 'POST',
+    ...jsonBody({ name, content, category }),
+  });
+
+export const updateSkillContent = (name: string, content: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/skills/content', {
+    method: 'PUT',
+    ...jsonBody({ name, content }),
+  });
+
+/**
+ * Start removing a skill.
+ *
+ * Hermes spawns its CLI and answers immediately, so `started` is all this can
+ * honestly report — the list has to be re-read to see whether it worked.
+ */
+export const uninstallSkill = (name: string): Promise<{ started: boolean }> =>
+  apiRequest<{ started: boolean }>('/hermes/skills/uninstall', {
+    method: 'POST',
+    ...jsonBody({ name }),
+  });
+
 export const getAuxiliaryModels = (): Promise<AuxiliaryModels> =>
   apiRequest<AuxiliaryModels>('/hermes/models/auxiliary');
 
@@ -510,6 +547,7 @@ export const queryKeys = {
   models: ['hermes', 'models'] as const,
   profiles: ['hermes', 'profiles'] as const,
   auxiliary: ['hermes', 'models', 'auxiliary'] as const,
+  skillContent: (name: string) => ['hermes', 'skills', 'content', name] as const,
   profileSoul: (name: string) => ['hermes', 'profiles', name, 'soul'] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,

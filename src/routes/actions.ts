@@ -20,6 +20,29 @@ const skillToggleSchema = z.object({
 const enabledSchema = z.object({ enabled: z.boolean() });
 
 /**
+ * A skill's name is also its directory name. Hermes validates it properly on
+ * the way in; this keeps an obviously wrong one from travelling at all. The
+ * 100 kB ceiling matches the size limit its own writer enforces.
+ */
+const skillNameSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9._-]+$/),
+});
+
+const skillCreateSchema = skillNameSchema.extend({
+  content: z.string().min(1).max(100_000),
+  category: z.string().trim().max(64).optional(),
+});
+
+const skillContentSchema = skillNameSchema.extend({
+  content: z.string().min(1).max(100_000),
+});
+
+/**
  * Hermes caps a batch at 500 and answers 400 above it. Rejecting here keeps the
  * failure local and specific rather than surfacing an upstream error.
  */
@@ -305,6 +328,52 @@ export async function registerActionRoutes(
       );
       cache.invalidate(CACHE_KEYS.auxiliary, CACHE_KEYS.models, CACHE_KEYS.model);
       return result;
+    });
+  });
+
+  // --- Skills: authoring ----------------------------------------------------
+
+  app.get('/api/hermes/skills/content', async (request, reply) => {
+    const name = (request.query as { name?: string } | undefined)?.name;
+    if (!name) return reply.code(400).send({ error: 'missing_name' });
+    // Not cached: it is fetched to be edited, and a stale copy would be saved
+    // back over whatever changed in between.
+    return guard(reply, () => ctx.dashboard.skillContent(name));
+  });
+
+  app.post('/api/hermes/skills', async (request, reply) => {
+    const input = parse(reply, skillCreateSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.createSkill(input.name, input.content, input.category);
+      cache.invalidate(CACHE_KEYS.skills, CACHE_KEYS.skillList);
+      return result;
+    });
+  });
+
+  app.put('/api/hermes/skills/content', async (request, reply) => {
+    const input = parse(reply, skillContentSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.updateSkillContent(input.name, input.content);
+      cache.invalidate(CACHE_KEYS.skills, CACHE_KEYS.skillList);
+      return result;
+    });
+  });
+
+  /**
+   * Remove a skill. Hermes has no delete endpoint — it spawns
+   * `hermes skills uninstall` and answers with the child's pid, so this reports
+   * that the removal started, not that it succeeded. The cache is cleared all
+   * the same, because the next read is how anyone finds out.
+   */
+  app.post('/api/hermes/skills/uninstall', async (request, reply) => {
+    const input = parse(reply, skillNameSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.uninstallSkill(input.name);
+      cache.invalidate(CACHE_KEYS.skills, CACHE_KEYS.skillList);
+      return { ...result, started: true };
     });
   });
 

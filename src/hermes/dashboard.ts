@@ -48,6 +48,7 @@ import {
   normalizeProfileSoul,
   normalizeSessions,
   normalizeSessionMessages,
+  normalizeSkillContent,
   normalizeSkillList,
   normalizeSkills,
   normalizeWebhooks,
@@ -57,6 +58,7 @@ import {
   profilesSchema,
   sessionMessagesSchema,
   sessionsSchema,
+  skillContentSchema,
   skillsSchema,
   webhooksSchema,
   type AnalyticsSummary,
@@ -70,6 +72,7 @@ import {
   type PairingOverview,
   type ProfileOverview,
   type ProfileSoul,
+  type SkillContent,
   type SkillEntry,
   type SkillSummary,
   type WebhooksOverview,
@@ -101,6 +104,18 @@ const bulkDeleteResultSchema = z.looseObject({
   deleted: z.number().nullish(),
 });
 export type BulkDeleteResult = z.infer<typeof bulkDeleteResultSchema>;
+
+/**
+ * Some Hermes actions are not done when they answer: it spawns the CLI and
+ * replies with the child's pid. The result says the work *started*, so callers
+ * must not report success — they re-read and see for themselves.
+ */
+const spawnedActionSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  pid: z.number().nullish(),
+  name: z.string().nullish(),
+});
+export type SpawnedAction = z.infer<typeof spawnedActionSchema>;
 
 export type CronAction = 'pause' | 'resume' | 'trigger';
 
@@ -233,6 +248,69 @@ export class DashboardClient {
       ...options,
       method: 'PUT',
       body: { name, enabled },
+    });
+  }
+
+  // --- Skills: authoring ----------------------------------------------------
+
+  /** The raw SKILL.md of one skill, for the editor. */
+  skillContent(name: string, options?: RequestOptions): Promise<SkillContent> {
+    return this.client
+      .json(skillContentSchema, '/api/skills/content', {
+        ...options,
+        query: { ...options?.query, name },
+      })
+      .then(normalizeSkillContent);
+  }
+
+  /**
+   * Write a new skill.
+   *
+   * Hermes routes this through the same validated path its own `skill_manage`
+   * tool uses — frontmatter validation, name and category checks, a size limit
+   * — and rejects with 400 rather than writing something malformed. Its own
+   * comment on why the agent's approval gate is skipped: "a write from the
+   * authenticated dashboard IS the user acting directly".
+   */
+  createSkill(
+    name: string,
+    content: string,
+    category?: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/skills', {
+      ...options,
+      method: 'POST',
+      body: { name, content, category: category || null },
+    });
+  }
+
+  /** Replace a skill's SKILL.md wholesale. */
+  updateSkillContent(
+    name: string,
+    content: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/skills/content', {
+      ...options,
+      method: 'PUT',
+      body: { name, content },
+    });
+  }
+
+  /**
+   * Remove a skill.
+   *
+   * There is no delete endpoint: Hermes shells out to `hermes skills uninstall`
+   * and answers with the child's pid the moment it is spawned. So this reports
+   * that the removal *started*, never that it finished — the caller has to
+   * re-read the list to find out.
+   */
+  uninstallSkill(name: string, options?: RequestOptions): Promise<SpawnedAction> {
+    return this.client.json(spawnedActionSchema, '/api/skills/hub/uninstall', {
+      ...options,
+      method: 'POST',
+      body: { name },
     });
   }
 
