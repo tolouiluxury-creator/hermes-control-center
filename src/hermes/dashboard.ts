@@ -328,19 +328,6 @@ export class DashboardClient {
     });
   }
 
-  /**
-   * Drop conversations that never got a message.
-   *
-   * They accumulate on their own: anything that opens a session and then goes
-   * away leaves one behind.
-   */
-  deleteEmptySessions(options?: RequestOptions): Promise<BulkDeleteResult> {
-    return this.client.json(bulkDeleteResultSchema, '/api/sessions/empty', {
-      ...options,
-      method: 'DELETE',
-    });
-  }
-
   // --- Settings: writes -----------------------------------------------------
 
   setEnv(key: string, value: string, options?: RequestOptions): Promise<ActionResult> {

@@ -256,12 +256,4 @@ export async function registerActionRoutes(
       return result;
     });
   });
-
-  app.delete('/api/hermes/sessions/empty', async (_request, reply) =>
-    guard(reply, async () => {
-      const result = await ctx.dashboard.deleteEmptySessions();
-      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
-      return result;
-    }),
-  );
 }

@@ -330,9 +330,6 @@ export const deleteChatSessions = (ids: string[]): Promise<DeleteSessionsResult>
     ...jsonBody({ ids }),
   });
 
-export const deleteEmptyChatSessions = (): Promise<DeleteSessionsResult> =>
-  apiRequest<DeleteSessionsResult>('/hermes/sessions/empty', { method: 'DELETE' });
-
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
 

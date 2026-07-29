@@ -3,7 +3,6 @@ import { CheckSquare, MessagesSquare, Plus, Send, Square, Trash2 } from 'lucide-
 import {
   createChatSession,
   deleteChatSessions,
-  deleteEmptyChatSessions,
   getChatHistory,
   getChatSessions,
   resumeChatSession,
@@ -30,7 +29,7 @@ export function ChatsPage() {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [listPending, setListPending] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(true);
+  const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
@@ -53,42 +52,37 @@ export function ChatsPage() {
   // A conversation that just became ready should be typeable without a click —
   // opening one is already the gesture that says "I want to write here".
   useEffect(() => {
-    if (!connecting && sessionId) inputRef.current?.focus();
+    if (!connecting) inputRef.current?.focus();
   }, [connecting, sessionId]);
 
-  const loadSessions = useCallback(async () => {
+  const loadSessions = useCallback(async (): Promise<ChatSessionSummary[]> => {
     try {
       const { sessions: list } = await getChatSessions();
       setSessions(list);
+      return list;
     } catch {
       // The list is a convenience; a failure here should not block chatting.
+      return [];
     } finally {
       setListPending(false);
     }
   }, []);
 
-  // Only sets state after the await, so it is safe to call from an effect.
-  const openNew = useCallback(async () => {
-    try {
-      const { sessionId: id } = await createChatSession();
-      sessionRef.current = id;
-      setSessionId(id);
-      setConnectionError(null);
-    } catch (error) {
-      setConnectionError(error instanceof Error ? error.message : t('chat.connectFailed'));
-    } finally {
-      setConnecting(false);
-    }
-  }, [t]);
-
+  /**
+   * Clear the thread and wait.
+   *
+   * Deliberately does not talk to the agent: opening this page used to create a
+   * session every single time, so a handful of visits left a trail of empty
+   * conversations behind. The session is now created on the first message
+   * instead — see `send` — which means looking at the chat costs nothing.
+   */
   const startNew = useCallback(() => {
     sessionRef.current = null;
     setSessionId(null);
-    setConnecting(true);
     setConnectionError(null);
     setMessages([]);
-    void openNew();
-  }, [openNew]);
+    inputRef.current?.focus();
+  }, []);
 
   /** Reopen a previous conversation: bring it live, then load its history. */
   const openExisting = useCallback(
@@ -153,37 +147,14 @@ export function ChatsPage() {
     }
   };
 
-  /*
-   * Empty conversations pile up on their own — anything that opens a session
-   * and then goes away leaves one behind. Hermes spares active ones, so the
-   * conversation on screen survives this.
-   */
-  const removeEmpty = async () => {
-    setDeleting(true);
-    try {
-      const result = await deleteEmptyChatSessions();
-      await loadSessions();
-      toast.push({
-        tone: 'success',
-        title: t('chat.cleanedEmpty', { count: result.deleted ?? 0 }),
-      });
-    } catch (error) {
-      toast.push({
-        tone: 'error',
-        title: t('toast.deleteFailed'),
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   // One SSE stream for the page; events are filtered by the active session.
   useEffect(() => {
-    // These only touch state after an await, so they are not synchronous
-    // set-state-in-effect despite how the rule reads them.
+    // Only the list is fetched on mount. Nothing is created until the first
+    // message, so arriving here leaves no trace on the agent.
+    //
+    // State is only touched after the await, so this is not the synchronous
+    // set-state-in-effect the rule is guarding against.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void openNew();
     void loadSessions();
 
     const source = new EventSource('/api/chat/events');
@@ -239,11 +210,11 @@ export function ChatsPage() {
     };
 
     return () => source.close();
-  }, [openNew, loadSessions]);
+  }, [loadSessions]);
 
   const send = async () => {
     const text = input.trim();
-    if (text === '' || streaming || !sessionRef.current) return;
+    if (text === '' || streaming) return;
     setInput('');
     // Sending must not cost the caret. Clicking the button moves focus there,
     // so it is handed back explicitly rather than left where the click put it.
@@ -251,7 +222,15 @@ export function ChatsPage() {
     setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setStreaming(true);
     try {
-      await sendChatPrompt(sessionRef.current, text);
+      // The conversation starts here, not when the page opened — that is what
+      // keeps unused sessions from piling up on the agent.
+      let id = sessionRef.current;
+      if (!id) {
+        id = (await createChatSession()).sessionId;
+        sessionRef.current = id;
+        setSessionId(id);
+      }
+      await sendChatPrompt(id, text);
     } catch (error) {
       setStreaming(false);
       setMessages((current) => current.slice(0, -1));
@@ -310,14 +289,6 @@ export function ChatsPage() {
                     className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
                   >
                     {t('chat.select')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void removeEmpty()}
-                    disabled={deleting}
-                    className="ml-auto text-[var(--color-ink-faint)] hover:text-[var(--color-ink)] disabled:opacity-40"
-                  >
-                    {t('chat.cleanEmpty')}
                   </button>
                 </>
               )}
@@ -507,12 +478,12 @@ export function ChatsPage() {
                   // Deliberately still writable while the answer streams: a disabled
                   // field drops the caret, and the next thought should not have to
                   // wait for the agent. Only sending waits — see the button.
-                  disabled={connecting || !sessionId}
+                  disabled={connecting}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={connecting || streaming || input.trim() === '' || !sessionId}
+                  disabled={connecting || streaming || input.trim() === ''}
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
                 >
                   <Send size={15} aria-hidden />

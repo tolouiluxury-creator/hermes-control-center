@@ -90,8 +90,6 @@ export const fa: Dict = {
   'chat.selectedCount': '{count} انتخاب‌شده',
   'chat.deleteConfirm': '{count} گفتگو حذف شود؟ این کار قابل بازگشت نیست.',
   'chat.deleted': '{count} گفتگو حذف شد',
-  'chat.cleanEmpty': 'پاک‌سازی خالی‌ها',
-  'chat.cleanedEmpty': '{count} گفتگوی خالی حذف شد',
 
   // Settings
   'settings.appearance': 'ظاهر',

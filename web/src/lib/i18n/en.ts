@@ -90,8 +90,6 @@ export const en: Dict = {
   'chat.selectedCount': '{count} selected',
   'chat.deleteConfirm': 'Delete {count} conversations? This cannot be undone.',
   'chat.deleted': '{count} conversations deleted',
-  'chat.cleanEmpty': 'Clean up empty',
-  'chat.cleanedEmpty': '{count} empty conversations removed',
 
   // Settings
   'settings.appearance': 'Appearance',

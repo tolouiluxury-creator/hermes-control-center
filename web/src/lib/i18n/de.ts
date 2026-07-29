@@ -91,8 +91,6 @@ export const de: Dict = {
   'chat.selectedCount': '{count} ausgewählt',
   'chat.deleteConfirm': '{count} Unterhaltungen löschen? Das lässt sich nicht rückgängig machen.',
   'chat.deleted': '{count} Unterhaltungen gelöscht',
-  'chat.cleanEmpty': 'Leere aufräumen',
-  'chat.cleanedEmpty': '{count} leere Unterhaltungen entfernt',
 
   // Settings
   'settings.appearance': 'Erscheinungsbild',

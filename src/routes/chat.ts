@@ -16,6 +16,21 @@ import { log } from '../log.js';
 
 const KEEPALIVE_MS = 20_000;
 
+/**
+ * Platform tag stamped on the conversations we open.
+ *
+ * Without one, the gateway defaults to `tui`, and Hermes documents what that
+ * costs: the agent then believes it is talking to a terminal user and offers
+ * TUI-only slash commands that do not exist here. We are what its own comment
+ * describes as `desktop` — a graphical surface, not a terminal.
+ *
+ * It also makes our conversations identifiable, which is what lets the browser
+ * reuse an empty one of ours instead of stacking up a new session per visit —
+ * and, critically, keeps it from ever adopting an empty Telegram session,
+ * where the source decides which channel a reply is routed back to.
+ */
+const CHAT_SOURCE = 'desktop';
+
 const promptSchema = z.object({
   sessionId: z.string().trim().min(1),
   text: z.string().trim().min(1).max(100_000),
@@ -74,6 +89,7 @@ export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext):
     try {
       const result = await ctx.gateway.request<{ session_id?: string }>('session.create', {
         cols: 80,
+        source: CHAT_SOURCE,
       });
       if (!result.session_id) {
         return reply
