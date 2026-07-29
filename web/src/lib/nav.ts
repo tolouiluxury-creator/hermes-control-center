@@ -12,6 +12,7 @@ import {
   ScrollText,
   Server,
   Settings,
+  UserRound,
   Workflow,
   type LucideIcon,
 } from 'lucide-react';
@@ -78,6 +79,11 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'modelle',
     path: '/modelle',
     icon: Cpu,
+  },
+  {
+    id: 'profile',
+    path: '/profile',
+    icon: UserRound,
   },
   {
     id: 'prompts',

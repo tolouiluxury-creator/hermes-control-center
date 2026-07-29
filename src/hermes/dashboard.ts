@@ -43,6 +43,7 @@ import {
   normalizeModelOptions,
   normalizePairing,
   normalizeProfiles,
+  normalizeProfileSoul,
   normalizeSessions,
   normalizeSessionMessages,
   normalizeSkillList,
@@ -50,6 +51,7 @@ import {
   normalizeWebhooks,
   modelOptionsSchema,
   pairingSchema,
+  profileSoulSchema,
   profilesSchema,
   sessionMessagesSchema,
   sessionsSchema,
@@ -64,6 +66,7 @@ import {
   type ModelSummary,
   type PairingOverview,
   type ProfileOverview,
+  type ProfileSoul,
   type SkillEntry,
   type SkillSummary,
   type WebhooksOverview,
@@ -354,6 +357,110 @@ export class DashboardClient {
       // database they live in have to travel together or the batch hits the
       // wrong state.db and reports zero deletions.
       body: { ids, ...(profile ? { profile } : {}) },
+    });
+  }
+
+  // --- Profiles: writes -----------------------------------------------------
+  // Bodies taken from Hermes' own request models (ProfileCreate, ProfileRename,
+  // ProfileSoulUpdate, …), not guessed.
+
+  /**
+   * Create a profile, optionally as a copy of an existing one.
+   *
+   * `cloneFrom` copies config, skills and SOUL; `cloneAll` copies the whole
+   * state including its conversations. Hermes seeds the bundled skills into a
+   * fresh profile unless `noSkills` says otherwise.
+   */
+  createProfile(
+    input: {
+      name: string;
+      cloneFrom?: string;
+      cloneAll?: boolean;
+      noSkills?: boolean;
+      description?: string;
+    },
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/profiles', {
+      ...options,
+      method: 'POST',
+      body: {
+        name: input.name,
+        clone_from: input.cloneFrom || null,
+        clone_all: input.cloneAll === true,
+        no_skills: input.noSkills === true,
+        description: input.description || null,
+      },
+    });
+  }
+
+  renameProfile(name: string, newName: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/profiles/${encodeURIComponent(name)}`, {
+      ...options,
+      method: 'PATCH',
+      body: { new_name: newName },
+    });
+  }
+
+  deleteProfile(name: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/profiles/${encodeURIComponent(name)}`, {
+      ...options,
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Set the sticky profile — what the next `hermes` command picks up.
+   *
+   * Deliberately NOT what the chat toolbar uses: Hermes' own docstring says
+   * this "does not retarget the already-running dashboard process", so it is
+   * offered here, where it is about the installation, and nowhere near a chat.
+   */
+  setActiveProfile(name: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/profiles/active', {
+      ...options,
+      method: 'POST',
+      body: { name },
+    });
+  }
+
+  setProfileDescription(
+    name: string,
+    description: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/profiles/${encodeURIComponent(name)}/description`,
+      { ...options, method: 'PUT', body: { description } },
+    );
+  }
+
+  /** The model a profile answers with, written into that profile's own config. */
+  setProfileModel(
+    name: string,
+    provider: string,
+    model: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/profiles/${encodeURIComponent(name)}/model`, {
+      ...options,
+      method: 'PUT',
+      body: { provider, model },
+    });
+  }
+
+  profileSoul(name: string, options?: RequestOptions): Promise<ProfileSoul> {
+    return this.client
+      .json(profileSoulSchema, `/api/profiles/${encodeURIComponent(name)}/soul`, options)
+      .then(normalizeProfileSoul);
+  }
+
+  saveProfileSoul(name: string, content: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/profiles/${encodeURIComponent(name)}/soul`, {
+      ...options,
+      method: 'PUT',
+      body: { content },
     });
   }
 

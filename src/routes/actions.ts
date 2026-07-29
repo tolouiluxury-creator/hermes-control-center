@@ -51,6 +51,31 @@ const envDeleteSchema = z.object({ key: z.string().trim().min(1) });
 const configRawSchema = z.object({ yaml: z.string() });
 const pausedSchema = z.object({ paused: z.boolean() });
 
+/**
+ * Profile names become directory names under `~/.hermes/profiles`, so the shape
+ * is constrained here rather than left to Hermes' 400. Same character set the
+ * CLI accepts.
+ */
+const profileNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9._-]+$/);
+
+const profileCreateSchema = z.object({
+  name: profileNameSchema,
+  cloneFrom: z.string().trim().max(64).optional(),
+  cloneAll: z.boolean().optional(),
+  noSkills: z.boolean().optional(),
+  description: z.string().trim().max(500).optional(),
+});
+
+const profileRenameSchema = z.object({ newName: profileNameSchema });
+const profileActiveSchema = z.object({ name: profileNameSchema });
+const profileDescriptionSchema = z.object({ description: z.string().max(500) });
+const profileSoulSchema = z.object({ content: z.string().max(200_000) });
+
 export async function registerActionRoutes(
   app: FastifyInstance,
   ctx: AppContext,
@@ -249,6 +274,92 @@ export async function registerActionRoutes(
       cache.invalidate(CACHE_KEYS.toolsets);
       return result;
     });
+  });
+
+  // --- Profiles -------------------------------------------------------------
+  // A profile is a whole installation of the agent: its own config, skills,
+  // memory and conversations. Every write here invalidates the profile list, and
+  // the model ones also invalidate the model reads, because a profile carries a
+  // model and the chat toolbar shows it.
+
+  app.post('/api/hermes/profiles', async (request, reply) => {
+    const input = parse(reply, profileCreateSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.createProfile(input);
+      cache.invalidate(CACHE_KEYS.profiles);
+      return result;
+    });
+  });
+
+  app.patch('/api/hermes/profiles/:name', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, profileRenameSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.renameProfile(name, input.newName);
+      cache.invalidate(CACHE_KEYS.profiles);
+      // Conversations are listed per profile; the old name's entries are stale.
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
+      return result;
+    });
+  });
+
+  app.delete('/api/hermes/profiles/:name', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.deleteProfile(name);
+      cache.invalidate(CACHE_KEYS.profiles);
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
+      return result;
+    });
+  });
+
+  /** The sticky profile for new terminal commands. Does not move the running dashboard. */
+  app.post('/api/hermes/profiles/active', async (request, reply) => {
+    const input = parse(reply, profileActiveSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setActiveProfile(input.name);
+      cache.invalidate(CACHE_KEYS.profiles);
+      return result;
+    });
+  });
+
+  app.put('/api/hermes/profiles/:name/description', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, profileDescriptionSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setProfileDescription(name, input.description);
+      cache.invalidate(CACHE_KEYS.profiles);
+      return result;
+    });
+  });
+
+  app.put('/api/hermes/profiles/:name/model', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, modelSetSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setProfileModel(name, input.provider, input.model);
+      cache.invalidate(CACHE_KEYS.profiles, CACHE_KEYS.models, CACHE_KEYS.model);
+      return result;
+    });
+  });
+
+  app.get('/api/hermes/profiles/:name/soul', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    // Not cached: it is opened to be edited, and a stale copy would be
+    // overwritten with what the editor had when it loaded.
+    return guard(reply, () => ctx.dashboard.profileSoul(name));
+  });
+
+  app.put('/api/hermes/profiles/:name/soul', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, profileSoulSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, () => ctx.dashboard.saveProfileSoul(name, input.content));
   });
 
   // --- Sessions -------------------------------------------------------------

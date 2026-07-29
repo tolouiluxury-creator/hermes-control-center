@@ -183,6 +183,21 @@ export const profilesSchema = z.looseObject({
     .nullish(),
 });
 
+/** SOUL.md is the profile's own standing instructions; absent is normal. */
+export const profileSoulSchema = z.looseObject({
+  content: z.string().nullish(),
+  exists: z.boolean().nullish(),
+});
+
+export interface ProfileSoul {
+  content: string;
+  exists: boolean;
+}
+
+export function normalizeProfileSoul(raw: z.infer<typeof profileSoulSchema>): ProfileSoul {
+  return { content: raw.content ?? '', exists: raw.exists === true };
+}
+
 export const activeProfileSchema = z.looseObject({
   active: z.string().nullish(),
   current: z.string().nullish(),

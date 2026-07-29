@@ -393,6 +393,62 @@ export const switchChatModel = (
 export const getProfiles = (): Promise<ProfileOverview> =>
   apiRequest<ProfileOverview>('/hermes/profiles');
 
+export interface ProfileCreateInput {
+  name: string;
+  /** Copy an existing profile's config, skills and SOUL instead of starting bare. */
+  cloneFrom?: string;
+  /** Copy its whole state as well, conversations included. */
+  cloneAll?: boolean;
+  noSkills?: boolean;
+  description?: string;
+}
+
+export const createProfile = (input: ProfileCreateInput): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/profiles', { method: 'POST', ...jsonBody(input) });
+
+export const renameProfile = (name: string, newName: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/profiles/${encodeURIComponent(name)}`, {
+    method: 'PATCH',
+    ...jsonBody({ newName }),
+  });
+
+export const deleteProfile = (name: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' });
+
+/** Sets the sticky profile for new terminal commands; the running dashboard stays put. */
+export const setActiveProfile = (name: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/profiles/active', { method: 'POST', ...jsonBody({ name }) });
+
+export const setProfileDescription = (name: string, description: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/profiles/${encodeURIComponent(name)}/description`, {
+    method: 'PUT',
+    ...jsonBody({ description }),
+  });
+
+export const setProfileModel = (
+  name: string,
+  provider: string,
+  model: string,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/profiles/${encodeURIComponent(name)}/model`, {
+    method: 'PUT',
+    ...jsonBody({ provider, model }),
+  });
+
+export interface ProfileSoul {
+  content: string;
+  exists: boolean;
+}
+
+export const getProfileSoul = (name: string): Promise<ProfileSoul> =>
+  apiRequest<ProfileSoul>(`/hermes/profiles/${encodeURIComponent(name)}/soul`);
+
+export const saveProfileSoul = (name: string, content: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/profiles/${encodeURIComponent(name)}/soul`, {
+    method: 'PUT',
+    ...jsonBody({ content }),
+  });
+
 /** Reports how many rows really went — Hermes skips ids it no longer knows. */
 export interface DeleteSessionsResult {
   ok?: boolean | null;
@@ -438,6 +494,7 @@ export const queryKeys = {
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,
   profiles: ['hermes', 'profiles'] as const,
+  profileSoul: (name: string) => ['hermes', 'profiles', name, 'soul'] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,
   model: ['hermes', 'model'] as const,
