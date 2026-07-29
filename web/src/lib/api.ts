@@ -18,6 +18,7 @@ import type {
   ModelOptions,
   ModelSummary,
   PairingOverview,
+  ProfileOverview,
   SessionsResponse,
   SkillEntry,
   SkillSummary,
@@ -307,16 +308,56 @@ export interface ChatSessionSummary {
   startedAt: number | null;
   messageCount: number;
   source: string;
+  /** What the conversation actually runs on; null when it cannot be determined. */
+  model: string | null;
 }
 
-export const getChatSessions = (): Promise<{ sessions: ChatSessionSummary[] }> =>
-  apiRequest<{ sessions: ChatSessionSummary[] }>('/chat/sessions');
+/**
+ * The profile a chat call is scoped to. Every profile has its own conversation
+ * database, so this decides which conversations are listed, where a new one is
+ * created, and which one a delete reaches. Empty means the profile the running
+ * dashboard was launched with.
+ */
+export type ChatProfile = string | null | undefined;
 
-export const resumeChatSession = (sessionId: string): Promise<{ ok: boolean }> =>
-  apiRequest<{ ok: boolean }>('/chat/resume', { method: 'POST', ...jsonBody({ sessionId }) });
+const withProfile = (path: string, profile: ChatProfile): string =>
+  profile ? `${path}${path.includes('?') ? '&' : '?'}profile=${encodeURIComponent(profile)}` : path;
 
-export const createChatSession = (): Promise<{ sessionId: string }> =>
-  apiRequest<{ sessionId: string }>('/chat/session', { method: 'POST' });
+export const getChatSessions = (
+  profile?: ChatProfile,
+): Promise<{ sessions: ChatSessionSummary[] }> =>
+  apiRequest<{ sessions: ChatSessionSummary[] }>(withProfile('/chat/sessions', profile));
+
+export const resumeChatSession = (
+  sessionId: string,
+  profile?: ChatProfile,
+): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/chat/resume', {
+    method: 'POST',
+    ...jsonBody({ sessionId, profile: profile ?? undefined }),
+  });
+
+export interface CreateChatSessionInput {
+  /** Per-session model override. Applies to this conversation only. */
+  model?: string;
+  provider?: string;
+  profile?: ChatProfile;
+}
+
+export const createChatSession = (
+  input: CreateChatSessionInput = {},
+): Promise<{ sessionId: string }> =>
+  apiRequest<{ sessionId: string }>('/chat/session', {
+    method: 'POST',
+    ...jsonBody({
+      model: input.model || undefined,
+      provider: input.provider || undefined,
+      profile: input.profile ?? undefined,
+    }),
+  });
+
+export const getProfiles = (): Promise<ProfileOverview> =>
+  apiRequest<ProfileOverview>('/hermes/profiles');
 
 /** Reports how many rows really went — Hermes skips ids it no longer knows. */
 export interface DeleteSessionsResult {
@@ -324,18 +365,24 @@ export interface DeleteSessionsResult {
   deleted?: number | null;
 }
 
-export const deleteChatSessions = (ids: string[]): Promise<DeleteSessionsResult> =>
+export const deleteChatSessions = (
+  ids: string[],
+  profile?: ChatProfile,
+): Promise<DeleteSessionsResult> =>
   apiRequest<DeleteSessionsResult>('/hermes/sessions/delete', {
     method: 'POST',
-    ...jsonBody({ ids }),
+    ...jsonBody({ ids, profile: profile ?? undefined }),
   });
 
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
 
-export const getChatHistory = (sessionId: string): Promise<{ messages: ChatMessage[] }> =>
+export const getChatHistory = (
+  sessionId: string,
+  profile?: ChatProfile,
+): Promise<{ messages: ChatMessage[] }> =>
   apiRequest<{ messages: ChatMessage[] }>(
-    `/chat/history?sessionId=${encodeURIComponent(sessionId)}`,
+    withProfile(`/chat/history?sessionId=${encodeURIComponent(sessionId)}`, profile),
   );
 
 export const getMetricSeries = (metric: string, windowMs?: number): Promise<MetricSeries> => {
@@ -356,6 +403,7 @@ export const queryKeys = {
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,
+  profiles: ['hermes', 'profiles'] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,
   model: ['hermes', 'model'] as const,

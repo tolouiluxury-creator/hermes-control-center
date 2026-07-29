@@ -4,6 +4,7 @@ import type { AppContext } from '../context.js';
 import { GatewayError } from '../hermes/gateway.js';
 import { toEpochMs } from '../hermes/inventory.js';
 import { log } from '../log.js';
+import { SESSIONS_CACHE_PREFIX, sessionsCacheKey, type ResponseCache } from './cache.js';
 
 /**
  * Chat with the agent over the dashboard's tui_gateway WebSocket. The browser
@@ -31,9 +32,42 @@ const KEEPALIVE_MS = 20_000;
  */
 const CHAT_SOURCE = 'desktop';
 
+/**
+ * How many stored rows are consulted to learn which model a conversation runs
+ * on. The gateway's own `session.list` does not report the model, so the list is
+ * joined against the dashboard's session table; anything older than this window
+ * simply shows no model rather than a guessed one.
+ */
+const MODEL_LOOKUP_LIMIT = 100;
+
 const promptSchema = z.object({
   sessionId: z.string().trim().min(1),
   text: z.string().trim().min(1).max(100_000),
+});
+
+/**
+ * A profile name, or nothing.
+ *
+ * Empty means "the profile the running dashboard was launched with" — which is
+ * exactly what omitting the parameter does upstream, so the two agree.
+ */
+const profileSchema = z
+  .string()
+  .trim()
+  .max(120)
+  .optional()
+  .transform((value) => value || undefined);
+
+const createSchema = z.object({
+  /** Per-session model override, honoured by `session.create`; never a config write. */
+  model: z.string().trim().max(200).optional(),
+  provider: z.string().trim().max(200).optional(),
+  profile: profileSchema,
+});
+
+const resumeSchema = z.object({
+  sessionId: z.string().trim().min(1),
+  profile: profileSchema,
 });
 
 interface ChatSession {
@@ -43,59 +77,98 @@ interface ChatSession {
   startedAt: number | null;
   messageCount: number;
   source: string;
+  /** From the stored row; null when the conversation is outside the lookup window. */
+  model: string | null;
 }
 
 /** Reduces a gateway session.list result to the list the sidebar renders. */
-function normalizeSessions(result: unknown): ChatSession[] {
+function normalizeSessions(result: unknown, models: Map<string, string | null>): ChatSession[] {
   const raw = result as { sessions?: unknown } | null;
   const list = Array.isArray(raw?.sessions) ? raw.sessions : [];
   return list.map((entry) => {
     const s = entry as Record<string, unknown>;
+    const id = typeof s.id === 'string' ? s.id : '';
     return {
-      id: typeof s.id === 'string' ? s.id : '',
+      id,
       title: typeof s.title === 'string' ? s.title.trim() : '',
       preview: typeof s.preview === 'string' ? s.preview.trim() : '',
       startedAt: toEpochMs(s.started_at),
       messageCount: typeof s.message_count === 'number' ? s.message_count : 0,
       source: typeof s.source === 'string' ? s.source : '',
+      model: models.get(id) ?? null,
     };
   });
 }
 
-export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
-  app.get('/api/chat/sessions', async (_request, reply) => {
+export async function registerChatRoutes(
+  app: FastifyInstance,
+  ctx: AppContext,
+  cache: ResponseCache,
+): Promise<void> {
+  app.get('/api/chat/sessions', async (request, reply) => {
+    const profile = readProfile((request.query as Record<string, unknown> | undefined)?.profile);
     try {
-      const result = await ctx.gateway.request('session.list', { limit: 50 });
-      return { sessions: normalizeSessions(result).filter((s) => s.id !== '') };
+      // The two calls answer different questions — which conversations exist
+      // (gateway, which also filters out internal sub-agent runs) and what each
+      // one runs on (stored rows). A failure of the second must not cost the
+      // list, so it degrades to "model unknown".
+      const [result, stored] = await Promise.all([
+        ctx.gateway.request('session.list', { limit: 50, ...(profile ? { profile } : {}) }),
+        cache
+          .get(sessionsCacheKey(MODEL_LOOKUP_LIMIT, profile), () =>
+            ctx.dashboard.sessions(MODEL_LOOKUP_LIMIT, profile),
+          )
+          .catch(() => ({ sessions: [] as { id: string; model: string | null }[] })),
+      ]);
+      const models = new Map(stored.sessions.map((s) => [s.id, s.model]));
+      return { sessions: normalizeSessions(result, models).filter((s) => s.id !== '') };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }
   });
 
   app.post('/api/chat/resume', async (request, reply) => {
-    const sessionId = (request.body as { sessionId?: unknown } | undefined)?.sessionId;
-    if (typeof sessionId !== 'string' || sessionId.trim() === '') {
-      return reply.code(400).send({ error: 'missing_session' });
-    }
+    const parsed = resumeSchema.safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: 'missing_session' });
     try {
-      await ctx.gateway.request('session.resume', { session_id: sessionId, cols: 80 });
+      await ctx.gateway.request('session.resume', {
+        session_id: parsed.data.sessionId,
+        cols: 80,
+        ...(parsed.data.profile ? { profile: parsed.data.profile } : {}),
+      });
       return { ok: true };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }
   });
 
-  app.post('/api/chat/session', async (_request, reply) => {
+  app.post('/api/chat/session', async (request, reply) => {
+    const parsed = createSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply
+        .code(400)
+        .send({ error: 'invalid_session', message: parsed.error.issues[0]?.message ?? 'invalid' });
+    }
+    const { model, provider, profile } = parsed.data;
     try {
       const result = await ctx.gateway.request<{ session_id?: string }>('session.create', {
         cols: 80,
         source: CHAT_SOURCE,
+        // Each of these is a per-session override in Hermes' own words: it is
+        // "built into the agent below — never a global config write, so picking
+        // a model for a new chat can't mutate the profile default".
+        ...(model ? { model } : {}),
+        ...(provider ? { provider } : {}),
+        ...(profile ? { profile } : {}),
       });
       if (!result.session_id) {
         return reply
           .code(502)
           .send({ error: 'no_session', message: 'Keine Sitzungs-ID erhalten.' });
       }
+      // The new conversation is not in the cached session list yet, and the
+      // sidebar reloads right after the first message lands.
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
       return { sessionId: result.session_id };
     } catch (error) {
       return reply
@@ -123,12 +196,13 @@ export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext):
   });
 
   app.get('/api/chat/history', async (request, reply) => {
-    const sessionId = (request.query as { sessionId?: string } | undefined)?.sessionId;
+    const query = request.query as { sessionId?: string; profile?: unknown } | undefined;
+    const sessionId = query?.sessionId;
     if (!sessionId) return reply.code(400).send({ error: 'missing_session' });
     try {
       // The stored transcript (dashboard REST) is authoritative and needs no
       // resume; the gateway's own history only holds a live session's turns.
-      const messages = await ctx.dashboard.sessionMessages(sessionId);
+      const messages = await ctx.dashboard.sessionMessages(sessionId, readProfile(query?.profile));
       return { messages };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
@@ -169,6 +243,11 @@ export async function registerChatRoutes(app: FastifyInstance, ctx: AppContext):
     request.raw.on('close', cleanup);
     request.raw.on('error', cleanup);
   });
+}
+
+/** Reads a profile from a query string, treating blank as "not scoped". */
+function readProfile(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 
 function describeGatewayError(error: unknown): string {

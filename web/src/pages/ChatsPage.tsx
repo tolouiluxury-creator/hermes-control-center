@@ -12,6 +12,7 @@ import {
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ChatToolbar, type ModelPick } from '@/components/ChatToolbar';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
@@ -39,6 +40,22 @@ export function ChatsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /**
+   * Toolbar state. The model is an override for the *next* conversation; the
+   * profile scopes the whole surface, because each profile keeps its own
+   * conversation database.
+   */
+  const [modelPick, setModelPick] = useState<ModelPick | null>(null);
+  const [profile, setProfile] = useState<string | null>(null);
+  /**
+   * The model a conversation started here was created with.
+   *
+   * Hermes writes the stored row on the first prompt, so for a few seconds
+   * after sending there is nothing to read back. Remembering the pick keeps the
+   * chip from saying "unknown" about a model the user just chose; the stored
+   * value takes over as soon as it exists.
+   */
+  const [startedWithModel, setStartedWithModel] = useState<string | null>(null);
 
   const sessionRef = useRef<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
@@ -57,7 +74,7 @@ export function ChatsPage() {
 
   const loadSessions = useCallback(async (): Promise<ChatSessionSummary[]> => {
     try {
-      const { sessions: list } = await getChatSessions();
+      const { sessions: list } = await getChatSessions(profile);
       setSessions(list);
       return list;
     } catch {
@@ -66,7 +83,14 @@ export function ChatsPage() {
     } finally {
       setListPending(false);
     }
-  }, []);
+  }, [profile]);
+
+  // The event stream is opened once, but it has to reach the *current* loader —
+  // a profile switch changes which conversations a reload should show.
+  const loadSessionsRef = useRef(loadSessions);
+  useEffect(() => {
+    loadSessionsRef.current = loadSessions;
+  }, [loadSessions]);
 
   /**
    * Clear the thread and wait.
@@ -81,6 +105,7 @@ export function ChatsPage() {
     setSessionId(null);
     setConnectionError(null);
     setMessages([]);
+    setStartedWithModel(null);
     inputRef.current?.focus();
   }, []);
 
@@ -92,9 +117,10 @@ export function ChatsPage() {
       setConnecting(true);
       setConnectionError(null);
       setMessages([]);
+      setStartedWithModel(null);
       try {
-        await resumeChatSession(id);
-        const { messages: history } = await getChatHistory(id);
+        await resumeChatSession(id, profile);
+        const { messages: history } = await getChatHistory(id, profile);
         // Guard against a race where the user clicked another session meanwhile.
         if (sessionRef.current === id) setMessages(history);
       } catch (error) {
@@ -103,8 +129,24 @@ export function ChatsPage() {
         setConnecting(false);
       }
     },
-    [t],
+    [profile, t],
   );
+
+  /**
+   * Switching profile switches conversation databases, so the open thread must
+   * go with it: its id means nothing in the other profile's store, and leaving
+   * it on screen would show a conversation the list no longer contains.
+   */
+  const switchProfile = (next: string | null) => {
+    if (next === profile) return;
+    setProfile(next);
+    setListPending(true);
+    setSessions([]);
+    leaveSelection();
+    startNew();
+  };
+
+  const openSession = sessions.find((session) => session.id === sessionId) ?? null;
 
   const toggleSelected = (id: string) =>
     setSelected((current) => {
@@ -125,7 +167,7 @@ export function ChatsPage() {
     if (ids.length === 0) return;
     setDeleting(true);
     try {
-      const result = await deleteChatSessions(ids);
+      const result = await deleteChatSessions(ids, profile);
       // Deleting the conversation on screen would leave a thread pointing at
       // something that no longer exists, so start a fresh one instead.
       const hitActive = sessionRef.current !== null && ids.includes(sessionRef.current);
@@ -147,16 +189,18 @@ export function ChatsPage() {
     }
   };
 
-  // One SSE stream for the page; events are filtered by the active session.
+  // Only the list is fetched here. Nothing is created until the first message,
+  // so arriving on this page leaves no trace on the agent. It re-runs on a
+  // profile switch, because that is a different conversation database.
   useEffect(() => {
-    // Only the list is fetched on mount. Nothing is created until the first
-    // message, so arriving here leaves no trace on the agent.
-    //
     // State is only touched after the await, so this is not the synchronous
     // set-state-in-effect the rule is guarding against.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSessions();
+  }, [loadSessions]);
 
+  // One SSE stream for the page; events are filtered by the active session.
+  useEffect(() => {
     const source = new EventSource('/api/chat/events');
 
     const append = (text: string) =>
@@ -199,7 +243,7 @@ export function ChatsPage() {
         }
         return current;
       });
-      void loadSessions();
+      void loadSessionsRef.current();
     };
 
     source.addEventListener('message.delta', onDelta);
@@ -210,7 +254,7 @@ export function ChatsPage() {
     };
 
     return () => source.close();
-  }, [loadSessions]);
+  }, []);
 
   const send = async () => {
     const text = input.trim();
@@ -226,9 +270,19 @@ export function ChatsPage() {
       // keeps unused sessions from piling up on the agent.
       let id = sessionRef.current;
       if (!id) {
-        id = (await createChatSession()).sessionId;
+        // The toolbar's picks only ever reach Hermes here. Both are per-session
+        // overrides on session.create, so starting a chat with another model
+        // leaves the agent's configured default untouched.
+        id = (
+          await createChatSession({
+            model: modelPick?.model,
+            provider: modelPick?.provider,
+            profile,
+          })
+        ).sessionId;
         sessionRef.current = id;
         setSessionId(id);
+        setStartedWithModel(modelPick?.model ?? null);
       }
       await sendChatPrompt(id, text);
     } catch (error) {
@@ -389,7 +443,7 @@ export function ChatsPage() {
             </div>
           ) : (
             <>
-              {/* Chat header. The quick-switchers for model and profile land here next. */}
+              {/* Chat header: what you are in, and what it runs on. */}
               <div className="mb-3 flex items-center gap-2.5 border-b border-[var(--color-hairline)] pb-2.5">
                 <img
                   src="/logo.png"
@@ -400,17 +454,24 @@ export function ChatsPage() {
                   aria-hidden
                 />
                 <span className="truncate text-sm font-medium">
-                  {sessions.find((session) => session.id === sessionId)?.title ||
-                    t('chat.newConversation')}
+                  {openSession?.title || t('chat.newConversation')}
                 </span>
                 {streaming && (
                   <span
-                    className="ml-auto shrink-0 animate-pulse text-xs text-[var(--color-ink-faint)]"
+                    className="shrink-0 animate-pulse text-xs text-[var(--color-ink-faint)]"
                     role="status"
                   >
                     {t('chat.thinking')}
                   </span>
                 )}
+                <ChatToolbar
+                  modelPick={modelPick}
+                  onModelPick={setModelPick}
+                  profile={profile}
+                  onProfile={switchProfile}
+                  openConversationModel={openSession?.model ?? startedWithModel}
+                  conversationOpen={sessionId !== null}
+                />
               </div>
 
               <div

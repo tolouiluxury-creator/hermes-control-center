@@ -73,6 +73,7 @@ export const CACHE_KEYS = {
   skills: 'skills',
   skillList: 'skills:list',
   models: 'models',
+  profiles: 'profiles',
   mcp: 'mcp',
   cron: 'cron',
   model: 'model',
@@ -93,3 +94,13 @@ export const CACHE_KEYS = {
  * Deleting a conversation invalidates all of them at once.
  */
 export const SESSIONS_CACHE_PREFIX = 'sessions:';
+
+/**
+ * Cache key for one session read. The profile is part of it because each
+ * profile has its own `state.db` — two profiles asking for the same limit are
+ * asking two different databases, and sharing one entry would show a
+ * conversation list that belongs to somebody else.
+ */
+export function sessionsCacheKey(limit: number, profile?: string | null): string {
+  return `${SESSIONS_CACHE_PREFIX}${limit}:${profile ?? ''}`;
+}

@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { AppContext } from '../context.js';
 import { UpstreamError } from '../hermes/client.js';
-import { CACHE_KEYS, type ResponseCache } from './cache.js';
+import { CACHE_KEYS, sessionsCacheKey, type ResponseCache } from './cache.js';
 
 /**
  * Read-only projections of the Hermes dashboard's inventory and telemetry.
@@ -52,6 +52,10 @@ export async function registerInventoryRoutes(
 
   app.get('/api/hermes/models', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.models, () => ctx.dashboard.modelOptions())),
+  );
+
+  app.get('/api/hermes/profiles', async (_request, reply) =>
+    guard(reply, () => cache.get(CACHE_KEYS.profiles, () => ctx.dashboard.profiles())),
   );
 
   app.get('/api/hermes/mcp', async (_request, reply) =>
@@ -115,6 +119,8 @@ export async function registerInventoryRoutes(
   app.get('/api/hermes/sessions', async (request, reply) => {
     const query = request.query as { limit?: string } | undefined;
     const limit = readLimit(query?.limit, 10, 100);
-    return guard(reply, () => cache.get(`sessions:${limit}`, () => ctx.dashboard.sessions(limit)));
+    return guard(reply, () =>
+      cache.get(sessionsCacheKey(limit), () => ctx.dashboard.sessions(limit)),
+    );
   });
 }

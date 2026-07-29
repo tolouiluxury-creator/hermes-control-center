@@ -88,10 +88,30 @@ export interface AnalyticsSummary {
   topTools: { tool: string; count: number }[];
 }
 
+export interface ProfileSummary {
+  name: string;
+  path: string | null;
+  isDefault: boolean;
+  model: string | null;
+  provider: string | null;
+  description: string | null;
+  skillCount: number | null;
+  gatewayRunning: boolean;
+}
+
+export interface ProfileOverview {
+  profiles: ProfileSummary[];
+  /** The sticky default for new CLI commands — not necessarily the running one. */
+  active: string | null;
+  /** The profile the running dashboard uses, and therefore an unscoped chat. */
+  current: string | null;
+}
+
 export interface SessionSummary {
   id: string;
   source: string | null;
   model: string | null;
+  profile: string | null;
   title: string | null;
   startedAt: number | null;
   messages: number | null;

@@ -25,6 +25,13 @@ const enabledSchema = z.object({ enabled: z.boolean() });
  */
 const sessionIdsSchema = z.object({
   ids: z.array(z.string().trim().min(1)).min(1).max(500),
+  /** Which profile's database the ids live in; empty means the launch profile. */
+  profile: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => value || undefined),
 });
 
 const modelSetSchema = z.object({
@@ -251,7 +258,7 @@ export async function registerActionRoutes(
     const input = parse(reply, sessionIdsSchema, request.body);
     if (!input) return reply;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.deleteSessions(input.ids);
+      const result = await ctx.dashboard.deleteSessions(input.ids, input.profile);
       cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
       return result;
     });

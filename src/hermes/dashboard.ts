@@ -25,6 +25,7 @@ import {
   type SystemStats,
 } from './schemas.js';
 import {
+  activeProfileSchema,
   analyticsSchema,
   cronJobsSchema,
   logsSchema,
@@ -41,6 +42,7 @@ import {
   normalizeModelInfo,
   normalizeModelOptions,
   normalizePairing,
+  normalizeProfiles,
   normalizeSessions,
   normalizeSessionMessages,
   normalizeSkillList,
@@ -48,6 +50,7 @@ import {
   normalizeWebhooks,
   modelOptionsSchema,
   pairingSchema,
+  profilesSchema,
   sessionMessagesSchema,
   sessionsSchema,
   skillsSchema,
@@ -60,6 +63,7 @@ import {
   type ModelOptions,
   type ModelSummary,
   type PairingOverview,
+  type ProfileOverview,
   type SkillEntry,
   type SkillSummary,
   type WebhooksOverview,
@@ -154,13 +158,31 @@ export class DashboardClient {
       .then(normalizeAnalytics);
   }
 
-  sessions(limit: number, options?: RequestOptions): Promise<ReturnType<typeof normalizeSessions>> {
+  sessions(
+    limit: number,
+    profile?: string | null,
+    options?: RequestOptions,
+  ): Promise<ReturnType<typeof normalizeSessions>> {
     return this.client
       .json(sessionsSchema, '/api/sessions', {
         ...options,
-        query: { ...options?.query, limit, order: 'created' },
+        query: { ...options?.query, limit, order: 'created', profile: profile || undefined },
       })
       .then(normalizeSessions);
+  }
+
+  /**
+   * The installed profiles, plus which one is sticky and which one the running
+   * dashboard actually uses. Two endpoints because Hermes keeps the list and the
+   * pointer apart — and they genuinely disagree: `active` is what the next CLI
+   * command picks up, `current` is what a chat started here runs as.
+   */
+  async profiles(options?: RequestOptions): Promise<ProfileOverview> {
+    const [list, active] = await Promise.all([
+      this.client.json(profilesSchema, '/api/profiles', options),
+      this.client.json(activeProfileSchema, '/api/profiles/active', options),
+    ]);
+    return normalizeProfiles(list, active);
   }
 
   memory(options?: RequestOptions): Promise<MemorySummary> {
@@ -170,14 +192,14 @@ export class DashboardClient {
   /** The stored transcript of a session, for reopening a past conversation. */
   sessionMessages(
     sessionId: string,
+    profile?: string | null,
     options?: RequestOptions,
   ): Promise<ReturnType<typeof normalizeSessionMessages>> {
     return this.client
-      .json(
-        sessionMessagesSchema,
-        `/api/sessions/${encodeURIComponent(sessionId)}/messages`,
-        options,
-      )
+      .json(sessionMessagesSchema, `/api/sessions/${encodeURIComponent(sessionId)}/messages`, {
+        ...options,
+        query: { ...options?.query, profile: profile || undefined },
+      })
       .then(normalizeSessionMessages);
   }
 
@@ -320,11 +342,18 @@ export class DashboardClient {
    * number that really went, not the number asked for. Hermes caps a batch at
    * 500; the caller is expected to stay under that.
    */
-  deleteSessions(ids: string[], options?: RequestOptions): Promise<BulkDeleteResult> {
+  deleteSessions(
+    ids: string[],
+    profile?: string | null,
+    options?: RequestOptions,
+  ): Promise<BulkDeleteResult> {
     return this.client.json(bulkDeleteResultSchema, '/api/sessions/bulk-delete', {
       ...options,
       method: 'POST',
-      body: { ids },
+      // The profile rides in the body here, not the query: the ids and the
+      // database they live in have to travel together or the batch hits the
+      // wrong state.db and reports zero deletions.
+      body: { ids, ...(profile ? { profile } : {}) },
     });
   }
 

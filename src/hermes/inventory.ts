@@ -164,6 +164,77 @@ export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): 
   };
 }
 
+// --- Profiles ---------------------------------------------------------------
+
+export const profilesSchema = z.looseObject({
+  profiles: z
+    .array(
+      z.looseObject({
+        name: z.string().nullish(),
+        path: z.string().nullish(),
+        is_default: z.boolean().nullish(),
+        model: z.string().nullish(),
+        provider: z.string().nullish(),
+        description: z.string().nullish(),
+        skill_count: numeric,
+        gateway_running: z.boolean().nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export const activeProfileSchema = z.looseObject({
+  active: z.string().nullish(),
+  current: z.string().nullish(),
+});
+
+export interface ProfileSummary {
+  name: string;
+  path: string | null;
+  isDefault: boolean;
+  model: string | null;
+  provider: string | null;
+  description: string | null;
+  skillCount: number | null;
+  gatewayRunning: boolean;
+}
+
+export interface ProfileOverview {
+  profiles: ProfileSummary[];
+  /**
+   * The sticky default a new `hermes` command would pick up.
+   *
+   * Not the same thing as {@link current}, and Hermes says so in its own
+   * docstring: setting it "does not retarget the already-running dashboard
+   * process". Shown for orientation, never used to decide where a chat runs.
+   */
+  active: string | null;
+  /** The profile the running dashboard — and therefore an unscoped chat — uses. */
+  current: string | null;
+}
+
+export function normalizeProfiles(
+  raw: z.infer<typeof profilesSchema>,
+  activeRaw: z.infer<typeof activeProfileSchema>,
+): ProfileOverview {
+  return {
+    profiles: (raw.profiles ?? [])
+      .map((profile, index) => ({
+        name: profile.name ?? `profile-${index}`,
+        path: profile.path ?? null,
+        isDefault: profile.is_default === true,
+        model: profile.model ?? null,
+        provider: profile.provider ?? null,
+        description: profile.description?.trim() || null,
+        skillCount: toNumber(profile.skill_count),
+        gatewayRunning: profile.gateway_running === true,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    active: activeRaw.active ?? null,
+    current: activeRaw.current ?? null,
+  };
+}
+
 // --- MCP servers ------------------------------------------------------------
 
 export const mcpServersSchema = z.looseObject({
@@ -438,6 +509,7 @@ export const sessionsSchema = z.looseObject({
         ended_at: numeric,
         end_reason: z.string().nullish(),
         message_count: numeric,
+        profile_name: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -448,6 +520,8 @@ export interface SessionSummary {
   id: string;
   source: string | null;
   model: string | null;
+  /** Null means the launch profile — that is Hermes' own convention for the column. */
+  profile: string | null;
   title: string | null;
   /** Epoch milliseconds. Hermes reports seconds, which would be 1970 if passed on. */
   startedAt: number | null;
@@ -478,6 +552,7 @@ export function normalizeSessions(raw: z.infer<typeof sessionsSchema>): {
       id: session.id ?? `session-${index}`,
       source: session.source ?? null,
       model: session.model ?? null,
+      profile: session.profile_name ?? null,
       title: session.display_name?.trim() || null,
       startedAt: toEpochMs(session.started_at),
       messages: toNumber(session.message_count),

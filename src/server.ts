@@ -86,7 +86,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerInventoryRoutes(app, ctx, cache);
   await registerActionRoutes(app, ctx, cache);
   await registerWorkspaceRoutes(app, ctx);
-  await registerChatRoutes(app, ctx);
+  await registerChatRoutes(app, ctx, cache);
   await registerStreamRoutes(app, ctx);
 
   const webRoot = resolveWebRoot();

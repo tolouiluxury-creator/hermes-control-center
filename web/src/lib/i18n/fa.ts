@@ -90,6 +90,16 @@ export const fa: Dict = {
   'chat.selectedCount': '{count} انتخاب‌شده',
   'chat.deleteConfirm': '{count} گفتگو حذف شود؟ این کار قابل بازگشت نیست.',
   'chat.deleted': '{count} گفتگو حذف شد',
+  'chat.toolbar.modelTitle': 'مدل برای گفتگوی بعدی',
+  'chat.toolbar.modelLocked': 'هر گفتگو همان مدلی را نگه می‌دارد که با آن آغاز شده است',
+  'chat.toolbar.modelUnavailable': 'هیچ مدلی گزارش نشد',
+  'chat.toolbar.modelUnknown': 'مدل نامشخص',
+  'chat.toolbar.inherit': 'پیش‌فرض نمایه',
+  'chat.toolbar.inheritHint': 'هر چه در نمایه تنظیم شده باشد',
+  'chat.toolbar.profileTitle': 'نمایه',
+  'chat.toolbar.profileRunning': 'نمایه‌ای که داشبورد با آن اجرا می‌شود',
+  'chat.toolbar.profileSticky': 'پیش‌فرض برای فرمان‌های تازهٔ ترمینال',
+  'chat.toolbar.profileSingle': 'تنها یک نمایه نصب شده است',
 
   // Settings
   'settings.appearance': 'ظاهر',

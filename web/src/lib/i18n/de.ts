@@ -91,6 +91,16 @@ export const de: Dict = {
   'chat.selectedCount': '{count} ausgewählt',
   'chat.deleteConfirm': '{count} Unterhaltungen löschen? Das lässt sich nicht rückgängig machen.',
   'chat.deleted': '{count} Unterhaltungen gelöscht',
+  'chat.toolbar.modelTitle': 'Modell für die nächste Unterhaltung',
+  'chat.toolbar.modelLocked': 'Eine Unterhaltung behält das Modell, mit dem sie begonnen wurde',
+  'chat.toolbar.modelUnavailable': 'Keine Modelle gemeldet',
+  'chat.toolbar.modelUnknown': 'Modell unbekannt',
+  'chat.toolbar.inherit': 'Profil-Standard',
+  'chat.toolbar.inheritHint': 'Was im Profil eingestellt ist',
+  'chat.toolbar.profileTitle': 'Profil',
+  'chat.toolbar.profileRunning': 'Womit das Dashboard läuft',
+  'chat.toolbar.profileSticky': 'Standard für neue Terminal-Befehle',
+  'chat.toolbar.profileSingle': 'Nur ein Profil installiert',
 
   // Settings
   'settings.appearance': 'Erscheinungsbild',

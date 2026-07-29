@@ -8,6 +8,7 @@ import {
   normalizeMessagingPlatforms,
   normalizeModelInfo,
   normalizePairing,
+  normalizeProfiles,
   normalizeSessionMessages,
   normalizeSessions,
   normalizeSkills,
@@ -133,6 +134,71 @@ describe('normalizeSessions', () => {
     expect(result.sessions[0]?.startedAt).toBe(1784312971425);
     expect(result.sessions[0]?.messages).toBe(12);
     expect(result.sessions[0]?.title).toBeNull();
+  });
+
+  it('keeps the profile a row belongs to, null meaning the launch profile', () => {
+    const result = normalizeSessions({
+      sessions: [
+        { id: 'a', profile_name: null, model: 'hermes-free' },
+        { id: 'b', profile_name: 'sunrise', model: 'hermes-free' },
+      ],
+    });
+
+    expect(result.sessions[0]?.profile).toBeNull();
+    expect(result.sessions[1]?.profile).toBe('sunrise');
+  });
+});
+
+describe('normalizeProfiles', () => {
+  // Trimmed from a real GET /api/profiles + GET /api/profiles/active.
+  const list = {
+    profiles: [
+      {
+        name: 'sunrise',
+        path: '/root/.hermes/profiles/sunrise',
+        is_default: false,
+        model: 'hermes-free',
+        provider: 'custom',
+        description: '',
+        skill_count: 130,
+        gateway_running: true,
+      },
+      {
+        name: 'default',
+        path: '/root/.hermes',
+        is_default: true,
+        model: 'hermes-free',
+        provider: 'custom',
+        description: '',
+        skill_count: 103,
+        gateway_running: false,
+      },
+    ],
+  };
+
+  it('maps the real payload and sorts by name', () => {
+    const result = normalizeProfiles(list, { active: 'sunrise', current: 'default' });
+
+    expect(result.profiles.map((profile) => profile.name)).toEqual(['default', 'sunrise']);
+    expect(result.profiles[0]?.isDefault).toBe(true);
+    expect(result.profiles[1]?.skillCount).toBe(130);
+    expect(result.profiles[1]?.gatewayRunning).toBe(true);
+  });
+
+  it('keeps the sticky profile and the running one apart', () => {
+    // They genuinely disagree on this install, and confusing the two would send
+    // new conversations to a database the dashboard is not reading.
+    const result = normalizeProfiles(list, { active: 'sunrise', current: 'default' });
+
+    expect(result.active).toBe('sunrise');
+    expect(result.current).toBe('default');
+  });
+
+  it('reports an empty description as absent rather than as a blank line', () => {
+    const result = normalizeProfiles(list, {});
+
+    expect(result.profiles[0]?.description).toBeNull();
+    expect(result.active).toBeNull();
   });
 });
 

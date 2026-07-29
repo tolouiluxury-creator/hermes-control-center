@@ -90,6 +90,16 @@ export const en: Dict = {
   'chat.selectedCount': '{count} selected',
   'chat.deleteConfirm': 'Delete {count} conversations? This cannot be undone.',
   'chat.deleted': '{count} conversations deleted',
+  'chat.toolbar.modelTitle': 'Model for the next conversation',
+  'chat.toolbar.modelLocked': 'A conversation keeps the model it was started with',
+  'chat.toolbar.modelUnavailable': 'No models reported',
+  'chat.toolbar.modelUnknown': 'Model unknown',
+  'chat.toolbar.inherit': 'Profile default',
+  'chat.toolbar.inheritHint': 'Whatever the profile is set to',
+  'chat.toolbar.profileTitle': 'Profile',
+  'chat.toolbar.profileRunning': 'What the dashboard runs as',
+  'chat.toolbar.profileSticky': 'Default for new terminal commands',
+  'chat.toolbar.profileSingle': 'Only one profile installed',
 
   // Settings
   'settings.appearance': 'Appearance',

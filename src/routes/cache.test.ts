@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ResponseCache } from './cache.js';
+import { ResponseCache, SESSIONS_CACHE_PREFIX, sessionsCacheKey } from './cache.js';
 
 describe('ResponseCache', () => {
   it('serves a cached value without calling the loader again', async () => {
@@ -65,6 +65,15 @@ describe('ResponseCache', () => {
     expect(await cache.get('sessions:50', load('sessions:50'))).toBe(2);
     // A different prefix must survive, or one delete would clear the whole cache.
     expect(await cache.get('logs:100', load('logs:100'))).toBe(1);
+  });
+
+  it('gives each profile its own session key, still behind the shared prefix', () => {
+    // Two profiles are two databases. Sharing an entry would show one profile's
+    // conversations under the other; falling outside the prefix would leave them
+    // on screen after a delete.
+    expect(sessionsCacheKey(50, 'sunrise')).not.toBe(sessionsCacheKey(50));
+    expect(sessionsCacheKey(50, 'sunrise').startsWith(SESSIONS_CACHE_PREFIX)).toBe(true);
+    expect(sessionsCacheKey(50)).toBe(sessionsCacheKey(50, ''));
   });
 
   it('does not cache a rejected load', async () => {
