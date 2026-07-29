@@ -18,6 +18,7 @@ export const en: Dict = {
   'nav.dateien': 'Files',
   'nav.prompts': 'Prompt Library',
   'nav.telegram': 'Telegram',
+  'nav.terminal': 'Terminal',
   'nav.integrationen': 'API & Integrations',
   'nav.analytics': 'Analytics',
   'nav.logs': 'Logs',
@@ -109,6 +110,14 @@ export const en: Dict = {
     'Your own templates. They live in the control center, not in Hermes — Hermes has no prompt library.',
   'page.telegram.desc':
     'The bot that connects Telegram to your agent: how it is wired up, and everything said through it.',
+  'page.terminal.desc': 'Your agent, typed rather than clicked.',
+  'terminal.hint':
+    'Type a message and press Enter. ↑ and ↓ walk back through what you sent. /clear empties the screen, /new starts a fresh conversation.',
+  'terminal.placeholder': 'message the agent …',
+  'terminal.inputLabel': 'Message the agent',
+  'terminal.newSession': '— new conversation —',
+  'terminal.notShell':
+    'This is the agent in a terminal skin, not a shell on the server. Nothing typed here is executed as a command — it is sent to the agent, exactly as in Chat.',
   'telegram.connection': 'Connection',
   'telegram.switchedOn': 'Switched on',
   'telegram.credentials': 'Credentials',
@@ -711,6 +720,7 @@ export const en: Dict = {
   'navKeywords.profile': 'profiles instances clone soul separate agents',
   'navKeywords.prompts': 'templates library system prompt',
   'navKeywords.telegram': 'telegram bot chat history messenger',
+  'navKeywords.terminal': 'terminal console command line prompt shell',
   'navKeywords.integrationen': 'api webhooks telegram discord messaging',
   'navKeywords.analytics': 'statistics cost tokens usage report',
   'navKeywords.logs': 'log errors console events output',

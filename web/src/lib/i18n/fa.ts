@@ -18,6 +18,7 @@ export const fa: Dict = {
   'nav.dateien': 'فایل‌ها',
   'nav.prompts': 'کتابخانه پرامپت',
   'nav.telegram': 'ØªÙÚ¯Ø±Ø§Ù',
+  'nav.terminal': 'ØªØ±ÙÛÙØ§Ù',
   'nav.integrationen': 'API و یکپارچه‌سازی‌ها',
   'nav.analytics': 'تحلیل‌ها',
   'nav.logs': 'گزارش‌ها',
@@ -109,6 +110,14 @@ export const fa: Dict = {
     'قالب‌های خودتان. این‌ها در کنترل‌سنتر ذخیره می‌شوند، نه در هرمس — هرمس کتابخانه پرامپت ندارد.',
   'page.telegram.desc':
     'رباتی که تلگرام را به عامل شما وصل می‌کند: چگونگی اتصال و هرچه از راه آن گفته شده.',
+  'page.terminal.desc': 'عامل شما، تایپ‌شده نه کلیک‌شده.',
+  'terminal.hint':
+    'پیامی بنویسید و Enter بزنید. ↑ و ↓ در پیام‌های پیشین حرکت می‌کنند. /clear صفحه را پاک می‌کند، /new گفتگوی تازه می‌سازد.',
+  'terminal.placeholder': 'پیام به عامل …',
+  'terminal.inputLabel': 'پیام به عامل',
+  'terminal.newSession': '— گفتگوی تازه —',
+  'terminal.notShell':
+    'این عامل در پوستهٔ ترمینال است، نه یک شل روی سرور. هیچ چیزی که اینجا می‌نویسید به‌عنوان فرمان اجرا نمی‌شود — به عامل فرستاده می‌شود، دقیقاً مانند گفتگو.',
   'telegram.connection': 'اتصال',
   'telegram.switchedOn': 'روشن',
   'telegram.credentials': 'اعتبارنامه',
@@ -710,6 +719,7 @@ export const fa: Dict = {
   'navKeywords.profile': 'نمایه نمونه رونوشت soul عامل‌های جداگانه',
   'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
   'navKeywords.telegram': 'ØªÙÚ¯Ø±Ø§Ù Ø±Ø¨Ø§Øª ØªØ§Ø±ÛØ®ÚÙ Ú¯ÙØªÚ¯Ù',
+  'navKeywords.terminal': 'ØªØ±ÙÛÙØ§Ù Ú©ÙØ³ÙÙ Ø®Ø· ÙØ±ÙØ§Ù',
   'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
   'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',

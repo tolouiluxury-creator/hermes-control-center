@@ -11,6 +11,7 @@ import {
   Plug,
   ScrollText,
   Server,
+  SquareTerminal,
   Send,
   Settings,
   UserRound,
@@ -90,6 +91,11 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'prompts',
     path: '/prompts',
     icon: Library,
+  },
+  {
+    id: 'terminal',
+    path: '/terminal',
+    icon: SquareTerminal,
   },
   {
     id: 'telegram',
