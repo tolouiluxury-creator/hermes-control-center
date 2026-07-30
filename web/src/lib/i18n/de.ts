@@ -337,7 +337,11 @@ export const de: Dict = {
   'tasks.lastRun': 'Letzter Lauf',
   'tasks.never': 'nie',
   'tasks.unknown': 'unbekannt',
-  'tasks.overdue': 'überfällig, seither wurde nichts terminiert',
+  'tasks.overdue': 'überfällig',
+  'tasks.noGateway':
+    'Das Profil „{profile}" hat kein laufendes Gateway, und dort sitzt der Planer — dieser Job läuft nicht, bis eines dafür gestartet wird.',
+  'tasks.form.noGateway':
+    'Das Profil „{profile}" hat kein laufendes Gateway. Die Aufgabe wird gespeichert, aber niemand führt sie aus, bis für dieses Profil ein Gateway läuft.',
   'tasks.profileAria': 'Profil {name}',
   'tasks.lastFailed': 'Der letzte Lauf ist gescheitert ({status}).',
   'tasks.editAria': '{name} bearbeiten',

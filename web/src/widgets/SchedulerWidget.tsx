@@ -31,11 +31,19 @@ export function describeCron(expression: string | null, t: TFunction): string | 
   });
 
   if (dayOfMonth === '*' && month === '*' && dayOfWeek === '*') return t('cron.daily', { time });
-  if (dayOfMonth === '*' && month === '*' && isNumber(dayOfWeek)) {
-    return t('cron.weekly', {
-      weekday: t(`cron.weekday.${Number(dayOfWeek) % 7}`),
-      time,
-    });
+  if (dayOfMonth === '*' && month === '*') {
+    /*
+     * A comma list too, not just a single day: the schedule picker offers
+     * multiple weekdays, so leaving `1,3` undescribed would mean the product
+     * writing an expression it then hands back raw.
+     */
+    const days = dayOfWeek.split(',');
+    if (days.every((day) => isNumber(day) && Number(day) <= 7)) {
+      const names = [...new Set(days.map((day) => Number(day) % 7))]
+        .sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7))
+        .map((day) => t(`cron.weekday.${day}`));
+      return t('cron.weekly', { weekday: names.join(', '), time });
+    }
   }
   if (isNumber(dayOfMonth) && month === '*' && dayOfWeek === '*') {
     return t('cron.monthly', { day: dayOfMonth, time });

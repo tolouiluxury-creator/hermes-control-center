@@ -117,6 +117,10 @@ function JobEditor({
       ? [{ id: deliver, name: deliver, homeTargetSet: true, homeEnvVar: null }, ...offered]
       : offered;
   const chosenTarget = options.find((target) => target.id === deliver);
+  const profileStalled =
+    profiles.data?.profiles.some(
+      (entry) => entry.name === chosenProfile && !entry.gatewayRunning,
+    ) === true;
 
   const expression = buildSchedule(schedule);
 
@@ -221,6 +225,13 @@ function JobEditor({
         </p>
       )}
 
+      {/* Said before saving, not after: a job in a gateway-less profile never runs. */}
+      {profileStalled && (
+        <p className="mt-2 text-xs text-[var(--color-warn)]">
+          {t('tasks.form.noGateway', { profile: chosenProfile })}
+        </p>
+      )}
+
       <div className="mt-4 flex gap-2">
         <button
           type="submit"
@@ -254,6 +265,22 @@ export function TasksPage() {
     queryFn: getCronJobs,
     staleTime: 30_000,
   });
+
+  /*
+   * The cron scheduler lives inside the gateway, and each profile runs its own.
+   * A job in a profile whose gateway is down is stored, listed, triggerable —
+   * and never executed. Without this the page shows a job that looks healthy
+   * while nothing behind it is running.
+   */
+  const profiles = useQuery({
+    queryKey: queryKeys.profiles,
+    queryFn: getProfiles,
+    staleTime: 60_000,
+  });
+  const gatewayDown = (profile: string | null): boolean =>
+    profile !== null &&
+    profiles.data?.profiles.some((entry) => entry.name === profile && !entry.gatewayRunning) ===
+      true;
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.cron });
 
@@ -383,6 +410,7 @@ export function TasksPage() {
                */
               const overdue = !job.paused && job.nextRun !== null && job.nextRun < dataUpdatedAt;
               const failed = job.lastStatus !== null && job.lastStatus !== 'ok';
+              const stalled = gatewayDown(job.profile);
 
               return (
                 <li key={job.id} className="card p-4">
@@ -400,7 +428,11 @@ export function TasksPage() {
                         {job.name}
                         {job.profile && (
                           <span
-                            className="rounded-md bg-[var(--color-raised)] px-1.5 py-0.5 text-[0.65rem] font-normal text-[var(--color-ink-faint)]"
+                            className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-normal ${
+                              stalled
+                                ? 'bg-[var(--color-warn)]/15 text-[var(--color-warn)]'
+                                : 'bg-[var(--color-raised)] text-[var(--color-ink-faint)]'
+                            }`}
                             title={t('tasks.profileAria', { name: job.profile })}
                           >
                             {job.profile}
@@ -488,6 +520,13 @@ export function TasksPage() {
                       </ActionButton>
                     </div>
                   </div>
+
+                  {stalled && (
+                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--color-warn)]/30 bg-[var(--color-warn)]/5 p-3 text-xs text-[var(--color-warn)]">
+                      <AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden />
+                      {t('tasks.noGateway', { profile: job.profile ?? '' })}
+                    </p>
+                  )}
 
                   {failed && (
                     <div className="mt-3 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-3">

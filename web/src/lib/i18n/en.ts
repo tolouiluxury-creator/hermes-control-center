@@ -335,7 +335,11 @@ export const en: Dict = {
   'tasks.lastRun': 'Last run',
   'tasks.never': 'never',
   'tasks.unknown': 'unknown',
-  'tasks.overdue': 'overdue, nothing has scheduled since',
+  'tasks.overdue': 'overdue',
+  'tasks.noGateway':
+    'Profile “{profile}” has no running gateway, and the scheduler lives there — this job will not run until one is started for it.',
+  'tasks.form.noGateway':
+    'Profile “{profile}” has no running gateway. The job will be saved, but nothing will run it until a gateway is started for that profile.',
   'tasks.profileAria': 'Profile {name}',
   'tasks.lastFailed': 'The last run failed ({status}).',
   'tasks.editAria': '{name} edit',

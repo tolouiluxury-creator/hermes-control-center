@@ -333,7 +333,11 @@ export const fa: Dict = {
   'tasks.lastRun': 'آخرین اجرا',
   'tasks.never': 'هرگز',
   'tasks.unknown': 'نامشخص',
-  'tasks.overdue': 'گذشته است؛ از آن زمان چیزی زمان‌بندی نشده',
+  'tasks.overdue': 'گذشته است',
+  'tasks.noGateway':
+    'نمایهٔ «{profile}» گیت‌وی در حال اجرا ندارد و زمان‌بند آنجاست — تا زمانی که برای آن گیت‌ویی راه‌اندازی نشود، این کار اجرا نمی‌شود.',
+  'tasks.form.noGateway':
+    'نمایهٔ «{profile}» گیت‌وی در حال اجرا ندارد. کار ذخیره می‌شود، اما تا راه‌اندازی گیت‌وی برای آن نمایه چیزی آن را اجرا نمی‌کند.',
   'tasks.profileAria': 'نمایه {name}',
   'tasks.lastFailed': 'آخرین اجرا شکست خورد ({status}).',
   'tasks.editAria': 'ویرایش {name}',
