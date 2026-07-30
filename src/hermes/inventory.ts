@@ -21,6 +21,22 @@ function toNumber(value: unknown): number | null {
   return null;
 }
 
+/**
+ * Epoch milliseconds out of what Hermes actually sends for a point in time:
+ * `"2026-07-29T07:00:00+02:00"` for cron jobs, plain epoch numbers elsewhere.
+ * `toNumber` alone turns the ISO form into NaN and then null, which is how the
+ * cron list silently had no timestamps at all.
+ */
+function toTimestamp(value: unknown): number | null {
+  const asNumber = toNumber(value);
+  if (asNumber !== null) return asNumber;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 // --- Skills -----------------------------------------------------------------
 
 export const skillsSchema = z.array(
@@ -474,8 +490,15 @@ export const cronJobsSchema = z.array(
       ])
       .nullish(),
     schedule_display: z.string().nullish(),
+    // Hermes 0.19 names these `*_at` and sends ISO strings; the unsuffixed forms
+    // are kept because older builds used them with epoch numbers.
+    next_run_at: numeric,
+    last_run_at: numeric,
     next_run: numeric,
     last_run: numeric,
+    last_status: z.string().nullish(),
+    last_error: z.string().nullish(),
+    profile: z.string().nullish(),
     model: z.string().nullish(),
   }),
 );
@@ -487,6 +510,11 @@ export interface CronJobSummary {
   paused: boolean;
   nextRun: number | null;
   lastRun: number | null;
+  /** `"error"`, `"ok"`, … as Hermes reports it; null when the job never ran. */
+  lastStatus: string | null;
+  lastError: string | null;
+  /** Which profile owns the job. The list spans all profiles by default. */
+  profile: string | null;
 }
 
 export function normalizeCronJobs(raw: z.infer<typeof cronJobsSchema>): CronJobSummary[] {
@@ -503,8 +531,11 @@ export function normalizeCronJobs(raw: z.infer<typeof cronJobsSchema>): CronJobS
       schedule,
       // Hermes reports either flag depending on version; either one pauses it.
       paused: job.paused === true || job.enabled === false,
-      nextRun: toNumber(job.next_run),
-      lastRun: toNumber(job.last_run),
+      nextRun: toTimestamp(job.next_run_at ?? job.next_run),
+      lastRun: toTimestamp(job.last_run_at ?? job.last_run),
+      lastStatus: job.last_status?.trim() || null,
+      lastError: job.last_error?.trim() || null,
+      profile: job.profile?.trim() || null,
     };
   });
 }

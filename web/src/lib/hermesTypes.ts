@@ -64,6 +64,11 @@ export interface CronJobSummary {
   paused: boolean;
   nextRun: number | null;
   lastRun: number | null;
+  /** `"error"`, `"ok"`, … as Hermes reports it; null when the job never ran. */
+  lastStatus: string | null;
+  lastError: string | null;
+  /** Which profile owns the job. The list spans all profiles by default. */
+  profile: string | null;
 }
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug' | 'plain';

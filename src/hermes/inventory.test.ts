@@ -50,6 +50,7 @@ describe('normalizeSkills', () => {
 });
 
 describe('normalizeCronJobs', () => {
+  /** Copied from GET /api/cron/jobs on the real server, 30.07.2026. */
   const real = [
     {
       id: '235f3731da4b',
@@ -57,11 +58,48 @@ describe('normalizeCronJobs', () => {
       prompt: 'Erstelle den Bericht',
       schedule: { kind: 'cron', expr: '0 7 * * *', display: '0 7 * * *' },
       schedule_display: '0 7 * * *',
+      next_run_at: '2026-07-29T07:00:00+02:00',
+      last_run_at: '2026-07-18T07:00:33.050274+00:00',
+      last_status: 'error',
+      last_error: "ImportError: cannot import name 'TELEGRAM_RICH_MESSAGES_HINT'",
+      profile: 'default',
     },
   ];
 
   it('reads the schedule out of the nested object', () => {
     expect(normalizeCronJobs(real)[0]?.schedule).toBe('0 7 * * *');
+  });
+
+  /*
+   * Hermes names these `*_at` and sends ISO strings. Reading `next_run` with a
+   * plain Number() left every timestamp null, and the page showed nothing — for
+   * as long as the page has existed.
+   */
+  it('reads the ISO timestamps out of the *_at fields', () => {
+    const [job] = normalizeCronJobs(real);
+    expect(job?.nextRun).toBe(Date.parse('2026-07-29T07:00:00+02:00'));
+    expect(job?.lastRun).toBe(Date.parse('2026-07-18T07:00:33.050274+00:00'));
+  });
+
+  it('still accepts the older epoch-number fields', () => {
+    const [job] = normalizeCronJobs([{ id: 'a', next_run: 1_784_000_000_000, last_run: '17840' }]);
+    expect(job?.nextRun).toBe(1_784_000_000_000);
+    expect(job?.lastRun).toBe(17_840);
+  });
+
+  it('carries the failure through instead of hiding it', () => {
+    const [job] = normalizeCronJobs(real);
+    expect(job?.lastStatus).toBe('error');
+    expect(job?.lastError).toContain('TELEGRAM_RICH_MESSAGES_HINT');
+    expect(job?.profile).toBe('default');
+  });
+
+  it('leaves a job that never ran without invented values', () => {
+    const [job] = normalizeCronJobs([{ id: 'a', next_run_at: null, last_run_at: null }]);
+    expect(job?.nextRun).toBeNull();
+    expect(job?.lastRun).toBeNull();
+    expect(job?.lastStatus).toBeNull();
+    expect(job?.lastError).toBeNull();
   });
 
   it('falls back to the prompt when a job has no name', () => {

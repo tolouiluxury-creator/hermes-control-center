@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, Pause, Play, Trash2, Zap } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Pause, Play, Trash2, Zap } from 'lucide-react';
 import { cronAction, deleteCronJob, getCronJobs, queryKeys } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
+import { formatDateTime, formatRelativeTime } from '@/lib/format';
 import { describeCron } from '@/widgets/SchedulerWidget';
 import type { CronJobSummary } from '@/lib/hermesTypes';
 
@@ -45,10 +46,10 @@ function ActionButton({
 export function TasksPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error, dataUpdatedAt } = useQuery({
     queryKey: queryKeys.cron,
     queryFn: getCronJobs,
     staleTime: 30_000,
@@ -130,6 +131,14 @@ export function TasksPage() {
             {jobs.map((job: CronJobSummary) => {
               const described = describeCron(job.schedule, t);
               const disabled = busy(job.id);
+              /*
+               * A next run in the past means nothing has scheduled since — worth
+               * naming, because the timestamp alone reads like a plan. Measured
+               * against when the list was fetched, not Date.now(): that keeps the
+               * render pure and says exactly what the data claimed.
+               */
+              const overdue = !job.paused && job.nextRun !== null && job.nextRun < dataUpdatedAt;
+              const failed = job.lastStatus !== null && job.lastStatus !== 'ok';
 
               return (
                 <li key={job.id} className="card p-4">
@@ -143,7 +152,17 @@ export function TasksPage() {
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{job.name}</p>
+                      <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                        {job.name}
+                        {job.profile && (
+                          <span
+                            className="rounded-md bg-[var(--color-raised)] px-1.5 py-0.5 text-[0.65rem] font-normal text-[var(--color-ink-faint)]"
+                            title={t('tasks.profileAria', { name: job.profile })}
+                          >
+                            {job.profile}
+                          </span>
+                        )}
+                      </p>
                       <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
                         {job.paused ? `${t('tasks.paused')} · ` : ''}
                         {described ?? t('tasks.scheduleUnknown')}
@@ -153,6 +172,30 @@ export function TasksPage() {
                           </span>
                         )}
                       </p>
+
+                      <dl className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                        <div className="flex gap-1.5">
+                          <dt className="text-[var(--color-ink-faint)]">{t('tasks.nextRun')}</dt>
+                          <dd
+                            className={overdue ? 'text-[var(--color-warn)]' : undefined}
+                            title={formatDateTime(job.nextRun, lang) ?? undefined}
+                          >
+                            {job.nextRun === null
+                              ? t('tasks.unknown')
+                              : `${formatDateTime(job.nextRun, lang)}${
+                                  overdue ? ` · ${t('tasks.overdue')}` : ''
+                                }`}
+                          </dd>
+                        </div>
+                        <div className="flex gap-1.5">
+                          <dt className="text-[var(--color-ink-faint)]">{t('tasks.lastRun')}</dt>
+                          <dd title={formatDateTime(job.lastRun, lang) ?? undefined}>
+                            {job.lastRun === null
+                              ? t('tasks.never')
+                              : formatRelativeTime(job.lastRun, lang)}
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
 
                     <div className="flex shrink-0 items-center gap-0.5">
@@ -193,6 +236,20 @@ export function TasksPage() {
                       </ActionButton>
                     </div>
                   </div>
+
+                  {failed && (
+                    <div className="mt-3 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-3">
+                      <p className="flex items-center gap-2 text-xs font-medium text-[var(--color-danger)]">
+                        <AlertTriangle size={13} aria-hidden />
+                        {t('tasks.lastFailed', { status: job.lastStatus ?? '' })}
+                      </p>
+                      {job.lastError && (
+                        <p className="mt-1 font-mono text-[0.65rem] break-words text-[var(--color-ink-muted)]">
+                          {job.lastError}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {confirmDelete === job.id && (
                     <ConfirmInline
