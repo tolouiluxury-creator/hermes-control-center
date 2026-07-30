@@ -243,7 +243,9 @@ export function PromptsPage() {
     >
       {editing !== undefined && (
         <div className="mb-4">
+          {/* Remount on target change, so the fields never belong to another prompt. */}
           <PromptEditor
+            key={editing?.id ?? 'new'}
             prompt={editing}
             saving={save.isPending}
             onCancel={() => setEditing(undefined)}

@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Bot,
   BookOpen,
   Cpu,
   Layers,
@@ -47,11 +46,6 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/chats',
     icon: MessagesSquare,
     badge: 'live',
-  },
-  {
-    id: 'agenten',
-    path: '/agenten',
-    icon: Bot,
   },
   {
     id: 'workflows',

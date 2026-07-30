@@ -37,7 +37,7 @@ describe('resolveSpaRequest', () => {
 
   it('returns the SPA for the root and for client-side routes', () => {
     expect(resolveRequest('/')).toEqual({ kind: 'spa' });
-    expect(resolveRequest('/agenten')).toEqual({ kind: 'spa' });
+    expect(resolveRequest('/workspace')).toEqual({ kind: 'spa' });
     expect(resolveRequest('/workflows/42')).toEqual({ kind: 'spa' });
   });
 

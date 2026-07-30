@@ -325,7 +325,9 @@ export function WorkflowsPage() {
     >
       {editing !== undefined && (
         <div className="mb-4">
+          {/* Remount on target change, so the fields never belong to another workflow. */}
           <WorkflowEditor
+            key={editing?.id ?? 'new'}
             workflow={editing}
             saving={save.isPending}
             onCancel={() => setEditing(undefined)}

@@ -38,8 +38,7 @@ browser.
   messaging integrations, logs with level filters and a follow toggle, and analytics broken down by
   day, model and tool — each with the write actions that belong to it, behind a confirmation that
   spells out the consequence.
-- **Agent presets and workflows.** Named bundles of model, toolset, skills and system prompt, and
-  ordered chains of prompts and scheduled jobs. Both live in the control center's own database.
+- **Workflows.** Ordered chains of prompts and scheduled jobs, in the control center's own database.
 - **A prompt library** — your own reusable prompts with `{{placeholders}}`, tags and a use counter.
   Hermes has no such thing, so this lives in the control center's database.
 - **Rule-based insights**, not a chatbot: deterministic checks over your metrics, logs and

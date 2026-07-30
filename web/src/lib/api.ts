@@ -8,8 +8,6 @@ import type {
   LogsResponse,
   Prompt,
   PromptInput,
-  Agent,
-  AgentInput,
   ConfigRaw,
   CuratorStatus,
   EnvVar,
@@ -389,21 +387,6 @@ export const deletePrompt = (id: string): Promise<{ ok: boolean }> =>
 export const recordPromptUse = (id: string): Promise<{ uses: number }> =>
   apiRequest<{ uses: number }>(`/prompts/${encodeURIComponent(id)}/use`, { method: 'POST' });
 
-export const getAgents = (): Promise<{ agents: Agent[] }> =>
-  apiRequest<{ agents: Agent[] }>('/agents');
-
-export const createAgent = (input: AgentInput): Promise<{ agent: Agent }> =>
-  apiRequest<{ agent: Agent }>('/agents', { method: 'POST', ...jsonBody(input) });
-
-export const updateAgent = (id: string, input: AgentInput): Promise<{ agent: Agent }> =>
-  apiRequest<{ agent: Agent }>(`/agents/${encodeURIComponent(id)}`, {
-    method: 'PUT',
-    ...jsonBody(input),
-  });
-
-export const deleteAgent = (id: string): Promise<{ ok: boolean }> =>
-  apiRequest<{ ok: boolean }>(`/agents/${encodeURIComponent(id)}`, { method: 'DELETE' });
-
 export const getWorkflows = (): Promise<{ workflows: Workflow[] }> =>
   apiRequest<{ workflows: Workflow[] }>('/workflows');
 
@@ -702,7 +685,6 @@ export const queryKeys = {
   dashboardLayout: ['dashboard', 'layout'] as const,
   insights: ['insights'] as const,
   prompts: ['prompts'] as const,
-  agents: ['agents'] as const,
   workflows: ['workflows'] as const,
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,

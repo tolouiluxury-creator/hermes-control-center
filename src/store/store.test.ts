@@ -31,7 +31,6 @@ describe('Store', () => {
     for (const expected of [
       'dashboards',
       'prompts',
-      'agents',
       'workflows',
       'workflow_steps',
       'workflow_runs',
@@ -42,6 +41,13 @@ describe('Store', () => {
     ]) {
       expect(tables).toContain(expected);
     }
+  });
+
+  it('drops the agent-presets table that migration 1 created', () => {
+    const tables = store
+      .all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .map((row) => row.name);
+    expect(tables).not.toContain('agents');
   });
 
   it('rolls back a failing transaction', () => {

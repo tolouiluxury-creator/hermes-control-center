@@ -5,7 +5,6 @@ export const en: Dict = {
   // Navigation
   'nav.dashboard': 'Dashboard',
   'nav.chats': 'Chats',
-  'nav.agenten': 'Agents',
   'nav.workflows': 'Workflows',
   'nav.aufgaben': 'Tasks',
   'nav.wissen': 'Knowledge (RAG)',
@@ -52,8 +51,6 @@ export const en: Dict = {
 
   // Page descriptions
   'page.chats.desc': 'Talk to your agent directly — over the running dashboard, no extra server.',
-  'page.agenten.desc':
-    'Named presets: a bundle of model, toolset, skills and system prompt that you save and apply. They live in the control center, not in Hermes.',
   'page.workflows.desc':
     'Named, ordered sequences of prompts and scheduled jobs. Created here; automatic execution of the chain arrives with the Hermes API server.',
   'page.aufgaben.desc':
@@ -436,37 +433,6 @@ export const en: Dict = {
   'prompts.copyText': 'Copy text',
 
   // Agents (presets)
-  'agents.editTitle': 'Edit preset',
-  'agents.newTitle': 'New preset',
-  'agents.name': 'Name',
-  'agents.color': 'Colour',
-  'agents.colorAria': 'Colour {color}',
-  'agents.description': 'Description',
-  'agents.descPlaceholder': 'What is this preset for?',
-  'agents.provider': 'Provider',
-  'agents.none': '— none —',
-  'agents.model': 'Model',
-  'agents.modelPlaceholder': 'e.g. hermes-free',
-  'agents.toolset': 'Toolset',
-  'agents.skills': 'Skills, comma separated',
-  'agents.skillsPlaceholder': 'pdf, canvas-design',
-  'agents.systemPrompt': 'System prompt',
-  'agents.systemPromptPlaceholder': 'Optional system prompt for this preset.',
-  'agents.saved': 'Preset saved',
-  'agents.deleted': 'Preset deleted',
-  'agents.applied': 'Model from “{name}” applied',
-  'agents.empty.title': 'No presets yet',
-  'agents.empty.desc':
-    'Create a named combination of model, tools and skills to apply it later with one click.',
-  'agents.applyModel': 'Apply model',
-  'agents.deleteConfirm': 'Delete “{name}”? The preset is then gone.',
-  'agents.metaModel': 'Model',
-  'agents.metaTools': 'Tools',
-  'agents.metaSkills': 'Skills',
-  'agents.editAria': 'edit {name}',
-  'agents.deleteAria': 'delete {name}',
-
-  // Workflows
   'workflows.editTitle': 'Edit workflow',
   'workflows.newTitle': 'New workflow',
   'workflows.name': 'Name',
@@ -737,7 +703,6 @@ export const en: Dict = {
   // Command palette: extra words per nav entry, space separated
   'navKeywords.dashboard': 'overview start widgets cockpit',
   'navKeywords.chats': 'conversation sessions messages talk',
-  'navKeywords.agenten': 'agents assistants presets subagents',
   'navKeywords.workflows': 'sequences automation chains',
   'navKeywords.aufgaben': 'tasks runs jobs cron queue schedule',
   'navKeywords.wissen': 'rag memory embeddings vector knowledge',

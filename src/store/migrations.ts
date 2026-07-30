@@ -129,6 +129,15 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 2,
+    name: 'drop agent presets',
+    // The agent-presets area was removed: it was the control center's own
+    // invention, and it overlapped with profiles (which Hermes really has) and
+    // the models page. Migration 1 stays untouched per the rule above, so this
+    // drop reaches databases that already ran it.
+    sql: `DROP TABLE IF EXISTS agents;`,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(

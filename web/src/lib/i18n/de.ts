@@ -5,7 +5,6 @@ export const de: Dict = {
   // Navigation
   'nav.dashboard': 'Dashboard',
   'nav.chats': 'Chats',
-  'nav.agenten': 'Agenten',
   'nav.workflows': 'Workflows',
   'nav.aufgaben': 'Aufgaben',
   'nav.wissen': 'Wissen (RAG)',
@@ -53,8 +52,6 @@ export const de: Dict = {
   // Page descriptions
   'page.chats.desc':
     'Unterhalte dich direkt mit deinem Agenten — über das laufende Dashboard, ohne zusätzliche Server.',
-  'page.agenten.desc':
-    'Benannte Presets: ein Bündel aus Modell, Werkzeugsatz, Skills und Systemprompt, das du speicherst und anwendest. Sie liegen im Control Center, nicht in Hermes.',
   'page.workflows.desc':
     'Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Sie werden hier angelegt; das automatische Ausführen der Kette kommt mit dem Hermes-API-Server.',
   'page.aufgaben.desc':
@@ -442,37 +439,6 @@ export const de: Dict = {
   'prompts.copyText': 'Text kopieren',
 
   // Agents (presets)
-  'agents.editTitle': 'Preset bearbeiten',
-  'agents.newTitle': 'Neues Preset',
-  'agents.name': 'Name',
-  'agents.color': 'Farbe',
-  'agents.colorAria': 'Farbe {color}',
-  'agents.description': 'Beschreibung',
-  'agents.descPlaceholder': 'Wofür ist dieses Preset?',
-  'agents.provider': 'Anbieter',
-  'agents.none': '— keiner —',
-  'agents.model': 'Modell',
-  'agents.modelPlaceholder': 'z. B. hermes-free',
-  'agents.toolset': 'Werkzeugsatz',
-  'agents.skills': 'Skills, durch Komma getrennt',
-  'agents.skillsPlaceholder': 'pdf, canvas-design',
-  'agents.systemPrompt': 'Systemprompt',
-  'agents.systemPromptPlaceholder': 'Optionaler Systemprompt für dieses Preset.',
-  'agents.saved': 'Preset gespeichert',
-  'agents.deleted': 'Preset gelöscht',
-  'agents.applied': 'Modell aus „{name}“ angewendet',
-  'agents.empty.title': 'Noch keine Presets',
-  'agents.empty.desc':
-    'Lege eine benannte Kombination aus Modell, Werkzeugen und Skills an, um sie später mit einem Klick anzuwenden.',
-  'agents.applyModel': 'Modell anwenden',
-  'agents.deleteConfirm': '„{name}“ löschen? Das Preset ist dann weg.',
-  'agents.metaModel': 'Modell',
-  'agents.metaTools': 'Werkzeuge',
-  'agents.metaSkills': 'Skills',
-  'agents.editAria': '{name} bearbeiten',
-  'agents.deleteAria': '{name} löschen',
-
-  // Workflows
   'workflows.editTitle': 'Workflow bearbeiten',
   'workflows.newTitle': 'Neuer Workflow',
   'workflows.name': 'Name',
@@ -745,7 +711,6 @@ export const de: Dict = {
   // Command palette: extra words per nav entry, space separated
   'navKeywords.dashboard': 'übersicht start widgets cockpit',
   'navKeywords.chats': 'unterhaltung sessions nachrichten gespräch',
-  'navKeywords.agenten': 'agents assistenten presets subagenten',
   'navKeywords.workflows': 'abläufe automatisierung ketten',
   'navKeywords.aufgaben': 'tasks runs jobs cron warteschlange zeitplan',
   'navKeywords.wissen': 'rag memory gedächtnis embeddings vektor',

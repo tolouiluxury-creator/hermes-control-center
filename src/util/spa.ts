@@ -9,7 +9,7 @@ export type SpaResolution =
  * fallback, cache eligibility — are unit-testable without a server.
  *
  * Unknown paths deliberately return the SPA rather than a 404: that is what
- * makes deep links like /agenten work on a hard reload.
+ * makes deep links like /workspace work on a hard reload.
  */
 export function resolveSpaRequest(
   webRoot: string,

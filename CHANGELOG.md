@@ -29,8 +29,7 @@ fixtures.
 - **Write actions across every page** — switching models, pausing and triggering jobs, toggling
   skills and toolsets, enabling platforms, activating memory providers, editing configuration.
   Each one sits behind an inline confirmation that names the consequence rather than a bare button.
-- **Agent presets and workflows**, both stored locally: named bundles of model, toolset, skills and
-  system prompt, and ordered chains of prompts and scheduled jobs.
+- **Workflows**, stored locally: ordered chains of prompts and scheduled jobs.
 - **Prompt library** with variables and tags, and **rule-based insights** derived from real metrics
   (no model involved).
 - **Three interface languages — English, German and Persian**, switchable per device, with

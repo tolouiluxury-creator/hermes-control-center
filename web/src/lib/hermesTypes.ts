@@ -188,31 +188,6 @@ export interface PromptInput {
   tags?: string[];
 }
 
-export interface Agent {
-  id: string;
-  name: string;
-  description: string;
-  provider: string | null;
-  model: string | null;
-  toolset: string | null;
-  skills: string[];
-  systemPrompt: string;
-  accent: string | null;
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface AgentInput {
-  name: string;
-  description?: string;
-  provider?: string | null;
-  model?: string | null;
-  toolset?: string | null;
-  skills?: string[];
-  systemPrompt?: string;
-  accent?: string | null;
-}
-
 export type WorkflowStepKind = 'prompt' | 'cron' | 'note';
 
 export interface WorkflowStep {

@@ -5,7 +5,6 @@ export const fa: Dict = {
   // Navigation
   'nav.dashboard': 'داشبورد',
   'nav.chats': 'گفتگوها',
-  'nav.agenten': 'ایجنت‌ها',
   'nav.workflows': 'گردش‌کارها',
   'nav.aufgaben': 'وظایف',
   'nav.wissen': 'دانش (RAG)',
@@ -53,8 +52,6 @@ export const fa: Dict = {
   // Page descriptions
   'page.chats.desc':
     'مستقیم با ایجنت خود گفتگو کنید — از طریق داشبورد در حال اجرا، بدون سرور اضافی.',
-  'page.agenten.desc':
-    'پیش‌تنظیم‌های نام‌گذاری‌شده: مجموعه‌ای از مدل، مجموعه‌ابزار، مهارت‌ها و پرامپت سیستمی که ذخیره و اعمال می‌کنید. این‌ها در کنترل‌سنتر ذخیره می‌شوند، نه در هرمس.',
   'page.workflows.desc':
     'دنباله‌های نام‌گذاری‌شده و مرتب از پرامپت‌ها و کارهای زمان‌بندی‌شده. این‌جا ساخته می‌شوند؛ اجرای خودکار زنجیره با سرور API هرمس می‌آید.',
   'page.aufgaben.desc':
@@ -435,37 +432,6 @@ export const fa: Dict = {
   'prompts.copyText': 'کپی متن',
 
   // Agents (presets)
-  'agents.editTitle': 'ویرایش پیش‌تنظیم',
-  'agents.newTitle': 'پیش‌تنظیم جدید',
-  'agents.name': 'نام',
-  'agents.color': 'رنگ',
-  'agents.colorAria': 'رنگ {color}',
-  'agents.description': 'توضیح',
-  'agents.descPlaceholder': 'این پیش‌تنظیم برای چیست؟',
-  'agents.provider': 'ارائه‌دهنده',
-  'agents.none': '— هیچ‌کدام —',
-  'agents.model': 'مدل',
-  'agents.modelPlaceholder': 'مثلاً hermes-free',
-  'agents.toolset': 'مجموعه‌ابزار',
-  'agents.skills': 'مهارت‌ها، جدا شده با کاما',
-  'agents.skillsPlaceholder': 'pdf, canvas-design',
-  'agents.systemPrompt': 'پرامپت سیستمی',
-  'agents.systemPromptPlaceholder': 'پرامپت سیستمی اختیاری برای این پیش‌تنظیم.',
-  'agents.saved': 'پیش‌تنظیم ذخیره شد',
-  'agents.deleted': 'پیش‌تنظیم حذف شد',
-  'agents.applied': 'مدل از «{name}» اعمال شد',
-  'agents.empty.title': 'هنوز پیش‌تنظیمی نیست',
-  'agents.empty.desc':
-    'یک ترکیب نام‌گذاری‌شده از مدل، ابزارها و مهارت‌ها بسازید تا بعداً با یک کلیک اعمالش کنید.',
-  'agents.applyModel': 'اعمال مدل',
-  'agents.deleteConfirm': '«{name}» حذف شود؟ پیش‌تنظیم از بین می‌رود.',
-  'agents.metaModel': 'مدل',
-  'agents.metaTools': 'ابزارها',
-  'agents.metaSkills': 'مهارت‌ها',
-  'agents.editAria': 'ویرایش {name}',
-  'agents.deleteAria': 'حذف {name}',
-
-  // Workflows
   'workflows.editTitle': 'ویرایش گردش‌کار',
   'workflows.newTitle': 'گردش‌کار جدید',
   'workflows.name': 'نام',
@@ -735,7 +701,6 @@ export const fa: Dict = {
   // Command palette: extra words per nav entry, space separated
   'navKeywords.dashboard': 'نمای کلی شروع ویجت‌ها داشبورد',
   'navKeywords.chats': 'گفتگو نشست‌ها پیام‌ها مکالمه',
-  'navKeywords.agenten': 'ایجنت‌ها دستیارها پیش‌تنظیم‌ها',
   'navKeywords.workflows': 'گردش‌کار خودکارسازی زنجیره‌ها',
   'navKeywords.aufgaben': 'وظایف کارها زمان‌بندی کران صف',
   'navKeywords.wissen': 'دانش حافظه بازیابی برداری rag',

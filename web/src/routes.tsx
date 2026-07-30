@@ -12,7 +12,6 @@ import { PromptsPage } from '@/pages/PromptsPage';
 import { WissenPage } from '@/pages/WissenPage';
 import { IntegrationenPage } from '@/pages/IntegrationenPage';
 import { EinstellungenPage } from '@/pages/EinstellungenPage';
-import { AgentenPage } from '@/pages/AgentenPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { ChatsPage } from '@/pages/ChatsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -26,7 +25,6 @@ import type { ComponentType } from 'react';
 /** Every nav item now maps to a real page. */
 const PAGES: Record<string, ComponentType> = {
   chats: ChatsPage,
-  agenten: AgentenPage,
   workflows: WorkflowsPage,
   aufgaben: TasksPage,
   wissen: WissenPage,
