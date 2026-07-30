@@ -251,9 +251,10 @@ export async function registerActionRoutes(
   const parse = <T>(reply: FastifyReply, schema: z.ZodType<T>, body: unknown): T | undefined => {
     const result = schema.safeParse(body);
     if (result.success) return result.data;
-    void reply
-      .code(400)
-      .send({ error: 'invalid_request', message: result.error.issues[0]?.message ?? 'ungültig' });
+    void reply.code(400).send({
+      error: 'invalid_request',
+      message: result.error.issues[0]?.message ?? 'invalid request',
+    });
     return undefined;
   };
 
@@ -273,7 +274,7 @@ export async function registerActionRoutes(
   app.post('/api/hermes/cron/:id/:action', async (request, reply) => {
     const { id, action } = request.params as { id: string; action: string };
     if (!cronActions.has(action)) {
-      return reply.code(400).send({ error: 'invalid_request', message: 'Unbekannte Aktion' });
+      return reply.code(400).send({ error: 'invalid_request', message: 'Unknown action' });
     }
     return guard(reply, async () => {
       const result = await ctx.dashboard.cronAction(id, action as 'pause' | 'resume' | 'trigger');

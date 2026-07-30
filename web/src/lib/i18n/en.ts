@@ -48,6 +48,7 @@ export const en: Dict = {
   'common.all': 'All',
   'common.close': 'Close',
   'common.loading': 'Loading …',
+  'common.unknown': 'unknown',
 
   // Page descriptions
   'page.chats.desc': 'Talk to your agent directly — over the running dashboard, no extra server.',
@@ -335,6 +336,7 @@ export const en: Dict = {
   'tasks.lastRun': 'Last run',
   'tasks.never': 'never',
   'tasks.unknown': 'unknown',
+  'tasks.unnamed': 'Unnamed job',
   'tasks.overdue': 'overdue',
   'tasks.noGateway':
     'Profile “{profile}” has no running gateway, and the scheduler lives there — this job will not run until one is started for it.',

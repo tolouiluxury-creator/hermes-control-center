@@ -62,9 +62,13 @@ export function normalizeSkills(raw: z.infer<typeof skillsSchema>): SkillSummary
   const categories = new Map<string, number>();
   let enabled = 0;
 
+  /*
+   * Uncategorised skills are counted under the empty string, not under a German
+   * word: the count is data, the label belongs to the browser.
+   */
   for (const skill of raw) {
     if (skill.enabled !== false) enabled += 1;
-    const category = skill.category?.trim() || 'Ohne Kategorie';
+    const category = skill.category?.trim() ?? '';
     categories.set(category, (categories.get(category) ?? 0) + 1);
   }
 
@@ -179,7 +183,8 @@ export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): 
     providers: (raw.providers ?? [])
       .map((provider, index) => ({
         slug: provider.slug ?? `provider-${index}`,
-        name: provider.name ?? provider.slug ?? `Anbieter ${index + 1}`,
+        // Falls back to the slug, never to a word in one language.
+        name: provider.name?.trim() || provider.slug?.trim() || `provider-${index}`,
         isCurrent: provider.is_current === true,
         authenticated: provider.authenticated ?? null,
         authType: provider.auth_type ?? null,
@@ -506,7 +511,8 @@ export const cronJobsSchema = z.array(
 
 export interface CronJobSummary {
   id: string;
-  name: string;
+  /** Null when Hermes reports neither a name nor a prompt to fall back on. */
+  name: string | null;
   schedule: string | null;
   paused: boolean;
   nextRun: number | null;
@@ -535,7 +541,8 @@ export function normalizeCronJobs(raw: z.infer<typeof cronJobsSchema>): CronJobS
 
     return {
       id: job.id ?? `job-${index}`,
-      name: job.name?.trim() || job.prompt?.slice(0, 60) || 'Unbenannter Job',
+      // Null rather than a German placeholder — the browser picks the wording.
+      name: job.name?.trim() || job.prompt?.slice(0, 60).trim() || null,
       schedule,
       // Hermes reports either flag depending on version; either one pauses it.
       paused: job.paused === true || job.enabled === false,
@@ -730,8 +737,8 @@ export interface AnalyticsSummary {
     apiCalls: number | null;
   };
   daily: { day: string; inputTokens: number; outputTokens: number; cost: number }[];
-  byModel: { model: string; tokens: number; cost: number; apiCalls: number }[];
-  topTools: { tool: string; count: number }[];
+  byModel: { model: string | null; tokens: number; cost: number; apiCalls: number }[];
+  topTools: { tool: string | null; count: number }[];
 }
 
 export function normalizeAnalytics(raw: z.infer<typeof analyticsSchema>): AnalyticsSummary {
@@ -758,14 +765,15 @@ export function normalizeAnalytics(raw: z.infer<typeof analyticsSchema>): Analyt
     })),
     byModel: (raw.by_model ?? [])
       .map((entry) => ({
-        model: entry.model ?? 'unbekannt',
+        // Null, not a word: the server does not know the interface language.
+        model: entry.model?.trim() || null,
         tokens: (toNumber(entry.input_tokens) ?? 0) + (toNumber(entry.output_tokens) ?? 0),
         cost: toNumber(entry.estimated_cost) ?? 0,
         apiCalls: toNumber(entry.api_calls) ?? 0,
       }))
       .sort((a, b) => b.tokens - a.tokens),
     topTools: (raw.tools ?? [])
-      .map((entry) => ({ tool: entry.tool ?? 'unbekannt', count: toNumber(entry.count) ?? 0 }))
+      .map((entry) => ({ tool: entry.tool?.trim() || null, count: toNumber(entry.count) ?? 0 }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 8),
   };
@@ -944,11 +952,18 @@ function memoryProviderRank(provider: MemoryProvider): number {
 }
 
 export function normalizeMemory(raw: z.infer<typeof memorySchema>): MemorySummary {
-  const providers = raw.providers ?? [];
+  /*
+   * A provider's name is also its handle: the UI keys rows by it and sends it
+   * back to activate one. A nameless entry cannot be acted on, so it is dropped
+   * rather than listed under a placeholder that would then fail on click.
+   */
+  const providers = (raw.providers ?? []).filter(
+    (provider) => typeof provider.name === 'string' && provider.name.trim() !== '',
+  );
 
   const all: MemoryProvider[] = providers
     .map((provider) => ({
-      name: provider.name ?? 'unbekannt',
+      name: provider.name as string,
       description: provider.description?.trim() || null,
       available: provider.available === true,
       configured: provider.configured === true,
@@ -961,7 +976,7 @@ export function normalizeMemory(raw: z.infer<typeof memorySchema>): MemorySummar
     active: raw.active?.trim() || null,
     configured: providers
       .filter((provider) => provider.configured === true)
-      .map((provider) => ({ name: provider.name ?? 'unbekannt', status: provider.status ?? null })),
+      .map((provider) => ({ name: provider.name as string, status: provider.status ?? null })),
     availableCount: providers.filter((provider) => provider.available === true).length,
     files: Object.entries(raw.builtin_files ?? {}).map(([name, entries]) => ({
       name,

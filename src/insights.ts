@@ -219,7 +219,11 @@ export function deriveInsights(input: InsightInput): Insight[] {
       params: { count: paused.length },
       evidence: paused
         .slice(0, 5)
-        .map((job) => ({ label: job.name, valueKey: 'insight.cron.pausedValue' })),
+        .map((job) =>
+          job.name === null
+            ? { labelKey: 'tasks.unnamed', valueKey: 'insight.cron.pausedValue' }
+            : { label: job.name, valueKey: 'insight.cron.pausedValue' },
+        ),
     });
   }
 

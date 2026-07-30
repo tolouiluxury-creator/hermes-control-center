@@ -152,7 +152,9 @@ function JobEditor({
     >
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">
-          {job ? t('tasks.editTitle', { name: job.name }) : t('tasks.newTitle')}
+          {job
+            ? t('tasks.editTitle', { name: job.name ?? t('tasks.unnamed') })
+            : t('tasks.newTitle')}
         </h3>
         <button
           type="button"
@@ -411,6 +413,8 @@ export function TasksPage() {
               const overdue = !job.paused && job.nextRun !== null && job.nextRun < dataUpdatedAt;
               const failed = job.lastStatus !== null && job.lastStatus !== 'ok';
               const stalled = gatewayDown(job.profile);
+              // Hermes may report neither a name nor a prompt; the wording is ours.
+              const jobName = job.name ?? t('tasks.unnamed');
 
               return (
                 <li key={job.id} className="card p-4">
@@ -425,7 +429,7 @@ export function TasksPage() {
 
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                        {job.name}
+                        {jobName}
                         {job.profile && (
                           <span
                             className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-normal ${
@@ -478,7 +482,7 @@ export function TasksPage() {
                       <ActionButton
                         onClick={() => runAction.mutate({ id: job.id, action: 'trigger' })}
                         disabled={disabled}
-                        label={t('tasks.trigger', { name: job.name })}
+                        label={t('tasks.trigger', { name: jobName })}
                         title={t('tasks.runNow')}
                       >
                         <Zap size={14} aria-hidden />
@@ -490,8 +494,8 @@ export function TasksPage() {
                         disabled={disabled}
                         label={
                           job.paused
-                            ? t('tasks.resumeAria', { name: job.name })
-                            : t('tasks.pauseAria', { name: job.name })
+                            ? t('tasks.resumeAria', { name: jobName })
+                            : t('tasks.pauseAria', { name: jobName })
                         }
                         title={job.paused ? t('tasks.resume') : t('tasks.pause')}
                       >
@@ -504,7 +508,7 @@ export function TasksPage() {
                       <ActionButton
                         onClick={() => setEditing(job)}
                         disabled={disabled}
-                        label={t('tasks.editAria', { name: job.name })}
+                        label={t('tasks.editAria', { name: jobName })}
                         title={t('common.edit')}
                       >
                         <Pencil size={14} aria-hidden />
@@ -512,7 +516,7 @@ export function TasksPage() {
                       <ActionButton
                         onClick={() => setConfirmDelete(job.id)}
                         disabled={disabled}
-                        label={t('tasks.deleteAria', { name: job.name })}
+                        label={t('tasks.deleteAria', { name: jobName })}
                         title={t('common.delete')}
                         danger
                       >
@@ -545,7 +549,7 @@ export function TasksPage() {
                   {confirmDelete === job.id && (
                     <ConfirmInline
                       tone="danger"
-                      message={t('tasks.deleteConfirm', { name: job.name })}
+                      message={t('tasks.deleteConfirm', { name: jobName })}
                       confirmLabel={t('common.delete')}
                       pending={remove.isPending && remove.variables === job.id}
                       onConfirm={() => remove.mutate(job.id)}

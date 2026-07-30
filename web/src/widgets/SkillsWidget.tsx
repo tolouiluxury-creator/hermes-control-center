@@ -49,7 +49,8 @@ export function SkillsWidget() {
                     key={category.name}
                     className="rounded-full border border-[var(--color-hairline)] px-2 py-0.5 text-[0.68rem] text-[var(--color-ink-muted)]"
                   >
-                    {category.name}
+                    {/* The empty bucket is the server's "uncategorised"; we name it. */}
+                    {category.name === '' ? t('skills.noCategory') : category.name}
                     <span className="ml-1 text-[var(--color-ink-faint)]">{category.count}</span>
                   </li>
                 ))}

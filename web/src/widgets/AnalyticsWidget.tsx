@@ -81,9 +81,12 @@ export function AnalyticsWidget() {
                 {t('analytics.topTools')}
               </p>
               <ul className="space-y-0.5">
-                {data.topTools.slice(0, 5).map((tool) => (
-                  <li key={tool.tool} className="flex items-center gap-2 text-xs">
-                    <span className="truncate">{tool.tool}</span>
+                {data.topTools.slice(0, 5).map((tool, index) => (
+                  <li
+                    key={tool.tool ?? `unnamed-${index}`}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <span className="truncate">{tool.tool ?? t('common.unknown')}</span>
                     <span className="ml-auto shrink-0 font-mono text-[var(--color-ink-faint)]">
                       {tool.count}
                     </span>

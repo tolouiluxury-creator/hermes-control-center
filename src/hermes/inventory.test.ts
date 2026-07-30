@@ -35,9 +35,13 @@ describe('normalizeSkills', () => {
     expect(summary.enabled).toBe(2);
   });
 
-  it('groups categories, largest first, and names the missing one', () => {
+  /*
+   * Uncategorised skills land in the empty-string bucket, not under a German
+   * word: the server has no idea which language the browser is showing.
+   */
+  it('groups categories, largest first, and leaves the empty one unnamed', () => {
     const summary = normalizeSkills(real);
-    expect(summary.categories.map((entry) => entry.name)).toContain('Ohne Kategorie');
+    expect(summary.categories.map((entry) => entry.name)).toContain('');
     expect(summary.categories[0]?.count).toBeGreaterThanOrEqual(1);
   });
 

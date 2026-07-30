@@ -16,9 +16,9 @@ export const fa: Dict = {
   'nav.browser': 'خودکارسازی مرورگر',
   'nav.dateien': 'فایل‌ها',
   'nav.prompts': 'کتابخانه پرامپت',
-  'nav.telegram': 'ØªÙÚ¯Ø±Ø§Ù',
-  'nav.terminal': 'ØªØ±ÙÛÙØ§Ù',
-  'nav.workspace': 'ÙØ¶Ø§Û Ú©Ø§Ø±',
+  'nav.telegram': 'تلگرام',
+  'nav.terminal': 'ترمینال',
+  'nav.workspace': 'فضای کار',
   'nav.integrationen': 'API و یکپارچه‌سازی‌ها',
   'nav.analytics': 'تحلیل‌ها',
   'nav.logs': 'گزارش‌ها',
@@ -48,6 +48,7 @@ export const fa: Dict = {
   'common.all': 'همه',
   'common.close': 'بستن',
   'common.loading': 'در حال بارگذاری …',
+  'common.unknown': 'نامشخص',
 
   // Page descriptions
   'page.chats.desc':
@@ -333,6 +334,7 @@ export const fa: Dict = {
   'tasks.lastRun': 'آخرین اجرا',
   'tasks.never': 'هرگز',
   'tasks.unknown': 'نامشخص',
+  'tasks.unnamed': 'کار بی‌نام',
   'tasks.overdue': 'گذشته است',
   'tasks.noGateway':
     'نمایهٔ «{profile}» گیت‌وی در حال اجرا ندارد و زمان‌بند آنجاست — تا زمانی که برای آن گیت‌ویی راه‌اندازی نشود، این کار اجرا نمی‌شود.',
@@ -755,9 +757,9 @@ export const fa: Dict = {
   'navKeywords.modelle': 'مدل‌ها ارائه‌دهنده هزینه زمینه llm',
   'navKeywords.profile': 'نمایه نمونه رونوشت soul عامل‌های جداگانه',
   'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
-  'navKeywords.telegram': 'ØªÙÚ¯Ø±Ø§Ù Ø±Ø¨Ø§Øª ØªØ§Ø±ÛØ®ÚÙ Ú¯ÙØªÚ¯Ù',
-  'navKeywords.terminal': 'ØªØ±ÙÛÙØ§Ù Ú©ÙØ³ÙÙ Ø®Ø· ÙØ±ÙØ§Ù',
-  'navKeywords.workspace': 'ÙØ§ÛÙ Ù¾ÙØ´Ù ÙØ¶Ø§Û Ú©Ø§Ø± ÙØ³ÛØ±',
+  'navKeywords.telegram': 'تلگرام ربات تاریخچه گفتگو',
+  'navKeywords.terminal': 'ترمینال کنسول خط فرمان',
+  'navKeywords.workspace': 'فایل پوشه فضای کار مسیر',
   'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
   'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',

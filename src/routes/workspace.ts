@@ -46,9 +46,10 @@ export async function registerWorkspaceRoutes(
   app.post('/api/prompts', async (request, reply) => {
     const parsed = promptInputSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply
-        .code(400)
-        .send({ error: 'invalid_prompt', message: parsed.error.issues[0]?.message ?? 'ungültig' });
+      return reply.code(400).send({
+        error: 'invalid_prompt',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
+      });
     }
     return reply.code(201).send({ prompt: prompts.create(parsed.data) });
   });
@@ -56,9 +57,10 @@ export async function registerWorkspaceRoutes(
   app.put('/api/prompts/:id', async (request, reply) => {
     const parsed = promptInputSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply
-        .code(400)
-        .send({ error: 'invalid_prompt', message: parsed.error.issues[0]?.message ?? 'ungültig' });
+      return reply.code(400).send({
+        error: 'invalid_prompt',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
+      });
     }
 
     const { id } = request.params as { id: string };
@@ -89,7 +91,7 @@ export async function registerWorkspaceRoutes(
     if (!parsed.success) {
       return reply.code(400).send({
         error: 'invalid_workflow',
-        message: parsed.error.issues[0]?.message ?? 'ungültig',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
       });
     }
     return reply.code(201).send({ workflow: workflows.create(parsed.data) });
@@ -100,7 +102,7 @@ export async function registerWorkspaceRoutes(
     if (!parsed.success) {
       return reply.code(400).send({
         error: 'invalid_workflow',
-        message: parsed.error.issues[0]?.message ?? 'ungültig',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
       });
     }
     const { id } = request.params as { id: string };
@@ -112,7 +114,9 @@ export async function registerWorkspaceRoutes(
   app.post('/api/workflows/:id/enabled', async (request, reply) => {
     const body = request.body as { enabled?: unknown } | undefined;
     if (typeof body?.enabled !== 'boolean') {
-      return reply.code(400).send({ error: 'invalid_request', message: 'enabled fehlt' });
+      return reply
+        .code(400)
+        .send({ error: 'invalid_request', message: 'enabled is required and must be a boolean' });
     }
     const { id } = request.params as { id: string };
     const updated = workflows.setEnabled(id, body.enabled);

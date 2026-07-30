@@ -48,6 +48,7 @@ export const de: Dict = {
   'common.all': 'Alle',
   'common.close': 'Schließen',
   'common.loading': 'Wird geladen …',
+  'common.unknown': 'unbekannt',
 
   // Page descriptions
   'page.chats.desc':
@@ -337,6 +338,7 @@ export const de: Dict = {
   'tasks.lastRun': 'Letzter Lauf',
   'tasks.never': 'nie',
   'tasks.unknown': 'unbekannt',
+  'tasks.unnamed': 'Unbenannte Aufgabe',
   'tasks.overdue': 'überfällig',
   'tasks.noGateway':
     'Das Profil „{profile}" hat kein laufendes Gateway, und dort sitzt der Planer — dieser Job läuft nicht, bis eines dafür gestartet wird.',

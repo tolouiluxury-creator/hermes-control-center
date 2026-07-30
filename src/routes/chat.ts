@@ -227,9 +227,10 @@ export async function registerChatRoutes(
   app.post('/api/chat/prompt', async (request, reply) => {
     const parsed = promptSchema.safeParse(request.body);
     if (!parsed.success) {
-      return reply
-        .code(400)
-        .send({ error: 'invalid_prompt', message: parsed.error.issues[0]?.message ?? 'ungültig' });
+      return reply.code(400).send({
+        error: 'invalid_prompt',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
+      });
     }
     try {
       await ctx.gateway.request('prompt.submit', {
@@ -367,5 +368,5 @@ function readProfile(value: unknown): string | undefined {
 
 function describeGatewayError(error: unknown): string {
   if (error instanceof GatewayError) return error.message;
-  return error instanceof Error ? error.message : 'Unbekannter Fehler';
+  return error instanceof Error ? error.message : 'Unknown error';
 }

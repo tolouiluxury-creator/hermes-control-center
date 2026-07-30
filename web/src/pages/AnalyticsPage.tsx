@@ -132,10 +132,12 @@ export function AnalyticsPage() {
                 <section className="card p-5">
                   <h3 className="mb-3 text-sm font-semibold">{t('analytics.byModel')}</h3>
                   <ul className="space-y-2">
-                    {data.byModel.map((entry) => (
-                      <li key={entry.model}>
+                    {data.byModel.map((entry, index) => (
+                      <li key={entry.model ?? `unnamed-${index}`}>
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate font-mono text-xs">{entry.model}</span>
+                          <span className="truncate font-mono text-xs">
+                            {entry.model ?? t('common.unknown')}
+                          </span>
                           <span className="shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">
                             {formatCompact(entry.tokens, lang)} ·{' '}
                             {t('analytics.calls', { count: entry.apiCalls })}
@@ -152,10 +154,12 @@ export function AnalyticsPage() {
                 <section className="card p-5">
                   <h3 className="mb-3 text-sm font-semibold">{t('analytics.topTools')}</h3>
                   <ul className="space-y-2">
-                    {data.topTools.map((tool) => (
-                      <li key={tool.tool}>
+                    {data.topTools.map((tool, index) => (
+                      <li key={tool.tool ?? `unnamed-${index}`}>
                         <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate text-xs">{tool.tool}</span>
+                          <span className="truncate text-xs">
+                            {tool.tool ?? t('common.unknown')}
+                          </span>
                           <span className="shrink-0 font-mono text-xs text-[var(--color-ink-faint)]">
                             {tool.count}
                           </span>
