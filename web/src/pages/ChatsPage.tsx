@@ -547,7 +547,11 @@ export function ChatsPage() {
                             selecting ? toggleSelected(session.id) : void openExisting(session.id)
                           }
                           aria-pressed={selecting ? picked : undefined}
-                          className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                          // `min-w-0 flex-1`, not `w-full`: a flex item defaults
+                          // to min-width:auto and so refuses to shrink below its
+                          // content. With a long preview the button claimed the
+                          // whole row and pushed the pin and trash out of sight.
+                          className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                             active && !selecting
                               ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
                               : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
