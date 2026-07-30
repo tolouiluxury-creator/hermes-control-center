@@ -455,6 +455,7 @@ export const fa: Dict = {
   'prompts.textPlaceholder': 'یک خلاصه درباره {{موضوع}} به {{زبان}} بنویس.',
   'prompts.tags': 'برچسب‌ها، جدا شده با کاما',
   'prompts.tagsPlaceholder': 'پژوهش، هفتگی',
+  'prompts.variableTitle': 'جای‌گیر در متن',
   'prompts.variables': 'جای‌گیرهای شناسایی‌شده:',
   'prompts.saved': 'پرامپت ذخیره شد',
   'prompts.deleted': 'پرامپت حذف شد',

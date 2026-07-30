@@ -10,6 +10,7 @@ import {
   updatePrompt,
 } from '@/lib/api';
 import { PageShell, SearchField } from '@/components/PageShell';
+import { ConfirmInline } from '@/components/ConfirmInline';
 import { SkeletonText } from '@/components/Skeleton';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
@@ -147,7 +148,7 @@ function PromptEditor({
 export function PromptsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Prompt | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -278,7 +279,7 @@ export function PromptsPage() {
                   <h3 className="text-sm font-medium">{prompt.title}</h3>
                   <p className="mt-0.5 text-[0.7rem] text-[var(--color-ink-faint)]">
                     {prompt.uses > 0 ? t('prompts.used', { count: prompt.uses }) : ''}
-                    {t('prompts.changed', { time: formatRelativeTime(prompt.updatedAt) })}
+                    {t('prompts.changed', { time: formatRelativeTime(prompt.updatedAt, lang) })}
                   </p>
                 </div>
 
@@ -329,7 +330,7 @@ export function PromptsPage() {
                     <span
                       key={variable}
                       className="rounded-full bg-[var(--color-agent)]/10 px-2 py-0.5 font-mono text-[0.65rem] text-[var(--color-agent)]"
-                      title="Platzhalter im Text"
+                      title={t('prompts.variableTitle')}
                     >
                       {variable}
                     </span>
@@ -339,30 +340,15 @@ export function PromptsPage() {
 
               {/* Deleting is irreversible, so it asks — inline, where the click was. */}
               {confirmDelete === prompt.id && (
-                <div
-                  className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger)]/5 p-3"
-                  role="alertdialog"
-                  aria-label={t('common.confirm')}
-                >
-                  <p className="min-w-0 flex-1 text-xs">
-                    {t('prompts.deleteConfirm', { title: prompt.title })}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => remove.mutate(prompt.id)}
-                    disabled={remove.isPending}
-                    className="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1 text-xs text-[var(--color-danger)] disabled:opacity-50"
-                  >
-                    {t('common.delete')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(null)}
-                    className="rounded-lg px-3 py-1 text-xs text-[var(--color-ink-muted)]"
-                  >
-                    {t('prompts.keep')}
-                  </button>
-                </div>
+                <ConfirmInline
+                  tone="danger"
+                  message={t('prompts.deleteConfirm', { title: prompt.title })}
+                  confirmLabel={t('common.delete')}
+                  cancelLabel={t('prompts.keep')}
+                  pending={remove.isPending && remove.variables === prompt.id}
+                  onConfirm={() => remove.mutate(prompt.id)}
+                  onCancel={() => setConfirmDelete(null)}
+                />
               )}
             </li>
           ))}

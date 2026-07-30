@@ -20,7 +20,7 @@ import { useI18n } from '@/lib/i18n';
 export function ModelsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   /** The provider+model a switch is being confirmed for, if any. */
   const [pending, setPending] = useState<{ provider: string; model: string } | null>(null);
 
@@ -69,7 +69,7 @@ export function ModelsPage() {
               )}
               {info.data?.contextLength && (
                 <span>
-                  {t('models.context', { tokens: formatCompact(info.data.contextLength) })}
+                  {t('models.context', { tokens: formatCompact(info.data.contextLength, lang) })}
                 </span>
               )}
             </div>

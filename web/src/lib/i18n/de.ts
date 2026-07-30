@@ -462,6 +462,7 @@ export const de: Dict = {
   'prompts.textPlaceholder': 'Schreibe eine Zusammenfassung über {{thema}} in {{sprache}}.',
   'prompts.tags': 'Schlagwörter, durch Komma getrennt',
   'prompts.tagsPlaceholder': 'recherche, wöchentlich',
+  'prompts.variableTitle': 'Platzhalter im Text',
   'prompts.variables': 'Erkannte Platzhalter:',
   'prompts.saved': 'Prompt gespeichert',
   'prompts.deleted': 'Prompt gelöscht',

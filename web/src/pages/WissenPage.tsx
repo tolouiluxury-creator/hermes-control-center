@@ -117,7 +117,7 @@ function ProviderRow({
 export function WissenPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [confirming, setConfirming] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
@@ -158,7 +158,7 @@ export function WissenPage() {
                   return (
                     <div key={file.name} className="card p-4">
                       <p className="font-mono text-2xl tracking-tight">
-                        {formatCompact(file.entries)}
+                        {formatCompact(file.entries, lang)}
                       </p>
                       <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
                         {fileKey ? t(fileKey) : file.name}

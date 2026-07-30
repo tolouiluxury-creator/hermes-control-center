@@ -456,6 +456,7 @@ export const en: Dict = {
   'prompts.textPlaceholder': 'Write a summary about {{topic}} in {{language}}.',
   'prompts.tags': 'Tags, comma separated',
   'prompts.tagsPlaceholder': 'research, weekly',
+  'prompts.variableTitle': 'Placeholder in the text',
   'prompts.variables': 'Detected placeholders:',
   'prompts.saved': 'Prompt saved',
   'prompts.deleted': 'Prompt deleted',
