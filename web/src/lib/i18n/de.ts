@@ -456,7 +456,8 @@ export const de: Dict = {
   'workflows.deleted': 'Workflow gelöscht',
   'workflows.empty.title': 'Noch keine Workflows',
   'workflows.empty.desc':
-    'Verkette Prompts und geplante Jobs zu einem benannten Ablauf, den du später mit einem Klick startest.',
+    'Verkette Prompts und geplante Jobs zu einem benannten, sortierten Ablauf. Anlegen geht jetzt; das Durchlaufen braucht den Hermes-API-Server.',
+  'workflows.stepIncomplete': 'Jeder Schritt braucht einen Prompt, einen Job oder einen Notiztext.',
   'workflows.deleteConfirm': '„{name}“ löschen? Der Ablauf ist dann weg.',
   'workflows.enableAria': '{name} aktivieren',
   'workflows.disableAria': '{name} deaktivieren',

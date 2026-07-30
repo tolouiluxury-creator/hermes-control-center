@@ -85,7 +85,13 @@ function WorkflowEditor({
       return next;
     });
 
-  const canSave = name.trim() !== '' && !saving;
+  /*
+   * A prompt or cron step with nothing chosen has an empty label, and the store
+   * drops those on write. Filtering them away here would mean saving four steps
+   * and getting three back with a success toast, so saving waits instead.
+   */
+  const incomplete = steps.some((step) => step.label.trim() === '');
+  const canSave = name.trim() !== '' && !incomplete && !saving;
 
   return (
     <form
@@ -93,12 +99,7 @@ function WorkflowEditor({
       onSubmit={(event) => {
         event.preventDefault();
         if (!canSave) return;
-        onSave({
-          name,
-          description,
-          enabled: workflow?.enabled ?? true,
-          steps: steps.filter((s) => s.label.trim() !== ''),
-        });
+        onSave({ name, description, enabled: workflow?.enabled ?? true, steps });
       }}
     >
       <div className="flex items-center justify-between gap-3">
@@ -238,6 +239,10 @@ function WorkflowEditor({
             );
           })}
         </div>
+
+        {incomplete && (
+          <p className="mt-2 text-xs text-[var(--color-warn)]">{t('workflows.stepIncomplete')}</p>
+        )}
       </div>
 
       <div className="mt-4 flex gap-2">

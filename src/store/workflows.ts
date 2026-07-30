@@ -3,8 +3,8 @@ import type { Store } from './db.js';
 
 /**
  * Workflows: named, ordered chains of steps that the control center stores on
- * the user's behalf. Hermes has no workflow concept, so — like prompts and
- * agent presets — they live in our database.
+ * the user's behalf. Hermes has no workflow concept, so — like the prompt
+ * library — they live in our database.
  *
  * A step references either a library prompt or a Hermes cron job, or is a plain
  * note. Executing a chain needs the Hermes API server (for runs); until that is

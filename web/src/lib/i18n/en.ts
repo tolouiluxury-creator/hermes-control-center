@@ -450,7 +450,8 @@ export const en: Dict = {
   'workflows.deleted': 'Workflow deleted',
   'workflows.empty.title': 'No workflows yet',
   'workflows.empty.desc':
-    'Chain prompts and scheduled jobs into a named sequence that you start later with one click.',
+    'Chain prompts and scheduled jobs into a named, ordered sequence. Building one works now; running the chain needs the Hermes API server.',
+  'workflows.stepIncomplete': 'Every step needs a prompt, a job or a note text.',
   'workflows.deleteConfirm': 'Delete “{name}”? The sequence is then gone.',
   'workflows.enableAria': 'enable {name}',
   'workflows.disableAria': 'disable {name}',
