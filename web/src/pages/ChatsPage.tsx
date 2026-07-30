@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { CheckSquare, MessagesSquare, Plus, Send, Square, Trash2 } from 'lucide-react';
+import { CheckSquare, MessagesSquare, Pin, Plus, Send, Square, Trash2 } from 'lucide-react';
 import {
   ApiError,
   createChatSession,
@@ -9,6 +9,7 @@ import {
   getChatSessions,
   resumeChatSession,
   sendChatPrompt,
+  setSessionPinned,
   switchChatModel,
   type ChatMessage,
   type ChatSessionSummary,
@@ -48,6 +49,9 @@ export function ChatsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /** A single row awaiting its own delete confirmation, outside selection mode. */
+  const [confirmOne, setConfirmOne] = useState<string | null>(null);
+  const [pinning, setPinning] = useState<string | null>(null);
   /**
    * Toolbar state. The model is an override for the *next* conversation; the
    * profile scopes the whole surface, because each profile keeps its own
@@ -243,6 +247,53 @@ export function ChatsPage() {
       return next;
     });
 
+  /**
+   * Pin or unpin one conversation.
+   *
+   * Hermes calls this a durable keep flag: a pinned conversation is also exempt
+   * from its auto-archive sweep, so this is more than ordering.
+   */
+  const togglePin = async (session: ChatSessionSummary) => {
+    setPinning(session.id);
+    try {
+      await setSessionPinned(session.id, !session.pinned, profile);
+      await loadSessions();
+    } catch (error) {
+      toast.push({
+        tone: 'error',
+        title: t('chat.pinFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setPinning(null);
+    }
+  };
+
+  /** Delete exactly one, without entering selection mode first. */
+  const removeOne = async (id: string) => {
+    setDeleting(true);
+    try {
+      const result = await deleteChatSessions([id], profile);
+      const hitActive = sessionRef.current === id;
+      setConfirmOne(null);
+      await loadSessions();
+      if (hitActive) startNew();
+      toast.push({ tone: 'success', title: t('chat.deleted', { count: result.deleted ?? 1 }) });
+    } catch (error) {
+      toast.push({
+        tone: 'error',
+        title: t('toast.deleteFailed'),
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const allSelected = sessions.length > 0 && selected.size === sessions.length;
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(sessions.map((session) => session.id)));
+
   const leaveSelection = () => {
     setSelecting(false);
     setSelected(new Set());
@@ -421,6 +472,13 @@ export function ChatsPage() {
             <div className="mt-2 flex items-center gap-2 text-[0.7rem]">
               {selecting ? (
                 <>
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+                  >
+                    {allSelected ? t('chat.selectNone') : t('chat.selectAll')}
+                  </button>
                   <span className="text-[var(--color-ink-faint)]">
                     {t('chat.selectedCount', { count: selected.size })}
                   </span>
@@ -481,46 +539,101 @@ export function ChatsPage() {
                   const picked = selected.has(session.id);
                   return (
                     <li key={session.id}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          selecting ? toggleSelected(session.id) : void openExisting(session.id)
-                        }
-                        aria-pressed={selecting ? picked : undefined}
-                        className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
-                          active && !selecting
-                            ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
-                            : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
-                        }`}
-                      >
-                        {selecting &&
-                          (picked ? (
-                            <CheckSquare
-                              size={13}
-                              className="mt-0.5 shrink-0 text-[var(--color-accent)]"
-                              aria-hidden
-                            />
-                          ) : (
-                            <Square
-                              size={13}
-                              className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
-                              aria-hidden
-                            />
-                          ))}
-                        <span className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium">{label}</p>
-                          <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                            {session.messageCount > 0 && (
-                              <span>
-                                {session.messageCount} {t('chat.messages')}
-                              </span>
-                            )}
-                            {session.startedAt && (
-                              <span>· {formatRelativeTime(session.startedAt, lang)}</span>
-                            )}
-                          </p>
-                        </span>
-                      </button>
+                      {/* `group` so the row's own hover reveals its buttons. */}
+                      <div className="group flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            selecting ? toggleSelected(session.id) : void openExisting(session.id)
+                          }
+                          aria-pressed={selecting ? picked : undefined}
+                          className={`flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                            active && !selecting
+                              ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
+                              : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
+                          }`}
+                        >
+                          {selecting &&
+                            (picked ? (
+                              <CheckSquare
+                                size={13}
+                                className="mt-0.5 shrink-0 text-[var(--color-accent)]"
+                                aria-hidden
+                              />
+                            ) : (
+                              <Square
+                                size={13}
+                                className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
+                                aria-hidden
+                              />
+                            ))}
+                          <span className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium">{label}</p>
+                            <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                              {session.messageCount > 0 && (
+                                <span>
+                                  {session.messageCount} {t('chat.messages')}
+                                </span>
+                              )}
+                              {session.startedAt && (
+                                <span>· {formatRelativeTime(session.startedAt, lang)}</span>
+                              )}
+                            </p>
+                          </span>
+                        </button>
+
+                        {/* Pin and delete stay reachable without entering
+                            selection mode, which is what the list needed most.
+                            Side by side and vertically centred: stacked, they
+                            stretched every row and read as status rather than
+                            as buttons. They stay faint until the row is hovered
+                            so the list itself keeps the eye. */}
+                        {!selecting && (
+                          <span className="flex shrink-0 items-center gap-0.5 self-center">
+                            <button
+                              type="button"
+                              onClick={() => void togglePin(session)}
+                              disabled={pinning === session.id}
+                              title={session.pinned ? t('chat.unpin') : t('chat.pin')}
+                              aria-label={session.pinned ? t('chat.unpin') : t('chat.pin')}
+                              aria-pressed={session.pinned}
+                              className={`rounded-md p-1 transition-colors disabled:opacity-40 ${
+                                session.pinned
+                                  ? // A pinned row keeps its marker visible; the
+                                    // filled pin says "pinned", the tooltip says undo.
+                                    'text-[var(--color-accent)]'
+                                  : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-ink)]'
+                              }`}
+                            >
+                              <Pin
+                                size={12}
+                                aria-hidden
+                                fill={session.pinned ? 'currentColor' : 'none'}
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmOne(session.id)}
+                              title={t('common.delete')}
+                              aria-label={`${t('common.delete')} ${label}`}
+                              className="rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-colors group-hover:opacity-100 hover:text-[var(--color-danger)] focus-visible:opacity-100"
+                            >
+                              <Trash2 size={12} aria-hidden />
+                            </button>
+                          </span>
+                        )}
+                      </div>
+
+                      {confirmOne === session.id && (
+                        <ConfirmInline
+                          tone="danger"
+                          message={t('chat.deleteOneConfirm', { name: label })}
+                          confirmLabel={t('common.delete')}
+                          pending={deleting}
+                          onConfirm={() => void removeOne(session.id)}
+                          onCancel={() => setConfirmOne(null)}
+                        />
+                      )}
                     </li>
                   );
                 })}

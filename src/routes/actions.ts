@@ -116,6 +116,16 @@ const sessionIdsSchema = z.object({
     .transform((value) => value || undefined),
 });
 
+const sessionPinSchema = z.object({
+  pinned: z.boolean(),
+  profile: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => value || undefined),
+});
+
 const modelSetSchema = z.object({
   provider: z.string().trim().min(1),
   model: z.string().trim().min(1),
@@ -624,6 +634,17 @@ export async function registerActionRoutes(
   });
 
   // --- Sessions -------------------------------------------------------------
+
+  app.patch('/api/hermes/sessions/:id/pinned', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const input = parse(reply, sessionPinSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setSessionPinned(id, input.pinned, input.profile);
+      cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
+      return result;
+    });
+  });
 
   /** POST, not DELETE: the ids travel in a body, which DELETE cannot carry reliably. */
   app.post('/api/hermes/sessions/delete', async (request, reply) => {

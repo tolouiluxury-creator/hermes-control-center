@@ -105,10 +105,15 @@ interface ChatSession {
   source: string;
   /** From the stored row; null when the conversation is outside the lookup window. */
   model: string | null;
+  pinned: boolean;
 }
 
 /** Reduces a gateway session.list result to the list the sidebar renders. */
-function normalizeSessions(result: unknown, models: Map<string, string | null>): ChatSession[] {
+function normalizeSessions(
+  result: unknown,
+  models: Map<string, string | null>,
+  pins: Set<string>,
+): ChatSession[] {
   const raw = result as { sessions?: unknown } | null;
   const list = Array.isArray(raw?.sessions) ? raw.sessions : [];
   return list.map((entry) => {
@@ -122,6 +127,7 @@ function normalizeSessions(result: unknown, models: Map<string, string | null>):
       messageCount: typeof s.message_count === 'number' ? s.message_count : 0,
       source: typeof s.source === 'string' ? s.source : '',
       model: models.get(id) ?? null,
+      pinned: pins.has(id),
     };
   });
 }
@@ -144,10 +150,19 @@ export async function registerChatRoutes(
           .get(sessionsCacheKey(MODEL_LOOKUP_LIMIT, profile), () =>
             ctx.dashboard.sessions(MODEL_LOOKUP_LIMIT, profile),
           )
-          .catch(() => ({ sessions: [] as { id: string; model: string | null }[] })),
+          .catch(() => ({
+            sessions: [] as { id: string; model: string | null; pinned: boolean }[],
+          })),
       ]);
       const models = new Map(stored.sessions.map((s) => [s.id, s.model]));
-      return { sessions: normalizeSessions(result, models).filter((s) => s.id !== '') };
+      const pins = new Set(stored.sessions.filter((s) => s.pinned).map((s) => s.id));
+      return {
+        sessions: normalizeSessions(result, models, pins)
+          .filter((s) => s.id !== '')
+          // Pinned first; within each group the gateway's own recency order is
+          // kept, so nothing else about the list shifts.
+          .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
+      };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }

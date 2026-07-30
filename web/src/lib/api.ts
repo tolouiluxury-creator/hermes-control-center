@@ -460,6 +460,8 @@ export interface ChatSessionSummary {
   source: string;
   /** What the conversation actually runs on; null when it cannot be determined. */
   model: string | null;
+  /** Hermes' keep flag: a pinned conversation is exempt from auto-archive. */
+  pinned: boolean;
 }
 
 /**
@@ -663,6 +665,17 @@ export const deleteChatSessions = (
   apiRequest<DeleteSessionsResult>('/hermes/sessions/delete', {
     method: 'POST',
     ...jsonBody({ ids, profile: profile ?? undefined }),
+  });
+
+/** Pin or unpin a conversation. Not only ordering — it also stops auto-archive. */
+export const setSessionPinned = (
+  sessionId: string,
+  pinned: boolean,
+  profile?: ChatProfile,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/sessions/${encodeURIComponent(sessionId)}/pinned`, {
+    method: 'PATCH',
+    ...jsonBody({ pinned, profile: profile ?? undefined }),
   });
 
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>

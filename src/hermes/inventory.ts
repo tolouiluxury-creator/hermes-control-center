@@ -698,6 +698,7 @@ export const sessionsSchema = z.looseObject({
         chat_id: z.union([z.string(), z.number()]).nullish(),
         chat_type: z.string().nullish(),
         title: z.string().nullish(),
+        pinned: z.union([z.boolean(), numeric]).nullish(),
       }),
     )
     .nullish(),
@@ -721,6 +722,8 @@ export interface SessionSummary {
   /** The platform chat this conversation belongs to, for Telegram and friends. */
   chatId: string | null;
   chatType: string | null;
+  /** Hermes' durable keep flag: a pinned session is exempt from auto-archive. */
+  pinned: boolean;
   /** Epoch milliseconds. Hermes reports seconds, which would be 1970 if passed on. */
   startedAt: number | null;
   messages: number | null;
@@ -758,6 +761,8 @@ export function normalizeSessions(raw: z.infer<typeof sessionsSchema>): {
       chatId:
         session.chat_id === null || session.chat_id === undefined ? null : String(session.chat_id),
       chatType: session.chat_type ?? null,
+      // Hermes stores it as 0/1 in SQLite but reports a bool on some paths.
+      pinned: session.pinned === true || toNumber(session.pinned) === 1,
       startedAt: toEpochMs(session.started_at),
       messages: toNumber(session.message_count),
       endReason: session.end_reason ?? null,

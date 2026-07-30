@@ -820,6 +820,26 @@ export class DashboardClient {
     });
   }
 
+  /**
+   * Pin or unpin a conversation.
+   *
+   * Hermes calls this a durable "keep" flag: a pinned session is exempt from the
+   * auto-archive sweep, so pinning is not only cosmetic ordering — it stops the
+   * conversation being tidied away.
+   */
+  setSessionPinned(
+    sessionId: string,
+    pinned: boolean,
+    profile?: string | null,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, `/api/sessions/${encodeURIComponent(sessionId)}`, {
+      ...options,
+      method: 'PATCH',
+      body: { pinned, ...(profile ? { profile } : {}) },
+    });
+  }
+
   // --- Settings: writes -----------------------------------------------------
 
   setEnv(key: string, value: string, options?: RequestOptions): Promise<ActionResult> {
