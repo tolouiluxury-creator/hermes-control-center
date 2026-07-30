@@ -88,7 +88,15 @@ describe('parseSchedule', () => {
   });
 
   it('round-trips every mode it claims to understand', () => {
-    for (const expression of ['0 7 * * *', '5 18 * * *', '0 7 * * 1,5', '0 9 1 * *', 'every 30m']) {
+    for (const expression of [
+      '0 7 * * *',
+      '5 18 * * *',
+      '0 7 * * 1,5',
+      // Task007 as the user created it: opening and saving must not drop a day.
+      '59 15 * * 1,3',
+      '0 9 1 * *',
+      'every 30m',
+    ]) {
       expect(buildSchedule(parseSchedule(expression))).toBe(expression);
     }
   });
