@@ -3,6 +3,8 @@ import type { DashboardLayout } from '@/widgets/types';
 import type {
   AnalyticsSummary,
   AuxiliaryModels,
+  CronDeliveryTarget,
+  CronJobInput,
   CronJobSummary,
   Insight,
   LogsResponse,
@@ -121,6 +123,20 @@ export const cronAction = (
 export const deleteCronJob = (id: string): Promise<ActionResult> =>
   apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
+export const createCronJob = (input: CronJobInput & { profile: string }): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/cron', { method: 'POST', ...jsonBody(input) });
+
+/** Only the changed keys travel; Hermes leaves the rest of the job alone. */
+export const updateCronJob = (
+  id: string,
+  profile: string,
+  updates: CronJobInput,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    ...jsonBody({ profile, updates }),
+  });
+
 export const setMainModel = (provider: string, model: string): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/model/set', {
     method: 'POST',
@@ -221,6 +237,9 @@ export const getMcpServers = (): Promise<McpServerSummary[]> =>
 
 export const getCronJobs = (): Promise<CronJobSummary[]> =>
   apiRequest<CronJobSummary[]>('/hermes/cron');
+
+export const getCronDeliveryTargets = (): Promise<CronDeliveryTarget[]> =>
+  apiRequest<CronDeliveryTarget[]>('/hermes/cron/delivery-targets');
 
 export const getModelInfo = (): Promise<ModelSummary> => apiRequest<ModelSummary>('/hermes/model');
 
@@ -700,6 +719,7 @@ export const queryKeys = {
     ['hermes', 'sessions', 'source', source, profile ?? ''] as const,
   mcp: ['hermes', 'mcp'] as const,
   cron: ['hermes', 'cron'] as const,
+  cronDeliveryTargets: ['hermes', 'cron', 'delivery-targets'] as const,
   model: ['hermes', 'model'] as const,
   analytics: ['hermes', 'analytics'] as const,
   memory: ['hermes', 'memory'] as const,

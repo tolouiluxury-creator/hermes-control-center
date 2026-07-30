@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   classifyLogLine,
   normalizeAnalytics,
+  normalizeCronDeliveryTargets,
   normalizeCronJobs,
   normalizeMcpServers,
   normalizeMemory,
@@ -94,6 +95,14 @@ describe('normalizeCronJobs', () => {
     expect(job?.profile).toBe('default');
   });
 
+  it('carries prompt and deliver, so the edit form starts from the real job', () => {
+    const [job] = normalizeCronJobs([
+      { id: 'a', prompt: 'Erstelle den Bericht', deliver: 'telegram' },
+    ]);
+    expect(job?.prompt).toBe('Erstelle den Bericht');
+    expect(job?.deliver).toBe('telegram');
+  });
+
   it('leaves a job that never ran without invented values', () => {
     const [job] = normalizeCronJobs([{ id: 'a', next_run_at: null, last_run_at: null }]);
     expect(job?.nextRun).toBeNull();
@@ -112,6 +121,45 @@ describe('normalizeCronJobs', () => {
     expect(normalizeCronJobs([{ id: 'a', paused: true }])[0]?.paused).toBe(true);
     expect(normalizeCronJobs([{ id: 'b', enabled: false }])[0]?.paused).toBe(true);
     expect(normalizeCronJobs([{ id: 'c' }])[0]?.paused).toBe(false);
+  });
+});
+
+describe('normalizeCronDeliveryTargets', () => {
+  /** Copied from GET /api/cron/delivery-targets on the real server, 30.07.2026. */
+  const real = {
+    targets: [
+      { id: 'local', name: 'Local (save only)', home_target_set: true, home_env_var: null },
+      {
+        id: 'telegram',
+        name: 'Telegram',
+        home_target_set: true,
+        home_env_var: 'TELEGRAM_HOME_CHANNEL',
+      },
+    ],
+  };
+
+  it('keeps both targets with their env var', () => {
+    const targets = normalizeCronDeliveryTargets(real);
+    expect(targets.map((target) => target.id)).toEqual(['local', 'telegram']);
+    expect(targets[1]?.homeEnvVar).toBe('TELEGRAM_HOME_CHANNEL');
+  });
+
+  /*
+   * Hermes returns a platform without a home channel on purpose, so the UI can
+   * say why it will not work. Only an explicit false means "not set".
+   */
+  it('marks a platform without a home channel, but keeps it', () => {
+    const [target] = normalizeCronDeliveryTargets({
+      targets: [{ id: 'telegram', name: 'Telegram', home_target_set: false }],
+    });
+    expect(target?.homeTargetSet).toBe(false);
+    expect(normalizeCronDeliveryTargets({ targets: [{ id: 'x' }] })[0]?.homeTargetSet).toBe(true);
+  });
+
+  it('drops entries without an id and falls back to the id as name', () => {
+    const targets = normalizeCronDeliveryTargets({ targets: [{ name: 'nameless' }, { id: 'x' }] });
+    expect(targets).toHaveLength(1);
+    expect(targets[0]?.name).toBe('x');
   });
 });
 

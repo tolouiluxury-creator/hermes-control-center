@@ -69,6 +69,37 @@ export interface CronJobSummary {
   lastError: string | null;
   /** Which profile owns the job. The list spans all profiles by default. */
   profile: string | null;
+  /**
+   * The instruction the job runs. Carried so the edit form can start from the
+   * real text — an empty field there would overwrite the prompt with nothing.
+   */
+  prompt: string | null;
+  /** Where the output goes: `local`, `telegram`, … */
+  deliver: string | null;
+}
+
+/**
+ * The editable fields of a scheduled job. `schedule` accepts what Hermes'
+ * `parse_schedule` accepts: `"30m"`, `"2h"`, `"every 30m"`, a five-field cron
+ * expression, or an ISO timestamp.
+ */
+export interface CronJobInput {
+  schedule?: string;
+  name?: string;
+  prompt?: string;
+  deliver?: string;
+  skills?: string[];
+  model?: string;
+  provider?: string;
+  workdir?: string;
+}
+
+export interface CronDeliveryTarget {
+  id: string;
+  name: string;
+  /** False when the platform is configured but has no home channel yet. */
+  homeTargetSet: boolean;
+  homeEnvVar: string | null;
 }
 
 export type LogLevel = 'error' | 'warn' | 'info' | 'debug' | 'plain';

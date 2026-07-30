@@ -146,6 +146,56 @@ const auxiliarySetSchema = z.object({
 
 const cronActions = new Set(['pause', 'resume', 'trigger']);
 
+/**
+ * Creating a scheduled job. `schedule` is the only field Hermes insists on, but
+ * an agent job also needs something to do, so prompt-or-skills is required here
+ * rather than letting Hermes answer 400 with its own wording.
+ *
+ * `profile` is required on purpose: every cron endpoint takes one, and without
+ * it Hermes falls back to its own current profile — a job created from the view
+ * of one profile would then quietly land in another.
+ *
+ * Deliberately not exposed: `script` and `no_agent` (running a sandboxed script
+ * on the host is a different kind of permission than scheduling a prompt),
+ * `context_from`, `enabled_toolsets`, `base_url` and `repeat`.
+ */
+const cronCreateSchema = z
+  .object({
+    profile: z.string().trim().min(1),
+    schedule: z.string().trim().min(1).max(200),
+    name: z.string().trim().max(200).optional(),
+    prompt: z.string().max(100_000).optional(),
+    deliver: z.string().trim().max(100).optional(),
+    skills: z.array(z.string().trim().min(1).max(200)).max(50).optional(),
+    model: z.string().trim().max(200).optional(),
+    provider: z.string().trim().max(200).optional(),
+    workdir: z.string().trim().max(1000).optional(),
+  })
+  .refine((body) => (body.prompt?.trim() ?? '') !== '' || (body.skills?.length ?? 0) > 0, {
+    message: 'A job needs a prompt or at least one skill.',
+  });
+
+/**
+ * Editing sends only what changed: Hermes takes a free-form `updates` map and
+ * leaves every key it is not given alone. The allowed keys are pinned so a typo
+ * cannot travel and be stored as a new field.
+ */
+const cronUpdateSchema = z.object({
+  profile: z.string().trim().min(1),
+  updates: z
+    .object({
+      schedule: z.string().trim().min(1).max(200).optional(),
+      name: z.string().trim().max(200).optional(),
+      prompt: z.string().max(100_000).optional(),
+      deliver: z.string().trim().max(100).optional(),
+      skills: z.array(z.string().trim().min(1).max(200)).max(50).optional(),
+      model: z.string().trim().max(200).nullable().optional(),
+      provider: z.string().trim().max(200).nullable().optional(),
+      workdir: z.string().trim().max(1000).nullable().optional(),
+    })
+    .refine((updates) => Object.keys(updates).length > 0, { message: 'Nothing to change.' }),
+});
+
 const envSetSchema = z.object({
   key: z.string().trim().min(1),
   value: z.string(),
@@ -236,6 +286,28 @@ export async function registerActionRoutes(
     const { id } = request.params as { id: string };
     return guard(reply, async () => {
       const result = await ctx.dashboard.deleteCron(id);
+      cache.invalidate(CACHE_KEYS.cron);
+      return result;
+    });
+  });
+
+  app.post('/api/hermes/cron', async (request, reply) => {
+    const body = parse(reply, cronCreateSchema, request.body);
+    if (!body) return undefined;
+    const { profile, ...job } = body;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.createCron(job, profile);
+      cache.invalidate(CACHE_KEYS.cron);
+      return result;
+    });
+  });
+
+  app.put('/api/hermes/cron/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = parse(reply, cronUpdateSchema, request.body);
+    if (!body) return undefined;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.updateCron(id, body.updates, body.profile);
       cache.invalidate(CACHE_KEYS.cron);
       return result;
     });

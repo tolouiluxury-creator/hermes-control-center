@@ -91,6 +91,12 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.cron, () => ctx.dashboard.cronJobs())),
   );
 
+  app.get('/api/hermes/cron/delivery-targets', async (_request, reply) =>
+    guard(reply, () =>
+      cache.get(CACHE_KEYS.cronDeliveryTargets, () => ctx.dashboard.cronDeliveryTargets()),
+    ),
+  );
+
   app.get('/api/hermes/model', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.model, () => ctx.dashboard.modelInfo())),
   );

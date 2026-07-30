@@ -1,7 +1,27 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CalendarClock, Pause, Play, Trash2, Zap } from 'lucide-react';
-import { cronAction, deleteCronJob, getCronJobs, queryKeys } from '@/lib/api';
+import {
+  AlertTriangle,
+  CalendarClock,
+  Check,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+  X,
+  Zap,
+} from 'lucide-react';
+import {
+  createCronJob,
+  cronAction,
+  deleteCronJob,
+  getCronDeliveryTargets,
+  getCronJobs,
+  getProfiles,
+  queryKeys,
+  updateCronJob,
+} from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
@@ -9,7 +29,7 @@ import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
 import { describeCron } from '@/widgets/SchedulerWidget';
-import type { CronJobSummary } from '@/lib/hermesTypes';
+import type { CronJobInput, CronJobSummary } from '@/lib/hermesTypes';
 
 /** Small icon button used for the per-job actions. */
 function ActionButton({
@@ -43,11 +63,195 @@ function ActionButton({
   );
 }
 
+/**
+ * Create or edit one scheduled job.
+ *
+ * The profile picker only appears when creating: a job cannot move between
+ * profiles, since each profile keeps its own cron store. On edit the profile is
+ * shown as a fact instead, so it is clear which store is being written to.
+ */
+function JobEditor({
+  job,
+  onCancel,
+  onSave,
+  saving,
+}: {
+  job: CronJobSummary | null;
+  onCancel: () => void;
+  onSave: (input: CronJobInput & { profile: string }) => void;
+  saving: boolean;
+}) {
+  const { t } = useI18n();
+  const profiles = useQuery({
+    queryKey: queryKeys.profiles,
+    queryFn: getProfiles,
+    staleTime: 60_000,
+  });
+  const targets = useQuery({
+    queryKey: queryKeys.cronDeliveryTargets,
+    queryFn: getCronDeliveryTargets,
+    staleTime: 60_000,
+  });
+
+  const [name, setName] = useState(job?.name ?? '');
+  const [schedule, setSchedule] = useState(job?.schedule ?? '');
+  const [prompt, setPrompt] = useState(job?.prompt ?? '');
+  const [deliver, setDeliver] = useState(job?.deliver ?? 'local');
+  const [profile, setProfile] = useState(job?.profile ?? '');
+
+  const chosenProfile = (job?.profile ?? profile) || (profiles.data?.current ?? '');
+
+  /*
+   * A job's stored target is not always one Hermes offers: the delivery-targets
+   * endpoint lists `local` plus the configured platforms, while a job created
+   * from a chat carries `deliver: "origin"`. Filling the select purely from the
+   * endpoint would leave that value unmatched, and the browser would silently
+   * show the first option instead — an edit would then reroute the output
+   * without anyone touching the field. So the stored value is always an option.
+   */
+  const offered = targets.data ?? [];
+  const options =
+    deliver !== '' && !offered.some((target) => target.id === deliver)
+      ? [{ id: deliver, name: deliver, homeTargetSet: true, homeEnvVar: null }, ...offered]
+      : offered;
+  const chosenTarget = options.find((target) => target.id === deliver);
+
+  /* Hermes rejects an agent job with neither a prompt nor a skill (400). */
+  const canSave = schedule.trim() !== '' && prompt.trim() !== '' && chosenProfile !== '' && !saving;
+
+  const field =
+    'mt-1 w-full rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]';
+  const label = 'block text-xs text-[var(--color-ink-faint)]';
+
+  return (
+    <form
+      className="card mb-4 p-5"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!canSave) return;
+        onSave({
+          profile: chosenProfile,
+          schedule: schedule.trim(),
+          name: name.trim(),
+          prompt: prompt.trim(),
+          deliver,
+        });
+      }}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold">
+          {job ? t('tasks.editTitle', { name: job.name }) : t('tasks.newTitle')}
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg p-1 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+          aria-label={t('common.cancel')}
+        >
+          <X size={15} aria-hidden />
+        </button>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className={label}>
+          {t('tasks.form.name')}
+          <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
+        </label>
+        <label className={label}>
+          {t('tasks.form.schedule')}
+          <input
+            value={schedule}
+            onChange={(e) => setSchedule(e.target.value)}
+            required
+            autoFocus
+            placeholder="0 7 * * *"
+            className={`${field} font-mono`}
+          />
+        </label>
+      </div>
+      <p className="mt-1 text-[0.65rem] text-[var(--color-ink-faint)]">
+        {t('tasks.form.scheduleHelp')}
+      </p>
+
+      <label className={`mt-3 ${label}`}>
+        {t('tasks.form.prompt')}
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          rows={4}
+          placeholder={t('tasks.form.promptPlaceholder')}
+          className={`${field} resize-y`}
+        />
+      </label>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className={label}>
+          {t('tasks.form.deliver')}
+          <select value={deliver} onChange={(e) => setDeliver(e.target.value)} className={field}>
+            {options.map((target) => (
+              <option key={target.id} value={target.id}>
+                {target.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {job ? (
+          <p className={label}>
+            {t('tasks.form.profile')}
+            <span className="mt-1 block px-3 py-2 text-sm">{job.profile ?? '—'}</span>
+          </p>
+        ) : (
+          <label className={label}>
+            {t('tasks.form.profile')}
+            <select
+              value={chosenProfile}
+              onChange={(e) => setProfile(e.target.value)}
+              className={field}
+            >
+              {(profiles.data?.profiles ?? []).map((entry) => (
+                <option key={entry.name} value={entry.name}>
+                  {entry.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+
+      {chosenTarget && !chosenTarget.homeTargetSet && (
+        <p className="mt-2 text-xs text-[var(--color-warn)]">
+          {t('tasks.form.noHomeChannel', { variable: chosenTarget.homeEnvVar ?? '' })}
+        </p>
+      )}
+
+      <div className="mt-4 flex gap-2">
+        <button
+          type="submit"
+          disabled={!canSave}
+          className="inline-flex items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
+        >
+          <Check size={14} aria-hidden />
+          {saving ? t('common.saving') : t('common.save')}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl border border-[var(--color-hairline)] px-4 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+        >
+          {t('common.cancel')}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export function TasksPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { t, lang } = useI18n();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editing, setEditing] = useState<CronJobSummary | null | undefined>(undefined);
 
   const { data, isPending, error, dataUpdatedAt } = useQuery({
     queryKey: queryKeys.cron,
@@ -93,6 +297,26 @@ export function TasksPage() {
       }),
   });
 
+  const save = useMutation({
+    mutationFn: (input: CronJobInput & { profile: string }) => {
+      if (!editing) return createCronJob(input);
+      const { profile, ...updates } = input;
+      return updateCronJob(editing.id, profile, updates);
+    },
+    onSuccess: async () => {
+      const created = !editing;
+      setEditing(undefined);
+      await invalidate();
+      toast.push({ tone: 'success', title: t(created ? 'tasks.created' : 'tasks.updated') });
+    },
+    onError: (mutationError: Error) =>
+      toast.push({
+        tone: 'error',
+        title: t('toast.saveFailed'),
+        description: mutationError.message,
+      }),
+  });
+
   const busy = (id: string) =>
     (runAction.isPending && runAction.variables?.id === id) ||
     (remove.isPending && remove.variables === id);
@@ -101,7 +325,31 @@ export function TasksPage() {
   const active = jobs.filter((job: CronJobSummary) => !job.paused).length;
 
   return (
-    <PageShell title={t('nav.aufgaben')} description={t('page.aufgaben.desc')}>
+    <PageShell
+      title={t('nav.aufgaben')}
+      description={t('page.aufgaben.desc')}
+      actions={
+        <button
+          type="button"
+          onClick={() => setEditing(null)}
+          className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
+        >
+          <Plus size={14} aria-hidden />
+          {t('common.new')}
+        </button>
+      }
+    >
+      {editing !== undefined && (
+        /* Keyed so switching to another job never carries the first one's text. */
+        <JobEditor
+          key={editing?.id ?? 'new'}
+          job={editing}
+          saving={save.isPending}
+          onCancel={() => setEditing(undefined)}
+          onSave={(input) => save.mutate(input)}
+        />
+      )}
+
       {isPending ? (
         <SkeletonText lines={6} />
       ) : error ? (
@@ -224,6 +472,14 @@ export function TasksPage() {
                         ) : (
                           <Pause size={14} aria-hidden />
                         )}
+                      </ActionButton>
+                      <ActionButton
+                        onClick={() => setEditing(job)}
+                        disabled={disabled}
+                        label={t('tasks.editAria', { name: job.name })}
+                        title={t('common.edit')}
+                      >
+                        <Pencil size={14} aria-hidden />
                       </ActionButton>
                       <ActionButton
                         onClick={() => setConfirmDelete(job.id)}

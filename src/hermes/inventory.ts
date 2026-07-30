@@ -499,6 +499,7 @@ export const cronJobsSchema = z.array(
     last_status: z.string().nullish(),
     last_error: z.string().nullish(),
     profile: z.string().nullish(),
+    deliver: z.string().nullish(),
     model: z.string().nullish(),
   }),
 );
@@ -515,6 +516,13 @@ export interface CronJobSummary {
   lastError: string | null;
   /** Which profile owns the job. The list spans all profiles by default. */
   profile: string | null;
+  /**
+   * The instruction the job runs. Carried so the edit form can start from the
+   * real text — an empty field there would overwrite the prompt with nothing.
+   */
+  prompt: string | null;
+  /** Where the output goes: `local`, `telegram`, … */
+  deliver: string | null;
 }
 
 export function normalizeCronJobs(raw: z.infer<typeof cronJobsSchema>): CronJobSummary[] {
@@ -536,8 +544,63 @@ export function normalizeCronJobs(raw: z.infer<typeof cronJobsSchema>): CronJobS
       lastStatus: job.last_status?.trim() || null,
       lastError: job.last_error?.trim() || null,
       profile: job.profile?.trim() || null,
+      prompt: job.prompt?.trim() || null,
+      deliver: job.deliver?.trim() || null,
     };
   });
+}
+
+/**
+ * What Hermes accepts when creating a job. `schedule` is the only required
+ * field, and `parse_schedule` takes several forms: `"30m"` and `"2h"` (once,
+ * relative), `"every 30m"` (recurring), a five-field cron expression, or an ISO
+ * timestamp. Everything else is optional — but an agent job needs at least one
+ * of prompt or skills, or Hermes answers 400.
+ */
+export interface CronJobCreateBody {
+  schedule: string;
+  prompt?: string;
+  name?: string;
+  deliver?: string;
+  skills?: string[];
+  model?: string;
+  provider?: string;
+  workdir?: string;
+}
+
+export const cronDeliveryTargetsSchema = z.looseObject({
+  targets: z
+    .array(
+      z.looseObject({
+        id: z.string().nullish(),
+        name: z.string().nullish(),
+        home_target_set: z.boolean().nullish(),
+        home_env_var: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface CronDeliveryTarget {
+  id: string;
+  name: string;
+  /** False when the platform is configured but has no home channel yet. */
+  homeTargetSet: boolean;
+  homeEnvVar: string | null;
+}
+
+export function normalizeCronDeliveryTargets(
+  raw: z.infer<typeof cronDeliveryTargetsSchema>,
+): CronDeliveryTarget[] {
+  return (raw.targets ?? [])
+    .filter((target) => typeof target.id === 'string' && target.id.trim() !== '')
+    .map((target) => ({
+      id: target.id as string,
+      name: target.name?.trim() || (target.id as string),
+      // Only an explicit false means "not set"; a missing flag is not a problem.
+      homeTargetSet: target.home_target_set !== false,
+      homeEnvVar: target.home_env_var?.trim() || null,
+    }));
 }
 
 // --- Logs -------------------------------------------------------------------

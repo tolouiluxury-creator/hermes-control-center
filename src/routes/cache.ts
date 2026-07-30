@@ -77,6 +77,7 @@ export const CACHE_KEYS = {
   auxiliary: 'models:auxiliary',
   mcp: 'mcp',
   cron: 'cron',
+  cronDeliveryTargets: 'cron:delivery-targets',
   model: 'model',
   analytics: 'analytics',
   memory: 'memory',

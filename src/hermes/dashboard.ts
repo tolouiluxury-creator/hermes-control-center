@@ -30,6 +30,7 @@ import {
   managedFileSchema,
   managedFilesSchema,
   auxiliaryModelsSchema,
+  cronDeliveryTargetsSchema,
   cronJobsSchema,
   logsSchema,
   mcpServersSchema,
@@ -38,6 +39,7 @@ import {
   modelInfoSchema,
   normalizeAnalytics,
   normalizeAuxiliaryModels,
+  normalizeCronDeliveryTargets,
   normalizeCronJobs,
   normalizeLogs,
   normalizeManagedFiles,
@@ -66,6 +68,8 @@ import {
   webhooksSchema,
   type AnalyticsSummary,
   type AuxiliaryModels,
+  type CronDeliveryTarget,
+  type CronJobCreateBody,
   type CronJobSummary,
   type FileListing,
   type McpServerSummary,
@@ -378,6 +382,60 @@ export class DashboardClient {
       ...options,
       method: 'DELETE',
     });
+  }
+
+  /**
+   * Create a scheduled job.
+   *
+   * `profile` decides which profile's cron store the job lands in and is not
+   * optional here on purpose: Hermes would fall back to its own idea of the
+   * current profile, and a job created from the view of one profile would
+   * quietly appear in another.
+   */
+  createCron(
+    body: CronJobCreateBody,
+    profile: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/cron/jobs?profile=${encodeURIComponent(profile)}`,
+      { ...options, method: 'POST', body },
+    );
+  }
+
+  /**
+   * Change an existing job. Hermes takes a free-form `updates` map and only
+   * touches the keys it is given, so an edit never has to resend the whole job.
+   */
+  updateCron(
+    id: string,
+    updates: Record<string, unknown>,
+    profile: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/cron/jobs/${encodeURIComponent(id)}?profile=${encodeURIComponent(profile)}`,
+      { ...options, method: 'PUT', body: { updates } },
+    );
+  }
+
+  /**
+   * Where a job's output can go. Always contains `local` (save only); the rest
+   * are the configured gateway platforms. A platform without a home channel is
+   * still listed, with `homeTargetSet: false`, so the reason can be shown
+   * instead of the option silently missing.
+   *
+   * Not built alongside this: `GET /api/cron/jobs/{id}/runs`. It answers `[]` on
+   * this server even for a job with five recorded runs, so the shape of a real
+   * entry was never seen — and a schema written from the source alone would be a
+   * guess.
+   */
+  cronDeliveryTargets(options?: RequestOptions): Promise<CronDeliveryTarget[]> {
+    return this.client
+      .json(cronDeliveryTargetsSchema, '/api/cron/delivery-targets', options)
+      .then(normalizeCronDeliveryTargets);
   }
 
   auxiliaryModels(options?: RequestOptions): Promise<AuxiliaryModels> {
