@@ -23,6 +23,8 @@ import {
   updateCronJob,
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
+import { ScheduleField } from '@/components/ScheduleField';
+import { buildSchedule, parseSchedule } from '@/lib/schedule';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
@@ -94,7 +96,7 @@ function JobEditor({
   });
 
   const [name, setName] = useState(job?.name ?? '');
-  const [schedule, setSchedule] = useState(job?.schedule ?? '');
+  const [schedule, setSchedule] = useState(() => parseSchedule(job?.schedule ?? null));
   const [prompt, setPrompt] = useState(job?.prompt ?? '');
   const [deliver, setDeliver] = useState(job?.deliver ?? 'local');
   const [profile, setProfile] = useState(job?.profile ?? '');
@@ -116,8 +118,14 @@ function JobEditor({
       : offered;
   const chosenTarget = options.find((target) => target.id === deliver);
 
-  /* Hermes rejects an agent job with neither a prompt nor a skill (400). */
-  const canSave = schedule.trim() !== '' && prompt.trim() !== '' && chosenProfile !== '' && !saving;
+  const expression = buildSchedule(schedule);
+
+  /*
+   * Hermes rejects an agent job with neither a prompt nor a skill (400), and an
+   * incomplete schedule draft — a weekly one with no weekday, say — has no
+   * expression to send.
+   */
+  const canSave = expression !== null && prompt.trim() !== '' && chosenProfile !== '' && !saving;
 
   const field =
     'mt-1 w-full rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]';
@@ -128,10 +136,10 @@ function JobEditor({
       className="card mb-4 p-5"
       onSubmit={(event) => {
         event.preventDefault();
-        if (!canSave) return;
+        if (!canSave || expression === null) return;
         onSave({
           profile: chosenProfile,
-          schedule: schedule.trim(),
+          schedule: expression,
           name: name.trim(),
           prompt: prompt.trim(),
           deliver,
@@ -152,26 +160,14 @@ function JobEditor({
         </button>
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <label className={label}>
-          {t('tasks.form.name')}
-          <input value={name} onChange={(e) => setName(e.target.value)} className={field} />
-        </label>
-        <label className={label}>
-          {t('tasks.form.schedule')}
-          <input
-            value={schedule}
-            onChange={(e) => setSchedule(e.target.value)}
-            required
-            autoFocus
-            placeholder="0 7 * * *"
-            className={`${field} font-mono`}
-          />
-        </label>
+      <label className={`mt-3 ${label}`}>
+        {t('tasks.form.name')}
+        <input value={name} onChange={(e) => setName(e.target.value)} autoFocus className={field} />
+      </label>
+
+      <div className="mt-4">
+        <ScheduleField draft={schedule} onChange={setSchedule} />
       </div>
-      <p className="mt-1 text-[0.65rem] text-[var(--color-ink-faint)]">
-        {t('tasks.form.scheduleHelp')}
-      </p>
 
       <label className={`mt-3 ${label}`}>
         {t('tasks.form.prompt')}
