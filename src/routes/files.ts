@@ -26,6 +26,11 @@ import {
 
 const pathSchema = z.object({ path: z.string().max(4096).optional() });
 const mkdirSchema = z.object({ path: z.string().min(1).max(4096) });
+/** 8 MiB is Hermes' own ceiling (`_FS_TEXT_WRITE_MAX_BYTES`); it answers 413 above it. */
+const writeSchema = z.object({
+  path: z.string().min(1).max(4096),
+  content: z.string().max(8 * 1024 * 1024),
+});
 const deleteSchema = z.object({
   path: z.string().min(1).max(4096),
   recursive: z.boolean().optional(),
@@ -138,6 +143,20 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
         binary: text === null || looksBinary(text),
       };
     });
+  });
+
+  /*
+   * Hermes caps the payload at 8 MiB and answers 413 above it; rejecting here
+   * keeps a pointless megabyte off the wire. Its own docstring puts freshness on
+   * the client: "Stale-on-disk detection is the client's job (re-read before
+   * save)" — the page re-reads after every write for that reason.
+   */
+  app.put('/api/workspace/file', async (request, reply) => {
+    const body = writeSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    const target = inside(reply, body.data.path);
+    if (target === null) return reply;
+    return guard(reply, () => ctx.dashboard.writeTextFile(target, body.data.content));
   });
 
   app.post('/api/workspace/mkdir', async (request, reply) => {

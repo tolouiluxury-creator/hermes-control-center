@@ -123,6 +123,7 @@ export const fa: Dict = {
   'workspace.nameNoDots': 'این نام به یک پوشه اشاره می‌کند، به‌جای آنکه یکی بسازد.',
   'workspace.create': 'ساختن',
   'workspace.created': 'پوشه ساخته شد',
+  'workspace.saved': 'فایل ذخیره شد',
   'workspace.up': 'یک سطح بالاتر',
   'workspace.empty': 'این پوشه خالی است.',
   'workspace.pickFile': 'یک فایل را برای خواندن انتخاب کنید.',

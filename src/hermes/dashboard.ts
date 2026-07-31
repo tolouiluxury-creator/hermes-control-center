@@ -578,6 +578,26 @@ export class DashboardClient {
     });
   }
 
+  /**
+   * Overwrite a UTF-8 text file, or create one next to existing files.
+   *
+   * The one place `/api/fs/*` is used instead of `/api/files/*`: the managed-file
+   * family has no write-text endpoint at all, and `upload` would mean round-tripping
+   * the content through a base64 data URL. Hermes stages this one to a sibling temp
+   * file and `os.replace`s it, so a crash mid-write cannot truncate the original —
+   * and it refuses directories, non-regular files and a missing parent.
+   *
+   * The fs family carries no path policy of its own, so the caller must have
+   * checked the path against the workspace root. Every route here does.
+   */
+  writeTextFile(path: string, content: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(actionResultSchema, '/api/fs/write-text', {
+      ...options,
+      method: 'POST',
+      body: { path, content },
+    });
+  }
+
   createDirectory(path: string, options?: RequestOptions): Promise<ActionResult> {
     return this.client.json(actionResultSchema, '/api/files/mkdir', {
       ...options,

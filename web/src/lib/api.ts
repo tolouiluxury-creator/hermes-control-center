@@ -384,6 +384,10 @@ export const listWorkspace = (path?: string): Promise<WorkspaceListing> =>
 export const readWorkspaceFile = (path: string): Promise<WorkspaceFile> =>
   apiRequest<WorkspaceFile>(`/workspace/read?path=${encodeURIComponent(path)}`);
 
+/** Overwrites the file whole. Hermes stages and renames, so a crash cannot truncate it. */
+export const writeWorkspaceFile = (path: string, content: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/workspace/file', { method: 'PUT', ...jsonBody({ path, content }) });
+
 export const createWorkspaceDirectory = (path: string): Promise<ActionResult> =>
   apiRequest<ActionResult>('/workspace/mkdir', { method: 'POST', ...jsonBody({ path }) });
 

@@ -8,6 +8,7 @@ import {
   listWorkspace,
   queryKeys,
   readWorkspaceFile,
+  writeWorkspaceFile,
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
@@ -30,6 +31,18 @@ export function WorkspacePage() {
 
   const [path, setPath] = useState<string | undefined>(undefined);
   const [openFile, setOpenFile] = useState<string | null>(null);
+  /** The buffer while editing; null means the file is only being read. */
+  const [editing, setEditing] = useState<string | null>(null);
+
+  /**
+   * Every change of the shown file goes through here, so the edit buffer can
+   * never outlive the file it came from. Four call sites set this, and one of
+   * them forgetting would mean saving one file's text into another.
+   */
+  const showFile = (target: string | null) => {
+    setOpenFile(target);
+    setEditing(null);
+  };
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<{ path: string; directory: boolean } | null>(
@@ -78,6 +91,22 @@ export function WorkspacePage() {
     onError: fail,
   });
 
+  /*
+   * Hermes puts freshness on the client — "Stale-on-disk detection is the
+   * client's job (re-read before save)" — so the read is invalidated after every
+   * write and the editor closes onto the re-read text rather than its own copy.
+   */
+  const save = useMutation({
+    mutationFn: ({ path: target, content }: { path: string; content: string }) =>
+      writeWorkspaceFile(target, content),
+    onSuccess: async () => {
+      setEditing(null);
+      await refresh();
+      toast.push({ tone: 'success', title: t('workspace.saved') });
+    },
+    onError: fail,
+  });
+
   /* Also waits for the listing: the new folder's path is built from it. */
   const canCreate =
     newName.trim() !== '' && nameError === null && !mkdir.isPending && listing.data !== undefined;
@@ -89,7 +118,7 @@ export function WorkspacePage() {
       deleteWorkspaceEntry(target, directory),
     onSuccess: async () => {
       setConfirmDelete(null);
-      setOpenFile(null);
+      showFile(null);
       await refresh();
       toast.push({ tone: 'success', title: t('workspace.deleted') });
     },
@@ -205,7 +234,7 @@ export function WorkspacePage() {
                     type="button"
                     onClick={() => {
                       setPath(parentOf(listing.data.path));
-                      setOpenFile(null);
+                      showFile(null);
                     }}
                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]"
                   >
@@ -227,9 +256,9 @@ export function WorkspacePage() {
                       onClick={() => {
                         if (entry.isDirectory) {
                           setPath(entry.path);
-                          setOpenFile(null);
+                          showFile(null);
                         } else {
-                          setOpenFile(entry.path);
+                          showFile(entry.path);
                         }
                       }}
                       className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs transition-colors ${
@@ -297,10 +326,50 @@ export function WorkspacePage() {
             <p className="text-xs text-[var(--color-ink-muted)]">{t('workspace.binary')}</p>
           ) : (
             <>
-              <p className="mb-2 font-mono text-xs text-[var(--color-ink-faint)]">
-                {file.data?.name}
-              </p>
-              <pre className="overflow-x-auto text-xs whitespace-pre-wrap">{file.data?.text}</pre>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--color-ink-faint)]">
+                  {file.data?.name}
+                </p>
+                {editing === null ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(file.data?.text ?? '')}
+                    className="shrink-0 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                  >
+                    {t('common.edit')}
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      disabled={save.isPending || editing === file.data?.text}
+                      onClick={() => save.mutate({ path: openFile, content: editing })}
+                      className="shrink-0 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
+                    >
+                      {save.isPending ? t('common.saving') : t('common.save')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(null)}
+                      className="shrink-0 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {editing === null ? (
+                <pre className="overflow-x-auto text-xs whitespace-pre-wrap">{file.data?.text}</pre>
+              ) : (
+                <textarea
+                  value={editing}
+                  onChange={(event) => setEditing(event.target.value)}
+                  rows={22}
+                  spellCheck={false}
+                  className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+                />
+              )}
             </>
           )}
         </div>

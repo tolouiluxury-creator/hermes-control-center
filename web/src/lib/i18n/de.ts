@@ -125,6 +125,7 @@ export const de: Dict = {
   'workspace.nameNoDots': 'Dieser Name zeigt auf einen Ordner, statt einen anzulegen.',
   'workspace.create': 'Anlegen',
   'workspace.created': 'Ordner angelegt',
+  'workspace.saved': 'Datei gespeichert',
   'workspace.up': 'Eine Ebene höher',
   'workspace.empty': 'Dieser Ordner ist leer.',
   'workspace.pickFile': 'Wähle eine Datei zum Lesen.',

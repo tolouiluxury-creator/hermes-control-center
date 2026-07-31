@@ -123,6 +123,7 @@ export const en: Dict = {
   'workspace.nameNoDots': 'That name would point at a folder, not create one.',
   'workspace.create': 'Create',
   'workspace.created': 'Folder created',
+  'workspace.saved': 'File saved',
   'workspace.up': 'Up one level',
   'workspace.empty': 'This folder is empty.',
   'workspace.pickFile': 'Pick a file to read it.',
