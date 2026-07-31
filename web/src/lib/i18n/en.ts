@@ -448,6 +448,10 @@ export const en: Dict = {
   'wissen.empty.title': 'No memory providers reported',
   'wissen.empty.desc':
     'Hermes currently uses only its built-in note files. A RAG provider is set up in the Hermes configuration.',
+  'wissen.deactivate': 'Switch off',
+  'wissen.deactivateConfirm':
+    'Switch off “{name}”? The agent keeps its note files but loses searchable long-term memory. You can switch it back on here at any time.',
+  'wissen.deactivatedToast': 'Memory provider switched off',
   'wissen.activateConfirm':
     'Activate “{name}” as the memory provider? The agent then remembers new things through it.',
   'wissen.activatedToast': '“{name}” activated',

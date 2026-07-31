@@ -454,6 +454,10 @@ export const de: Dict = {
   'wissen.empty.title': 'Keine Speicher-Anbieter gemeldet',
   'wissen.empty.desc':
     'Hermes nutzt derzeit nur seine eingebauten Notizdateien. Ein RAG-Anbieter wird in der Hermes-Konfiguration eingerichtet.',
+  'wissen.deactivate': 'Ausschalten',
+  'wissen.deactivateConfirm':
+    '„{name}" ausschalten? Der Agent behält seine Notizdateien, verliert aber das durchsuchbare Langzeitgedächtnis. Du kannst es hier jederzeit wieder einschalten.',
+  'wissen.deactivatedToast': 'Speicher-Anbieter ausgeschaltet',
   'wissen.activateConfirm':
     '„{name}“ als Speicher-Anbieter aktivieren? Der Agent merkt sich Neues dann hierüber.',
   'wissen.activatedToast': '„{name}“ aktiviert',

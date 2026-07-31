@@ -189,16 +189,19 @@ function ProviderRow({
   pending,
   configuring,
   onActivate,
+  onDeactivate,
   onConfirm,
   onCancel,
   onToggleConfig,
 }: {
   provider: MemoryProvider;
   active: boolean;
-  confirming: boolean;
+  /** `'on'` while confirming activation, `'off'` while confirming a switch-off. */
+  confirming: 'on' | 'off' | null;
   pending: boolean;
   configuring: boolean;
   onActivate: (name: string) => void;
+  onDeactivate: (name: string) => void;
   onConfirm: (name: string) => void;
   onCancel: () => void;
   onToggleConfig: (name: string) => void;
@@ -250,6 +253,22 @@ function ProviderRow({
           {t('wissen.config.open')}
         </button>
 
+        {/*
+         * The way back. Hermes maps "none" (and "", "built-in") to an empty
+         * provider and skips the readiness check for it, so switching off is
+         * always possible — without this button it just was not reachable.
+         */}
+        {active && (
+          <button
+            type="button"
+            onClick={() => onDeactivate(provider.name)}
+            disabled={pending}
+            className="mt-0.5 shrink-0 rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-danger)] disabled:opacity-40"
+          >
+            {t('wissen.deactivate')}
+          </button>
+        )}
+
         {/* Only an available, not-yet-active provider can be switched to. */}
         {provider.available && !active && (
           <button
@@ -270,13 +289,18 @@ function ProviderRow({
         </span>
       </div>
 
-      {confirming && (
+      {confirming !== null && (
         <ConfirmInline
           tone="warn"
-          message={t('wissen.activateConfirm', { name: provider.name })}
-          confirmLabel={t('common.activate')}
+          message={
+            confirming === 'off'
+              ? t('wissen.deactivateConfirm', { name: provider.name })
+              : t('wissen.activateConfirm', { name: provider.name })
+          }
+          confirmLabel={confirming === 'off' ? t('wissen.deactivate') : t('common.activate')}
           pending={pending}
-          onConfirm={() => onConfirm(provider.name)}
+          // "none" is Hermes' sentinel for the built-in-only state.
+          onConfirm={() => onConfirm(confirming === 'off' ? 'none' : provider.name)}
           onCancel={onCancel}
         />
       )}
@@ -292,7 +316,8 @@ export function WissenPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { t, lang } = useI18n();
-  const [confirming, setConfirming] = useState<string | null>(null);
+  /** Which row is asking, and whether it asks to switch on or off. */
+  const [confirming, setConfirming] = useState<{ name: string; mode: 'on' | 'off' } | null>(null);
   /** Only one provider's form is open at a time; the rows are long enough. */
   const [configuring, setConfiguring] = useState<string | null>(null);
 
@@ -307,7 +332,14 @@ export function WissenPage() {
     onSuccess: async (_r, provider) => {
       setConfirming(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.memory });
-      toast.push({ tone: 'success', title: t('wissen.activatedToast', { name: provider }) });
+      // "none" is a sentinel, not a provider — saying it was activated would lie.
+      toast.push({
+        tone: 'success',
+        title:
+          provider === 'none'
+            ? t('wissen.deactivatedToast')
+            : t('wissen.activatedToast', { name: provider }),
+      });
     },
     onError: (e: Error) =>
       toast.push({ tone: 'error', title: t('toast.actionFailed'), description: e.message }),
@@ -390,10 +422,11 @@ export function WissenPage() {
                     key={provider.name}
                     provider={provider}
                     active={data.active === provider.name}
-                    confirming={confirming === provider.name}
+                    confirming={confirming?.name === provider.name ? confirming.mode : null}
                     pending={activate.isPending && activate.variables === provider.name}
                     configuring={configuring === provider.name}
-                    onActivate={setConfirming}
+                    onActivate={(name) => setConfirming({ name, mode: 'on' })}
+                    onDeactivate={(name) => setConfirming({ name, mode: 'off' })}
                     onConfirm={(name) => activate.mutate(name)}
                     onCancel={() => setConfirming(null)}
                     onToggleConfig={(name) =>
