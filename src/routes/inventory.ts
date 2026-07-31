@@ -91,6 +91,16 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.cron, () => ctx.dashboard.cronJobs())),
   );
 
+  /*
+   * Not cached: the schema carries current values, and it is read on demand when
+   * a provider's form is opened — a stale copy would show fields that were
+   * already changed elsewhere.
+   */
+  app.get('/api/hermes/memory/providers/:name/config', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    return guard(reply, () => ctx.dashboard.memoryProviderConfig(name));
+  });
+
   app.get('/api/hermes/cron/delivery-targets', async (_request, reply) =>
     guard(reply, () =>
       cache.get(CACHE_KEYS.cronDeliveryTargets, () => ctx.dashboard.cronDeliveryTargets()),

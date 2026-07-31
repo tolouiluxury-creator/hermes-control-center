@@ -435,6 +435,14 @@ export const fa: Dict = {
   'wissen.activeProvider': 'فعال: {name}',
   'wissen.noneActive': 'هیچ‌کدام فعال نیست',
   'wissen.available': 'در دسترس',
+  'wissen.config.open': 'پیکربندی',
+  'wissen.config.noFields': 'این ارائه‌دهنده چیزی برای تنظیم ندارد.',
+  'wissen.config.secretKeep': 'برای نگه‌داشتن مقدار ذخیره‌شده خالی بگذارید',
+  'wissen.config.alsoActivates':
+    'ذخیره‌کردن «{name}» را هم‌زمان ارائه‌دهندهٔ فعال حافظه می‌کند — هرمس هر دو را در یک گام می‌نویسد.',
+  'wissen.config.missing': 'هنوز لازم است: {fields}',
+  'wissen.config.saveAndActivate': 'ذخیره و فعال‌سازی',
+  'wissen.config.saved': '«{name}» پیکربندی و فعال شد',
   'wissen.notUsable': 'پیکربندی‌شده، اما قابل استفاده نیست',
   'wissen.empty.title': 'هیچ ارائه‌دهنده حافظه‌ای گزارش نشد',
   'wissen.empty.desc':

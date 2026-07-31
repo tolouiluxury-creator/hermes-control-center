@@ -272,6 +272,30 @@ export interface MemorySummary {
   providers: MemoryProvider[];
 }
 
+/** One configurable field, exactly as the provider declares it. */
+export interface MemoryProviderField {
+  key: string;
+  label: string;
+  /** `text`, `secret`, `select`, … Anything unknown is treated as text. */
+  kind: string;
+  description: string | null;
+  placeholder: string | null;
+  required: boolean;
+  /** Empty for secrets — Hermes never sends one back. */
+  value: string;
+  /** Whether a value exists upstream. The only signal a secret gives. */
+  isSet: boolean;
+  /** Where to get the credential, when the provider says so. */
+  url: string | null;
+  options: { value: string; label: string }[];
+}
+
+export interface MemoryProviderConfig {
+  name: string;
+  label: string;
+  fields: MemoryProviderField[];
+}
+
 export interface MessagingEnvVar {
   key: string;
   required: boolean;

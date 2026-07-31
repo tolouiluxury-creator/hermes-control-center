@@ -6,6 +6,7 @@ import {
   normalizeCronJobs,
   normalizeMcpServers,
   normalizeMemory,
+  normalizeMemoryProviderConfig,
   normalizeMessagingPlatforms,
   normalizeModelInfo,
   normalizePairing,
@@ -164,6 +165,88 @@ describe('normalizeCronDeliveryTargets', () => {
     const targets = normalizeCronDeliveryTargets({ targets: [{ name: 'nameless' }, { id: 'x' }] });
     expect(targets).toHaveLength(1);
     expect(targets[0]?.name).toBe('x');
+  });
+});
+
+describe('normalizeMemoryProviderConfig', () => {
+  /** Copied from GET /api/memory/providers/{name}/config, 30.07.2026. */
+  const openviking = {
+    name: 'openviking',
+    label: 'Openviking',
+    fields: [
+      {
+        key: 'endpoint',
+        label: 'Endpoint',
+        kind: 'text',
+        description: 'OpenViking server URL',
+        placeholder: '',
+        required: true,
+        value: 'http://127.0.0.1:1933',
+        is_set: true,
+        options: [],
+        url: '',
+      },
+      {
+        key: 'api_key',
+        label: 'Api Key',
+        kind: 'secret',
+        description: 'OpenViking API key (leave blank for local dev mode)',
+        required: false,
+        value: '',
+        is_set: false,
+        options: [],
+        url: '',
+      },
+    ],
+  };
+
+  it('keeps kind, requiredness and the current value', () => {
+    const config = normalizeMemoryProviderConfig(openviking, 'openviking');
+    expect(config.label).toBe('Openviking');
+    expect(config.fields[0]).toMatchObject({
+      key: 'endpoint',
+      kind: 'text',
+      required: true,
+      value: 'http://127.0.0.1:1933',
+    });
+    expect(config.fields[1]).toMatchObject({ kind: 'secret', required: false, isSet: false });
+  });
+
+  /* Empty strings from Hermes mean "not provided", not a value to render. */
+  it('turns empty placeholder and url into null', () => {
+    const [field] = normalizeMemoryProviderConfig(openviking, 'openviking').fields;
+    expect(field?.placeholder).toBeNull();
+    expect(field?.url).toBeNull();
+  });
+
+  it('carries select options and stringifies non-text values', () => {
+    const config = normalizeMemoryProviderConfig(
+      {
+        fields: [
+          {
+            key: 'auto_extract',
+            kind: 'select',
+            value: false,
+            options: [
+              { value: 'true', label: 'true' },
+              { value: 'false', label: 'false' },
+            ],
+          },
+        ],
+      },
+      'holographic',
+    );
+    expect(config.fields[0]?.value).toBe('false');
+    expect(config.fields[0]?.options).toHaveLength(2);
+    // No label of its own: the key is the honest fallback.
+    expect(config.fields[0]?.label).toBe('auto_extract');
+  });
+
+  it('drops fields without a key and falls back to the requested name', () => {
+    const config = normalizeMemoryProviderConfig({ fields: [{ label: 'orphan' }] }, 'retaindb');
+    expect(config.fields).toHaveLength(0);
+    expect(config.name).toBe('retaindb');
+    expect(config.label).toBe('retaindb');
   });
 });
 

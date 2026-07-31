@@ -14,6 +14,7 @@ import type {
   CuratorStatus,
   EnvVar,
   McpServerSummary,
+  MemoryProviderConfig,
   MemorySummary,
   MessagingOverview,
   ModelOptions,
@@ -247,6 +248,19 @@ export const getAnalytics = (): Promise<AnalyticsSummary> =>
   apiRequest<AnalyticsSummary>('/hermes/analytics');
 
 export const getMemory = (): Promise<MemorySummary> => apiRequest<MemorySummary>('/hermes/memory');
+
+export const getMemoryProviderConfig = (name: string): Promise<MemoryProviderConfig> =>
+  apiRequest<MemoryProviderConfig>(`/hermes/memory/providers/${encodeURIComponent(name)}/config`);
+
+/** Saving also activates the provider — that is Hermes' behaviour, see the UI copy. */
+export const setMemoryProviderConfig = (
+  name: string,
+  values: Record<string, string>,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>(`/hermes/memory/providers/${encodeURIComponent(name)}/config`, {
+    method: 'PUT',
+    ...jsonBody({ values }),
+  });
 
 export const getMessaging = (profile?: string | null): Promise<MessagingOverview> =>
   apiRequest<MessagingOverview>(
@@ -723,6 +737,7 @@ export const queryKeys = {
   model: ['hermes', 'model'] as const,
   analytics: ['hermes', 'analytics'] as const,
   memory: ['hermes', 'memory'] as const,
+  memoryProviderConfig: (name: string) => ['hermes', 'memory', 'provider', name] as const,
   messaging: ['hermes', 'messaging'] as const,
   messagingFor: (profile: string | null) => ['hermes', 'messaging', profile ?? ''] as const,
   webhooks: ['hermes', 'webhooks'] as const,

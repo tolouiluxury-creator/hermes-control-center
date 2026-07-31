@@ -436,6 +436,14 @@ export const en: Dict = {
   'wissen.activeProvider': 'active: {name}',
   'wissen.noneActive': 'none active',
   'wissen.available': 'available',
+  'wissen.config.open': 'Configure',
+  'wissen.config.noFields': 'This provider has nothing to configure.',
+  'wissen.config.secretKeep': 'leave blank to keep the stored value',
+  'wissen.config.alsoActivates':
+    'Saving also makes “{name}” the active memory provider — Hermes writes both in one step.',
+  'wissen.config.missing': 'Still required: {fields}',
+  'wissen.config.saveAndActivate': 'Save and activate',
+  'wissen.config.saved': '“{name}” configured and activated',
   'wissen.notUsable': 'configured, but not usable',
   'wissen.empty.title': 'No memory providers reported',
   'wissen.empty.desc':

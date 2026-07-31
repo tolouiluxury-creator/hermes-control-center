@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BookOpen, Check } from 'lucide-react';
-import { getMemory, queryKeys, setMemoryProvider } from '@/lib/api';
+import {
+  getMemory,
+  getMemoryProviderConfig,
+  queryKeys,
+  setMemoryProvider,
+  setMemoryProviderConfig,
+} from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
@@ -25,22 +31,177 @@ const FILE_KEY: Record<string, string> = {
   user: 'wissen.files.user',
 };
 
+/**
+ * The fields a provider declares, rendered as Hermes describes them.
+ *
+ * Two things this form has to be honest about, both read out of Hermes' writer:
+ * saving also makes the provider the active one, and a secret left blank keeps
+ * whatever is stored rather than clearing it.
+ */
+function ProviderConfigForm({ name, onClose }: { name: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+
+  const config = useQuery({
+    queryKey: queryKeys.memoryProviderConfig(name),
+    queryFn: () => getMemoryProviderConfig(name),
+  });
+
+  const save = useMutation({
+    mutationFn: (values: Record<string, string>) => setMemoryProviderConfig(name, values),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.memory });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.memoryProviderConfig(name) });
+      setEdits({});
+      toast.push({ tone: 'success', title: t('wissen.config.saved', { name }) });
+    },
+    onError: (error: Error) =>
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: error.message }),
+  });
+
+  const fields = config.data?.fields ?? [];
+  const missing = fields.filter(
+    (field) =>
+      field.required &&
+      (edits[field.key] ?? (field.kind === 'secret' ? (field.isSet ? 'set' : '') : field.value))
+        .toString()
+        .trim() === '',
+  );
+
+  const input =
+    'mt-1 w-full rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]';
+
+  return (
+    <form
+      className="mt-3 rounded-xl border border-[var(--color-hairline)] p-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (missing.length > 0 || save.isPending) return;
+        save.mutate(edits);
+      }}
+    >
+      {config.isPending ? (
+        <SkeletonText lines={4} />
+      ) : config.error ? (
+        <p className="text-sm text-[var(--color-danger)]" role="alert">
+          {config.error.message}
+        </p>
+      ) : fields.length === 0 ? (
+        <p className="text-xs text-[var(--color-ink-muted)]">{t('wissen.config.noFields')}</p>
+      ) : (
+        <>
+          {fields.map((field) => (
+            <label key={field.key} className="mt-3 block text-xs first:mt-0">
+              <span className="text-[var(--color-ink-faint)]">
+                {field.label}
+                {field.required && <span className="text-[var(--color-warn)]"> *</span>}
+              </span>
+
+              {field.options.length > 0 ? (
+                <select
+                  value={edits[field.key] ?? field.value}
+                  onChange={(event) =>
+                    setEdits((current) => ({ ...current, [field.key]: event.target.value }))
+                  }
+                  className={input}
+                >
+                  {field.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={field.kind === 'secret' ? 'password' : 'text'}
+                  value={edits[field.key] ?? (field.kind === 'secret' ? '' : field.value)}
+                  placeholder={
+                    field.kind === 'secret' && field.isSet
+                      ? t('wissen.config.secretKeep')
+                      : (field.placeholder ?? '')
+                  }
+                  onChange={(event) =>
+                    setEdits((current) => ({ ...current, [field.key]: event.target.value }))
+                  }
+                  className={input}
+                />
+              )}
+
+              {field.description && (
+                <span className="mt-1 block text-[0.65rem] text-[var(--color-ink-muted)]">
+                  {field.description}
+                </span>
+              )}
+              {field.url && (
+                <a
+                  href={field.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="mt-0.5 inline-block text-[0.65rem] text-[var(--color-accent)] hover:underline"
+                >
+                  {field.url}
+                </a>
+              )}
+            </label>
+          ))}
+
+          {/* Hermes activates on write; saying it after the click would be too late. */}
+          <p className="mt-4 text-xs text-[var(--color-warn)]">
+            {t('wissen.config.alsoActivates', { name })}
+          </p>
+
+          {missing.length > 0 && (
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+              {t('wissen.config.missing', {
+                fields: missing.map((field) => field.label).join(', '),
+              })}
+            </p>
+          )}
+
+          <div className="mt-3 flex gap-2">
+            <button
+              type="submit"
+              disabled={missing.length > 0 || save.isPending}
+              className="rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 py-2 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
+            >
+              {save.isPending ? t('common.saving') : t('wissen.config.saveAndActivate')}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-[var(--color-hairline)] px-4 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </>
+      )}
+    </form>
+  );
+}
+
 function ProviderRow({
   provider,
   active,
   confirming,
   pending,
+  configuring,
   onActivate,
   onConfirm,
   onCancel,
+  onToggleConfig,
 }: {
   provider: MemoryProvider;
   active: boolean;
   confirming: boolean;
   pending: boolean;
+  configuring: boolean;
   onActivate: (name: string) => void;
   onConfirm: (name: string) => void;
   onCancel: () => void;
+  onToggleConfig: (name: string) => void;
 }) {
   const { t } = useI18n();
   const color = STATUS_COLOR[provider.status ?? ''] ?? 'var(--color-ink-faint)';
@@ -80,6 +241,15 @@ function ProviderRow({
           )}
         </div>
 
+        <button
+          type="button"
+          onClick={() => onToggleConfig(provider.name)}
+          aria-expanded={configuring}
+          className="mt-0.5 shrink-0 rounded-lg px-2 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >
+          {t('wissen.config.open')}
+        </button>
+
         {/* Only an available, not-yet-active provider can be switched to. */}
         {provider.available && !active && (
           <button
@@ -110,6 +280,10 @@ function ProviderRow({
           onCancel={onCancel}
         />
       )}
+
+      {configuring && (
+        <ProviderConfigForm name={provider.name} onClose={() => onToggleConfig(provider.name)} />
+      )}
     </li>
   );
 }
@@ -119,6 +293,8 @@ export function WissenPage() {
   const toast = useToast();
   const { t, lang } = useI18n();
   const [confirming, setConfirming] = useState<string | null>(null);
+  /** Only one provider's form is open at a time; the rows are long enough. */
+  const [configuring, setConfiguring] = useState<string | null>(null);
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.memory,
@@ -216,9 +392,13 @@ export function WissenPage() {
                     active={data.active === provider.name}
                     confirming={confirming === provider.name}
                     pending={activate.isPending && activate.variables === provider.name}
+                    configuring={configuring === provider.name}
                     onActivate={setConfirming}
                     onConfirm={(name) => activate.mutate(name)}
                     onCancel={() => setConfirming(null)}
+                    onToggleConfig={(name) =>
+                      setConfiguring((current) => (current === name ? null : name))
+                    }
                   />
                 ))}
               </ul>

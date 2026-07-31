@@ -986,6 +986,97 @@ export function normalizeMemory(raw: z.infer<typeof memorySchema>): MemorySummar
   };
 }
 
+/**
+ * One memory provider's configuration surface, as Hermes declares it.
+ *
+ * The field list is not ours to invent: each provider ships its own schema, and
+ * `GET /api/memory/providers/{name}/config` hands it over complete with kinds,
+ * defaults, descriptions and select options. Rendering it is the whole job.
+ */
+export const memoryProviderConfigSchema = z.looseObject({
+  name: z.string().nullish(),
+  label: z.string().nullish(),
+  docs_url: z.string().nullish(),
+  fields: z
+    .array(
+      z.looseObject({
+        key: z.string().nullish(),
+        label: z.string().nullish(),
+        kind: z.string().nullish(),
+        description: z.string().nullish(),
+        placeholder: z.string().nullish(),
+        required: z.boolean().nullish(),
+        value: z.unknown().nullish(),
+        is_set: z.boolean().nullish(),
+        url: z.string().nullish(),
+        options: z
+          .array(
+            z.looseObject({
+              value: z.string().nullish(),
+              label: z.string().nullish(),
+              description: z.string().nullish(),
+            }),
+          )
+          .nullish(),
+      }),
+    )
+    .nullish(),
+});
+
+export interface MemoryProviderField {
+  key: string;
+  label: string;
+  /** `text`, `secret`, `select`, … Anything unknown is treated as text. */
+  kind: string;
+  description: string | null;
+  placeholder: string | null;
+  required: boolean;
+  /** Empty for secrets — Hermes never sends one back. */
+  value: string;
+  /** Whether a value exists upstream. The only signal a secret gives. */
+  isSet: boolean;
+  /** Where to get the credential, when the provider says so. */
+  url: string | null;
+  options: { value: string; label: string }[];
+}
+
+export interface MemoryProviderConfig {
+  name: string;
+  label: string;
+  fields: MemoryProviderField[];
+}
+
+export function normalizeMemoryProviderConfig(
+  raw: z.infer<typeof memoryProviderConfigSchema>,
+  fallbackName: string,
+): MemoryProviderConfig {
+  const name = raw.name?.trim() || fallbackName;
+  return {
+    name,
+    label: raw.label?.trim() || name,
+    fields: (raw.fields ?? [])
+      .filter((field) => typeof field.key === 'string' && field.key.trim() !== '')
+      .map((field) => ({
+        key: field.key as string,
+        label: field.label?.trim() || (field.key as string),
+        kind: field.kind?.trim() || 'text',
+        description: field.description?.trim() || null,
+        placeholder: field.placeholder?.trim() || null,
+        required: field.required === true,
+        // Numbers and booleans arrive as-is; the form edits everything as text.
+        value: field.value === null || field.value === undefined ? '' : String(field.value),
+        isSet: field.is_set === true,
+        url: field.url?.trim() || null,
+        options: (field.options ?? [])
+          .filter((option) => typeof option.value === 'string')
+          .map((option) => ({
+            value: option.value as string,
+            label: option.label?.trim() || (option.value as string),
+          })),
+      })),
+  };
+}
+
 // --- Messaging platforms ----------------------------------------------------
 
 export const messagingPlatformsSchema = z.looseObject({

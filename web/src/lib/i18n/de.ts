@@ -442,6 +442,14 @@ export const de: Dict = {
   'wissen.activeProvider': 'aktiv: {name}',
   'wissen.noneActive': 'keiner aktiv',
   'wissen.available': 'verfügbar',
+  'wissen.config.open': 'Konfigurieren',
+  'wissen.config.noFields': 'Dieser Anbieter hat nichts einzustellen.',
+  'wissen.config.secretKeep': 'leer lassen, um den gespeicherten Wert zu behalten',
+  'wissen.config.alsoActivates':
+    'Speichern macht „{name}" zugleich zum aktiven Speicher-Anbieter — Hermes schreibt beides in einem Schritt.',
+  'wissen.config.missing': 'Noch nötig: {fields}',
+  'wissen.config.saveAndActivate': 'Speichern und aktivieren',
+  'wissen.config.saved': '„{name}" konfiguriert und aktiviert',
   'wissen.notUsable': 'eingerichtet, aber nicht nutzbar',
   'wissen.empty.title': 'Keine Speicher-Anbieter gemeldet',
   'wissen.empty.desc':

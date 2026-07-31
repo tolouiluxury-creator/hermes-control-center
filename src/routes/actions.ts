@@ -134,6 +134,16 @@ const modelSetSchema = z.object({
 const providerSchema = z.object({ provider: z.string().trim().min(1) });
 
 /**
+ * A memory provider's own field keys, so the shape cannot be pinned here. Values
+ * travel as strings; Hermes coerces each one against the field's declared kind.
+ * An omitted key keeps its stored value, which is how a blank secret is left
+ * alone rather than cleared.
+ */
+const memoryConfigSchema = z.object({
+  values: z.record(z.string().min(1).max(120), z.string().max(4000)),
+});
+
+/**
  * An auxiliary slot. `task` may be Hermes' `__reset__` sentinel or empty (all
  * slots), so it is not required to name a known task; `model` may be empty when
  * the provider is `auto`.
@@ -361,6 +371,22 @@ export async function registerActionRoutes(
     if (!input) return reply;
     return guard(reply, async () => {
       const result = await ctx.dashboard.setMemoryProvider(input.provider);
+      cache.invalidate(CACHE_KEYS.memory);
+      return result;
+    });
+  });
+
+  /*
+   * Writing a provider's config also makes it the active one — that is Hermes'
+   * own behaviour, not ours to hide. The memory cache is invalidated for exactly
+   * that reason.
+   */
+  app.put('/api/hermes/memory/providers/:name/config', async (request, reply) => {
+    const { name } = request.params as { name: string };
+    const input = parse(reply, memoryConfigSchema, request.body);
+    if (!input) return reply;
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.setMemoryProviderConfig(name, input.values);
       cache.invalidate(CACHE_KEYS.memory);
       return result;
     });

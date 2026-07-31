@@ -34,6 +34,7 @@ import {
   cronJobsSchema,
   logsSchema,
   mcpServersSchema,
+  memoryProviderConfigSchema,
   memorySchema,
   messagingPlatformsSchema,
   modelInfoSchema,
@@ -45,6 +46,7 @@ import {
   normalizeManagedFiles,
   normalizeMcpServers,
   normalizeMemory,
+  normalizeMemoryProviderConfig,
   normalizeMessagingPlatforms,
   normalizeModelInfo,
   normalizeModelOptions,
@@ -71,6 +73,7 @@ import {
   type CronDeliveryTarget,
   type CronJobCreateBody,
   type CronJobSummary,
+  type MemoryProviderConfig,
   type FileListing,
   type McpServerSummary,
   type MemorySummary,
@@ -690,6 +693,41 @@ export class DashboardClient {
       method: 'PUT',
       body: { provider },
     });
+  }
+
+  /** The field schema a provider declares, with its current values. */
+  memoryProviderConfig(name: string, options?: RequestOptions): Promise<MemoryProviderConfig> {
+    return this.client
+      .json(
+        memoryProviderConfigSchema,
+        `/api/memory/providers/${encodeURIComponent(name)}/config`,
+        options,
+      )
+      .then((raw) => normalizeMemoryProviderConfig(raw, name));
+  }
+
+  /**
+   * Write a provider's configuration.
+   *
+   * Two things this does beyond its name, both read out of Hermes' own writer:
+   *
+   * 1. **It also activates the provider.** After writing, `update_memory_provider_config`
+   *    sets `memory.provider` to this one and saves. There is no way to save
+   *    fields without switching — so the UI must say so before the click.
+   * 2. **Omitted keys keep their stored value**, and a secret sent empty is
+   *    skipped rather than cleared (`if submitted and _env_key`). Secrets land in
+   *    the profile's `.env`, not in config.yaml.
+   */
+  setMemoryProviderConfig(
+    name: string,
+    values: Record<string, string>,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/memory/providers/${encodeURIComponent(name)}/config`,
+      { ...options, method: 'PUT', body: { values } },
+    );
   }
 
   /**
