@@ -211,6 +211,11 @@ export const en: Dict = {
   'chat.toolbar.inherit': 'Profile default',
   'chat.toolbar.inheritHint': 'Whatever the profile is set to',
   'chat.toolbar.profileTitle': 'Profile',
+  'chat.toolbar.cwdTitle': 'Working folder for the next conversation',
+  'chat.toolbar.cwdLive': 'Working folder of this conversation',
+  'chat.toolbar.cwdRoot': 'Workspace root',
+  'chat.toolbar.cwdFixed':
+    'A conversation keeps the folder it started in — Hermes has no way to move it. Start a new one to pick another.',
   'chat.toolbar.profileRunning': 'What the dashboard runs as',
   'chat.toolbar.profileSticky': 'Default for new terminal commands',
   'chat.toolbar.profileSingle': 'Only one profile installed',

@@ -524,6 +524,8 @@ export interface CreateChatSessionInput {
   model?: string;
   provider?: string;
   profile?: ChatProfile;
+  /** Where the agent starts. Refused by the server if outside the workspace root. */
+  cwd?: string;
 }
 
 export const createChatSession = (input: CreateChatSessionInput = {}): Promise<ChatSessionIds> =>
@@ -533,6 +535,7 @@ export const createChatSession = (input: CreateChatSessionInput = {}): Promise<C
       model: input.model || undefined,
       provider: input.provider || undefined,
       profile: input.profile ?? undefined,
+      cwd: input.cwd || undefined,
     }),
   });
 

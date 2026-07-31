@@ -89,6 +89,16 @@ const createSchema = z.object({
   model: z.string().trim().max(200).optional(),
   provider: z.string().trim().max(200).optional(),
   profile: profileSchema,
+  /**
+   * The working directory the agent starts in. `session.create` takes it, checks
+   * it with `os.path.isdir` and marks the session as having an explicit cwd;
+   * without one Hermes falls back to the profile's configured `terminal.cwd`.
+   *
+   * Confined to the workspace root like every other path this server sends, so
+   * the chat cannot be used to point the agent somewhere the workspace area
+   * refuses to show.
+   */
+  cwd: z.string().trim().max(4096).optional(),
 });
 
 const resumeSchema = z.object({
@@ -196,7 +206,24 @@ export async function registerChatRoutes(
         .code(400)
         .send({ error: 'invalid_session', message: parsed.error.issues[0]?.message ?? 'invalid' });
     }
-    const { model, provider, profile } = parsed.data;
+    const { model, provider, profile, cwd } = parsed.data;
+
+    /*
+     * The same boundary the workspace area enforces. Without it the chat would
+     * be a way around it: pick any directory, and the agent starts there.
+     */
+    let workingDir: string | undefined;
+    if (cwd) {
+      const resolved = ctx.resolveWorkspacePath(cwd);
+      if (resolved === null) {
+        return reply.code(403).send({
+          error: 'outside_workspace',
+          message: 'Working directory is outside the workspace root.',
+        });
+      }
+      workingDir = resolved;
+    }
+
     try {
       const result = await ctx.gateway.request<GatewaySessionResult>('session.create', {
         cols: 80,
@@ -207,6 +234,7 @@ export async function registerChatRoutes(
         ...(model ? { model } : {}),
         ...(provider ? { provider } : {}),
         ...(profile ? { profile } : {}),
+        ...(workingDir ? { cwd: workingDir } : {}),
       });
       if (!result.session_id) {
         return reply

@@ -213,6 +213,11 @@ export const de: Dict = {
   'chat.toolbar.inherit': 'Profil-Standard',
   'chat.toolbar.inheritHint': 'Was im Profil eingestellt ist',
   'chat.toolbar.profileTitle': 'Profil',
+  'chat.toolbar.cwdTitle': 'Arbeitsordner für die nächste Unterhaltung',
+  'chat.toolbar.cwdLive': 'Arbeitsordner dieser Unterhaltung',
+  'chat.toolbar.cwdRoot': 'Workspace-Wurzel',
+  'chat.toolbar.cwdFixed':
+    'Eine Unterhaltung behält den Ordner, in dem sie begonnen hat — Hermes kann ihn nicht verschieben. Beginne eine neue, um einen anderen zu wählen.',
   'chat.toolbar.profileRunning': 'Womit das Dashboard läuft',
   'chat.toolbar.profileSticky': 'Standard für neue Terminal-Befehle',
   'chat.toolbar.profileSingle': 'Nur ein Profil installiert',

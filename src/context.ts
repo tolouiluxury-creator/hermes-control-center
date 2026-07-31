@@ -13,6 +13,11 @@ import { SettingsRepo } from './store/settings.js';
 import { MetricsRepo } from './store/metrics.js';
 import { EventBus } from './events.js';
 import { buildStatusSnapshot, metricInputsFromSnapshot, type StatusSnapshot } from './status.js';
+import {
+  detectWorkspaceRoot,
+  OutsideWorkspaceError,
+  resolveInsideRoot,
+} from './routes/workspaceRoot.js';
 import { log } from './log.js';
 
 export interface AppContext {
@@ -32,6 +37,16 @@ export interface AppContext {
   /** Forces a fresh snapshot, records metrics and publishes it. Used by the poller. */
   refreshStatus(): Promise<StatusSnapshot>;
   lastStatus(): StatusSnapshot | null;
+  /**
+   * Resolve a path against the configured workspace root, or null when it falls
+   * outside — or when no root is configured at all.
+   *
+   * Lives here rather than in the workspace routes because the chat needs the
+   * same boundary: a conversation can start the agent in a directory, and
+   * without this check that would be a way around the confinement the workspace
+   * area exists to enforce.
+   */
+  resolveWorkspacePath(path: string): string | null;
   close(): void;
 }
 
@@ -93,6 +108,10 @@ export function createContext(
   let cached: StatusSnapshot | null = null;
   let inFlight: Promise<StatusSnapshot> | null = null;
 
+  /** Null when no root is configured, which closes the workspace area entirely. */
+  const configuredRoot = resolved.workspaceRoot?.trim();
+  const workspaceRoot = configuredRoot ? detectWorkspaceRoot(configuredRoot) : null;
+
   const fetchStatus = async (): Promise<StatusSnapshot> => {
     // Collapse concurrent callers onto one upstream round trip.
     inFlight ??= buildStatusSnapshot({ api, dashboard, connection: publicConnection }).finally(
@@ -130,6 +149,16 @@ export function createContext(
 
     lastStatus() {
       return cached;
+    },
+
+    resolveWorkspacePath(path: string) {
+      if (!workspaceRoot) return null;
+      try {
+        return resolveInsideRoot(workspaceRoot, path);
+      } catch (error) {
+        if (error instanceof OutsideWorkspaceError) return null;
+        throw error;
+      }
     },
 
     close() {

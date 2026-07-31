@@ -209,6 +209,11 @@ export const fa: Dict = {
   'chat.toolbar.inherit': 'پیش‌فرض نمایه',
   'chat.toolbar.inheritHint': 'هر چه در نمایه تنظیم شده باشد',
   'chat.toolbar.profileTitle': 'نمایه',
+  'chat.toolbar.cwdTitle': 'پوشهٔ کاری برای گفتگوی بعدی',
+  'chat.toolbar.cwdLive': 'پوشهٔ کاری این گفتگو',
+  'chat.toolbar.cwdRoot': 'ریشهٔ فضای کار',
+  'chat.toolbar.cwdFixed':
+    'هر گفتگو پوشه‌ای را که در آن آغاز شده نگه می‌دارد — هرمس نمی‌تواند آن را جابه‌جا کند. برای انتخاب پوشهٔ دیگر، گفتگوی تازه‌ای آغاز کنید.',
   'chat.toolbar.profileRunning': 'نمایه‌ای که داشبورد با آن اجرا می‌شود',
   'chat.toolbar.profileSticky': 'پیش‌فرض برای فرمان‌های تازهٔ ترمینال',
   'chat.toolbar.profileSingle': 'تنها یک نمایه نصب شده است',

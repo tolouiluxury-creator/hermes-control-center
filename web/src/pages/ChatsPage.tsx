@@ -58,6 +58,8 @@ export function ChatsPage() {
    * conversation database.
    */
   const [modelPick, setModelPick] = useState<ModelPick | null>(null);
+  /** Working directory for the next conversation; null means the workspace root. */
+  const [cwd, setCwd] = useState<string | null>(null);
   /**
    * `?profile=` and `?session=` let another page hand a conversation over —
    * the Telegram area continues a bot conversation here. Read once at mount so
@@ -432,6 +434,7 @@ export function ChatsPage() {
           model: modelPick?.model,
           provider: modelPick?.provider,
           profile,
+          cwd: cwd ?? undefined,
         });
         if (!ids.liveId) throw new Error(t('chat.sendFailed'));
         live = ids.liveId;
@@ -697,6 +700,8 @@ export function ChatsPage() {
                   onLiveModelPick={(pick) => void applyLiveModel(pick)}
                   streaming={streaming}
                   switching={switchingModel}
+                  cwd={cwd}
+                  onCwd={setCwd}
                 />
               </div>
 

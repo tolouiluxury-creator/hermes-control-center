@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { Cpu, UserRound } from 'lucide-react';
-import { getModelOptions, getProfiles, queryKeys } from '@/lib/api';
+import { Cpu, FolderClosed, UserRound } from 'lucide-react';
+import { getModelOptions, getProfiles, listWorkspace, queryKeys } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { ChipMenu, type ChipMenuOption } from './ChipMenu';
 
@@ -27,6 +27,13 @@ interface ChatToolbarProps {
   /** Hermes refuses to swap a model mid-turn, so the chip waits for the answer. */
   streaming: boolean;
   switching: boolean;
+  /**
+   * Where the agent starts working. `session.create` takes it once and keeps it,
+   * and `config.set` has no key for it — so unlike the model this cannot be
+   * changed mid-conversation, only chosen for the next one.
+   */
+  cwd: string | null;
+  onCwd: (cwd: string | null) => void;
 }
 
 export function ChatToolbar({
@@ -39,6 +46,8 @@ export function ChatToolbar({
   onLiveModelPick,
   streaming,
   switching,
+  cwd,
+  onCwd,
 }: ChatToolbarProps) {
   const { t } = useI18n();
 
@@ -51,6 +60,18 @@ export function ChatToolbar({
     queryKey: queryKeys.profiles,
     queryFn: getProfiles,
     staleTime: 60_000,
+  });
+
+  /*
+   * Only the workspace root's own folders are offered — one level, not a tree.
+   * The server refuses anything outside the root anyway, and a chip menu is the
+   * wrong place to go hunting through a filesystem.
+   */
+  const workspace = useQuery({
+    queryKey: queryKeys.workspaceList(''),
+    queryFn: () => listWorkspace(undefined),
+    staleTime: 60_000,
+    retry: false,
   });
 
   const inheritedModel = models.data?.currentModel ?? null;
@@ -124,6 +145,19 @@ export function ChatToolbar({
 
   const modelBusy = conversationOpen && (streaming || switching);
 
+  const cwdOptions: ChipMenuOption[] = [
+    { value: '', label: t('chat.toolbar.cwdRoot'), hint: workspace.data?.path ?? '' },
+    ...(workspace.data?.entries ?? [])
+      .filter((entry) => entry.isDirectory)
+      .map((entry) => ({ value: entry.path, label: entry.name })),
+  ];
+
+  const cwdLabel =
+    cwd === null
+      ? t('chat.toolbar.cwdRoot')
+      : // The folder name alone; the full path is the menu's hint.
+        (cwd.split('/').pop() ?? cwd);
+
   return (
     <div className="ms-auto flex shrink-0 items-center gap-1.5">
       <ChipMenu
@@ -146,6 +180,22 @@ export function ChatToolbar({
               : t('chat.toolbar.modelUnavailable')
         }
       />
+      {/*
+       * Hidden when no workspace root is configured: the area is closed then, and
+       * an empty chip would only raise a question the page cannot answer here.
+       */}
+      {workspace.data && (
+        <ChipMenu
+          icon={<FolderClosed size={12} />}
+          label={cwdLabel}
+          title={conversationOpen ? t('chat.toolbar.cwdLive') : t('chat.toolbar.cwdTitle')}
+          options={cwdOptions}
+          value={cwd ?? ''}
+          onChange={(value) => onCwd(value === '' ? null : value)}
+          disabled={conversationOpen}
+          disabledHint={t('chat.toolbar.cwdFixed')}
+        />
+      )}
       <ChipMenu
         icon={<UserRound size={12} />}
         label={profile ?? launchProfile ?? t('chat.toolbar.profileTitle')}
