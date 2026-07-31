@@ -54,6 +54,19 @@ export function WorkspacePage() {
   const fail = (error: Error) =>
     toast.push({ tone: 'error', title: t('workspace.failed'), description: error.message });
 
+  /*
+   * A folder name, not a path. Separators and `..` would compose a path that the
+   * server refuses as "outside the workspace root" — a true message, but a
+   * baffling one when all you did was type a name. Said here instead, and the
+   * server check stays where it belongs: it guards the API, not the typing.
+   */
+  const nameError = ((): string | null => {
+    const name = newName.trim();
+    if (name === '') return null;
+    if (/[\\/]/.test(name)) return t('workspace.nameNoSlash');
+    if (name === '.' || name === '..') return t('workspace.nameNoDots');
+    return null;
+  })();
   const mkdir = useMutation({
     mutationFn: () => createWorkspaceDirectory(`${listing.data?.path ?? ''}/${newName.trim()}`),
     onSuccess: async () => {
@@ -64,6 +77,10 @@ export function WorkspacePage() {
     },
     onError: fail,
   });
+
+  /* Also waits for the listing: the new folder's path is built from it. */
+  const canCreate =
+    newName.trim() !== '' && nameError === null && !mkdir.isPending && listing.data !== undefined;
 
   const remove = useMutation({
     mutationFn: ({ path: target, directory }: { path: string; directory: boolean }) =>
@@ -146,11 +163,12 @@ export function WorkspacePage() {
             value={newName}
             onChange={(event) => setNewName(event.target.value)}
             placeholder={t('workspace.folderName')}
+            autoFocus
             className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
           />
           <button
             type="button"
-            disabled={mkdir.isPending || newName.trim() === ''}
+            disabled={!canCreate}
             onClick={() => mkdir.mutate()}
             className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
           >
@@ -163,6 +181,11 @@ export function WorkspacePage() {
           >
             {t('common.cancel')}
           </button>
+          {nameError && (
+            <p className="w-full text-xs text-[var(--color-danger)]" role="alert">
+              {nameError}
+            </p>
+          )}
         </div>
       )}
 

@@ -119,6 +119,8 @@ export const en: Dict = {
   'workspace.rootTitle': 'The folder this area is confined to',
   'workspace.newFolder': 'New folder',
   'workspace.folderName': 'folder name',
+  'workspace.nameNoSlash': 'A name, not a path — leave out slashes.',
+  'workspace.nameNoDots': 'That name would point at a folder, not create one.',
   'workspace.create': 'Create',
   'workspace.created': 'Folder created',
   'workspace.up': 'Up one level',

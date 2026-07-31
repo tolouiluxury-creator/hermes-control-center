@@ -119,6 +119,8 @@ export const fa: Dict = {
   'workspace.rootTitle': 'پوشه‌ای که این بخش به آن محدود است',
   'workspace.newFolder': 'پوشهٔ تازه',
   'workspace.folderName': 'نام پوشه',
+  'workspace.nameNoSlash': 'یک نام، نه یک مسیر — اسلش ننویسید.',
+  'workspace.nameNoDots': 'این نام به یک پوشه اشاره می‌کند، به‌جای آنکه یکی بسازد.',
   'workspace.create': 'ساختن',
   'workspace.created': 'پوشه ساخته شد',
   'workspace.up': 'یک سطح بالاتر',

@@ -121,6 +121,8 @@ export const de: Dict = {
   'workspace.rootTitle': 'Der Ordner, auf den dieser Bereich begrenzt ist',
   'workspace.newFolder': 'Neuer Ordner',
   'workspace.folderName': 'Ordnername',
+  'workspace.nameNoSlash': 'Ein Name, kein Pfad — Schrägstriche weglassen.',
+  'workspace.nameNoDots': 'Dieser Name zeigt auf einen Ordner, statt einen anzulegen.',
   'workspace.create': 'Anlegen',
   'workspace.created': 'Ordner angelegt',
   'workspace.up': 'Eine Ebene höher',
