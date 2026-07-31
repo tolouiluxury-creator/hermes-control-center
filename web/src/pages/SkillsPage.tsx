@@ -97,6 +97,7 @@ function SkillRow({
   onCancel,
   onEdit,
   onRemove,
+  children,
 }: {
   skill: SkillEntry;
   confirming: boolean;
@@ -106,6 +107,8 @@ function SkillRow({
   onCancel: () => void;
   onEdit: (skill: SkillEntry) => void;
   onRemove: (skill: SkillEntry) => void;
+  /** The remove confirmation, so it stays inside this row's <li>. */
+  children?: React.ReactNode;
 }) {
   const { t } = useI18n();
   const provenance = skill.provenance ? PROVENANCE_META[skill.provenance] : undefined;
@@ -191,6 +194,8 @@ function SkillRow({
           onCancel={onCancel}
         />
       )}
+
+      {children}
     </li>
   );
 }
@@ -269,8 +274,19 @@ export function SkillsPage() {
       setRemoving(null);
       await queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
       await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
-      // Hermes spawns the CLI and answers before it has finished, so this says
-      // the removal started. Claiming success would be a guess.
+      /*
+       * Hermes spawns `hermes skills uninstall` and answers with the child's pid,
+       * so the skill is still listed at this point — reporting success would be a
+       * guess. The toast says the removal started, and these two re-reads make
+       * that true: without them the list sat there stale until a manual reload,
+       * and the promise in the message went unkept.
+       */
+      for (const delay of [3000, 8000]) {
+        setTimeout(() => {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+        }, delay);
+      }
       toast.push({ tone: 'info', title: t('skills.removeStarted', { name }) });
     },
     onError: (removeError: Error) =>
@@ -421,30 +437,28 @@ export function SkillsPage() {
           ) : (
             <ul className="card overflow-hidden p-0">
               {visible.map((skill) => (
-                <div key={skill.name}>
-                  <SkillRow
-                    skill={skill}
-                    confirming={confirming === skill.name}
-                    pending={toggle.isPending && toggle.variables?.name === skill.name}
-                    onToggle={onToggle}
-                    onConfirmDisable={(target) => toggle.mutate(target)}
-                    onCancel={() => setConfirming(null)}
-                    onEdit={(target) => void openEditor(target)}
-                    onRemove={(target) => setRemoving(target.name)}
-                  />
+                <SkillRow
+                  key={skill.name}
+                  skill={skill}
+                  confirming={confirming === skill.name}
+                  pending={toggle.isPending && toggle.variables?.name === skill.name}
+                  onToggle={onToggle}
+                  onConfirmDisable={(target) => toggle.mutate(target)}
+                  onCancel={() => setConfirming(null)}
+                  onEdit={(target) => void openEditor(target)}
+                  onRemove={(target) => setRemoving(target.name)}
+                >
                   {removing === skill.name && (
-                    <div className="px-3 pb-2.5">
-                      <ConfirmInline
-                        tone="danger"
-                        message={t('skills.removeConfirm', { name: skill.name })}
-                        confirmLabel={t('skills.remove')}
-                        pending={remove.isPending}
-                        onConfirm={() => remove.mutate(skill.name)}
-                        onCancel={() => setRemoving(null)}
-                      />
-                    </div>
+                    <ConfirmInline
+                      tone="danger"
+                      message={t('skills.removeConfirm', { name: skill.name })}
+                      confirmLabel={t('skills.remove')}
+                      pending={remove.isPending}
+                      onConfirm={() => remove.mutate(skill.name)}
+                      onCancel={() => setRemoving(null)}
+                    />
                   )}
-                </div>
+                </SkillRow>
               ))}
             </ul>
           )}
@@ -481,6 +495,8 @@ function SkillEditor({
 }) {
   const { t } = useI18n();
 
+  /** An existing skill opens empty and is filled once its file arrives. */
+  const loading = !editor.isNew && editor.content === '';
   const description = frontmatterDescription(editor.content);
   const tooLong =
     editor.isNew && description !== null && description.length > NEW_SKILL_DESCRIPTION_LIMIT;
@@ -527,12 +543,20 @@ function SkillEditor({
         <p className="text-xs text-[var(--color-danger)]">{t('skills.nameInvalid')}</p>
       )}
 
+      {/*
+       * An existing skill's SKILL.md arrives after the editor opens, so the box
+       * is briefly empty. Saving is blocked meanwhile (canSave wants content),
+       * but an empty box reads like an empty skill — hence the note.
+       */}
+      {loading && <p className="text-xs text-[var(--color-ink-faint)]">{t('common.loading')}</p>}
+
       <textarea
         value={editor.content}
         onChange={(event) => onChange({ ...editor, content: event.target.value })}
         rows={18}
         spellCheck={false}
-        className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+        disabled={loading}
+        className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
       />
 
       {tooLong ? (
