@@ -423,6 +423,8 @@ export const de: Dict = {
   'skills.removeStarted':
     'Entfernen von {name} gestartet — die Liste aktualisiert sich, sobald es fertig ist.',
   'skills.removeFailed': 'Entfernen konnte nicht gestartet werden',
+  'skills.removeStuck':
+    '{name} ist noch da. Hermes meldete das Entfernen als gestartet, es lief aber nicht durch — in Hermes 0.19 lehnt der aufgerufene Befehl sein eigenes Flag ab. Entferne den Skill stattdessen auf dem Server.',
   'skills.created': 'Skill {name} angelegt',
   'skills.saved': 'Skill {name} gespeichert',
   'skills.saveFailed': 'Speichern fehlgeschlagen',

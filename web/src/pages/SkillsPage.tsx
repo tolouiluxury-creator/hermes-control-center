@@ -277,17 +277,29 @@ export function SkillsPage() {
       /*
        * Hermes spawns `hermes skills uninstall` and answers with the child's pid,
        * so the skill is still listed at this point — reporting success would be a
-       * guess. The toast says the removal started, and these two re-reads make
-       * that true: without them the list sat there stale until a manual reload,
-       * and the promise in the message went unkept.
+       * guess. These re-reads let the list correct itself once the CLI finishes.
+       *
+       * The last one also checks. On Hermes 0.19.0 the spawned command carries a
+       * `--yes` flag its own CLI does not accept, so the child dies on an argument
+       * error while the endpoint has already answered ok — the removal never
+       * happens and nothing anywhere says so. Rather than leave that silent, the
+       * page looks at whether the skill is still there and reports what it sees.
        */
+      toast.push({ tone: 'info', title: t('skills.removeStarted', { name }) });
+
       for (const delay of [3000, 8000]) {
         setTimeout(() => {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
-          void queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+          void (async () => {
+            await queryClient.invalidateQueries({ queryKey: queryKeys.skillList });
+            await queryClient.invalidateQueries({ queryKey: queryKeys.skills });
+            if (delay !== 8000) return;
+            const list = queryClient.getQueryData<SkillEntry[]>(queryKeys.skillList);
+            if (list?.some((entry) => entry.name === name)) {
+              toast.push({ tone: 'error', title: t('skills.removeStuck', { name }) });
+            }
+          })();
         }, delay);
       }
-      toast.push({ tone: 'info', title: t('skills.removeStarted', { name }) });
     },
     onError: (removeError: Error) =>
       toast.push({

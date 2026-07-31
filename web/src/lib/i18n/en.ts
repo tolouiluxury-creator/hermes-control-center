@@ -417,6 +417,8 @@ export const en: Dict = {
   'skills.removeConfirm': 'Remove skill {name}? Hermes runs the uninstall in the background.',
   'skills.removeStarted': 'Removal of {name} started — the list updates once it finishes.',
   'skills.removeFailed': 'Could not start the removal',
+  'skills.removeStuck':
+    '{name} is still here. Hermes reported the removal as started but it did not finish — on Hermes 0.19 the command it runs rejects its own flag. Remove the skill on the server instead.',
   'skills.created': 'Skill {name} created',
   'skills.saved': 'Skill {name} saved',
   'skills.saveFailed': 'Save failed',

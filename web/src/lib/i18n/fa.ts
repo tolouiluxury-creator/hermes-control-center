@@ -416,6 +416,8 @@ export const fa: Dict = {
   'skills.removeConfirm': 'مهارت {name} حذف شود؟ هرمس حذف را در پس‌زمینه انجام می‌دهد.',
   'skills.removeStarted': 'حذف {name} آغاز شد — فهرست پس از پایان به‌روز می‌شود.',
   'skills.removeFailed': 'حذف آغاز نشد',
+  'skills.removeStuck':
+    '{name} هنوز اینجاست. هرمس آغاز حذف را گزارش کرد اما کامل نشد — در هرمس ۰٫۱۹ فرمانی که اجرا می‌شود پرچم خودش را نمی‌پذیرد. به‌جای آن مهارت را روی سرور حذف کنید.',
   'skills.created': 'مهارت {name} ساخته شد',
   'skills.saved': 'مهارت {name} ذخیره شد',
   'skills.saveFailed': 'ذخیره ناموفق بود',
