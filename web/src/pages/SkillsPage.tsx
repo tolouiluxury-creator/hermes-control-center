@@ -467,7 +467,23 @@ export function SkillsPage() {
                   {removing === skill.name && (
                     <ConfirmInline
                       tone="danger"
-                      message={t('skills.removeConfirm', { name: skill.name })}
+                      message={
+                        <>
+                          {t('skills.removeConfirm', { name: skill.name })}
+                          {/*
+                           * Hermes' uninstall path goes through the hub lock file
+                           * and refuses anything not listed there, so a skill made
+                           * here can never be removed by it. Said before the click,
+                           * because afterwards there is nothing to see: the endpoint
+                           * answers ok either way.
+                           */}
+                          {skill.provenance !== 'hub' && (
+                            <span className="mt-1 block text-[var(--color-ink-muted)]">
+                              {t('skills.removeOnlyHub')}
+                            </span>
+                          )}
+                        </>
+                      }
                       confirmLabel={t('skills.remove')}
                       pending={remove.isPending}
                       onConfirm={() => remove.mutate(skill.name)}

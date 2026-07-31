@@ -420,6 +420,8 @@ export const de: Dict = {
   'skills.remove': 'Entfernen',
   'skills.removeConfirm':
     'Skill {name} entfernen? Hermes führt die Deinstallation im Hintergrund aus.',
+  'skills.removeOnlyHub':
+    'Hermes entfernt nur Skills, die es selbst aus dem Hub installiert hat. Diesen lehnt es ab — er wird danach noch da sein; lösche ihn stattdessen auf dem Server.',
   'skills.removeStarted':
     'Entfernen von {name} gestartet — die Liste aktualisiert sich, sobald es fertig ist.',
   'skills.removeFailed': 'Entfernen konnte nicht gestartet werden',

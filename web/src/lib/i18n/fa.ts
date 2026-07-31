@@ -414,6 +414,8 @@ export const fa: Dict = {
   'skills.edit': 'ویرایش SKILL.md',
   'skills.remove': 'حذف',
   'skills.removeConfirm': 'مهارت {name} حذف شود؟ هرمس حذف را در پس‌زمینه انجام می‌دهد.',
+  'skills.removeOnlyHub':
+    'هرمس فقط مهارت‌هایی را حذف می‌کند که خودش از هاب نصب کرده است. این یکی را رد می‌کند — انتظار داشته باشید بعد از آن هنوز اینجا باشد و به‌جایش روی سرور حذفش کنید.',
   'skills.removeStarted': 'حذف {name} آغاز شد — فهرست پس از پایان به‌روز می‌شود.',
   'skills.removeFailed': 'حذف آغاز نشد',
   'skills.removeStuck':

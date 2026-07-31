@@ -415,6 +415,8 @@ export const en: Dict = {
   'skills.edit': 'Edit SKILL.md',
   'skills.remove': 'Remove',
   'skills.removeConfirm': 'Remove skill {name}? Hermes runs the uninstall in the background.',
+  'skills.removeOnlyHub':
+    'Hermes only removes skills it installed from the hub. This one it will refuse — expect it to still be here afterwards, and delete it on the server instead.',
   'skills.removeStarted': 'Removal of {name} started — the list updates once it finishes.',
   'skills.removeFailed': 'Could not start the removal',
   'skills.removeStuck':
