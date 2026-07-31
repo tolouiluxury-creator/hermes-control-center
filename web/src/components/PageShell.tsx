@@ -105,3 +105,40 @@ export function FilterChips<T extends string>({
     </div>
   );
 }
+
+/**
+ * The same choice as `FilterChips`, as a dropdown.
+ *
+ * Chips read well while they fit on a line; past a dozen options they wrap into
+ * a block that pushes the content down and is tedious to scan. Same option shape,
+ * so a filter can move between the two without touching its data.
+ */
+export function FilterSelect<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: { id: T; label: string; count?: number }[];
+  value: T;
+  onChange: (value: T) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-[var(--color-ink-faint)]">
+      {label}
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+        className="rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2.5 py-1 text-xs text-[var(--color-ink)] outline-none focus-visible:border-[var(--color-accent)]"
+      >
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.label}
+            {option.count !== undefined ? ` (${option.count})` : ''}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}

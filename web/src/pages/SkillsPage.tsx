@@ -10,7 +10,7 @@ import {
   uninstallSkill,
   updateSkillContent,
 } from '@/lib/api';
-import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
+import { FilterChips, FilterSelect, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
@@ -417,12 +417,16 @@ export function SkillsPage() {
             />
           </div>
 
-          <div className="mb-4 flex flex-wrap gap-1.5">
-            <FilterChips
+          {/* A dropdown, not chips: this install has a dozen-plus categories. */}
+          <div className="mb-4">
+            <FilterSelect
               label={t('skills.category')}
               value={category}
               onChange={setCategory}
-              options={[{ id: 'alle', label: t('skills.categories') }, ...categories]}
+              options={[
+                { id: 'alle', label: t('skills.categories'), count: skills.length },
+                ...categories,
+              ]}
             />
           </div>
 
