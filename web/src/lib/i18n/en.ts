@@ -72,6 +72,8 @@ export const en: Dict = {
     'These differ. Setting the sticky profile does not move the running dashboard — it takes effect for new terminal commands, and after a restart.',
   'profile.new': 'New profile',
   'profile.name': 'Name',
+  'profile.nameInvalid':
+    'The name becomes a folder: letters, digits, dot, dash and underscore only.',
   'profile.description': 'Description',
   'profile.cloneFrom': 'Copy from',
   'profile.cloneNone': 'Start empty',
@@ -294,13 +296,19 @@ export const en: Dict = {
   // MCP
   'mcp.empty.title': 'No MCP servers set up',
   'mcp.empty.desc':
-    'Your Hermes has no MCP server configured right now. They are set up in the Hermes configuration under mcpServers; they then appear here with status and tool list.',
+    'Your Hermes has no MCP server configured right now. Add one above — over HTTP, or as a command your machine runs — and it appears here with its status and tool list.',
   'mcp.tools': '{count} tools',
   'mcp.new': 'Add server',
   'mcp.name': 'Name',
   'mcp.nameInvalid': 'Letters, digits, dot, dash and underscore only.',
   'mcp.overHttp': 'Over HTTP',
   'mcp.overCommand': 'Runs a command',
+  'mcp.transportLocked':
+    'How this server is reached cannot be changed here. Remove it and add it again to switch.',
+  'mcp.bearer': 'Bearer token (optional)',
+  'mcp.bearerHint':
+    'Stored in this profile’s .env, never in the config file. It cannot be read back afterwards.',
+  'mcp.bearerLocked': 'A bearer token can only be set when the server is added.',
   'mcp.url': 'URL',
   'mcp.command': 'Command',
   'mcp.args': 'Arguments',

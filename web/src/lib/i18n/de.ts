@@ -73,6 +73,8 @@ export const de: Dict = {
     'Diese beiden unterscheiden sich. Das sticky Profil zu setzen verschiebt das laufende Dashboard nicht — es wirkt für neue Terminal-Befehle und nach einem Neustart.',
   'profile.new': 'Neues Profil',
   'profile.name': 'Name',
+  'profile.nameInvalid':
+    'Der Name wird ein Ordner: nur Buchstaben, Ziffern, Punkt, Bindestrich und Unterstrich.',
   'profile.description': 'Beschreibung',
   'profile.cloneFrom': 'Kopieren von',
   'profile.cloneNone': 'Leer beginnen',
@@ -296,13 +298,19 @@ export const de: Dict = {
   // MCP
   'mcp.empty.title': 'Keine MCP-Server eingerichtet',
   'mcp.empty.desc':
-    'Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Eingerichtet werden sie in der Hermes-Konfiguration unter mcpServers; hier erscheinen sie dann mit Status und Werkzeugliste.',
+    'Auf deinem Hermes ist derzeit kein MCP-Server konfiguriert. Oben einen anlegen — über HTTP oder als Befehl, den dein Rechner startet — und er erscheint hier mit Status und Werkzeugliste.',
   'mcp.tools': '{count} Werkzeuge',
   'mcp.new': 'Server hinzufügen',
   'mcp.name': 'Name',
   'mcp.nameInvalid': 'Nur Buchstaben, Ziffern, Punkt, Bindestrich und Unterstrich.',
   'mcp.overHttp': 'Über HTTP',
   'mcp.overCommand': 'Startet einen Befehl',
+  'mcp.transportLocked':
+    'Wie dieser Server erreicht wird, lässt sich hier nicht ändern. Zum Wechseln entfernen und neu anlegen.',
+  'mcp.bearer': 'Bearer-Token (optional)',
+  'mcp.bearerHint':
+    'Wird in der .env dieses Profils abgelegt, nie in der Konfigurationsdatei. Danach nicht mehr auslesbar.',
+  'mcp.bearerLocked': 'Ein Bearer-Token lässt sich nur beim Anlegen setzen.',
   'mcp.url': 'URL',
   'mcp.command': 'Befehl',
   'mcp.args': 'Argumente',

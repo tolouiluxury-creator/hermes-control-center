@@ -10,6 +10,7 @@ import {
   testMcpServer,
   updateMcpServer,
 } from '@/lib/api';
+import { mcpCreatePayload, mcpUpdatePayload, type McpDraft } from '@/lib/mcpDraft';
 import type { McpServerSummary } from '@/lib/hermesTypes';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
@@ -78,22 +79,10 @@ export function McpPage() {
   });
 
   const save = useMutation({
-    mutationFn: (draft: ServerDraft) =>
+    mutationFn: (draft: McpDraft) =>
       draft.isNew
-        ? createMcpServer({
-            name: draft.name,
-            url: draft.transport === 'http' ? draft.url : undefined,
-            command: draft.transport === 'stdio' ? draft.command : undefined,
-            args: splitArgs(draft.args),
-            env: parseEnv(draft.env),
-          })
-        : updateMcpServer(draft.name, {
-            ...(draft.transport === 'http' ? { url: draft.url } : { command: draft.command }),
-            args: splitArgs(draft.args),
-            // Only variables the user actually typed travel; the rest keep the
-            // real values this page is never allowed to see.
-            ...(Object.keys(parseEnv(draft.env)).length > 0 ? { env: parseEnv(draft.env) } : {}),
-          }),
+        ? createMcpServer(mcpCreatePayload(draft))
+        : updateMcpServer(draft.name, mcpUpdatePayload(draft)),
     onSuccess: async (_r, draft) => {
       setEditing(null);
       await invalidate();
@@ -264,33 +253,6 @@ export function McpPage() {
   );
 }
 
-interface ServerDraft {
-  isNew: boolean;
-  name: string;
-  transport: 'http' | 'stdio';
-  url: string;
-  command: string;
-  args: string;
-  env: string;
-}
-
-/** Splits a command line into arguments. Quotes are honoured, nothing else. */
-function splitArgs(raw: string): string[] {
-  return (raw.match(/"[^"]*"|'[^']*'|\S+/g) ?? []).map((part) => part.replace(/^["']|["']$/g, ''));
-}
-
-/** Reads `KEY=value` lines. Blank lines and lines without `=` are skipped. */
-function parseEnv(raw: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of raw.split('\n')) {
-    const at = line.indexOf('=');
-    if (at <= 0) continue;
-    const key = line.slice(0, at).trim();
-    if (key !== '') out[key] = line.slice(at + 1).trim();
-  }
-  return out;
-}
-
 /**
  * Add or change one MCP server.
  *
@@ -299,6 +261,11 @@ function parseEnv(raw: string): Record<string, string> {
  * in front of the user and save that string over their real key the moment they
  * pressed save. Existing variables are listed above it, read-only; typing a
  * `KEY=value` line replaces exactly that one and leaves the rest alone.
+ *
+ * The two transports show different fields because Hermes treats them as
+ * different things: a URL server takes neither arguments nor environment
+ * variables (its normalizer refuses both), and its credential is a bearer token
+ * that Hermes stores in the profile's `.env`.
  */
 function ServerForm({
   server,
@@ -308,21 +275,25 @@ function ServerForm({
 }: {
   server: McpServerSummary | null;
   pending: boolean;
-  onSave: (draft: ServerDraft) => void;
+  onSave: (draft: McpDraft) => void;
   onCancel: () => void;
 }) {
   const { t } = useI18n();
-  const [draft, setDraft] = useState<ServerDraft>(() => ({
+  const [draft, setDraft] = useState<McpDraft>(() => ({
     isNew: server === null,
     name: server?.name ?? '',
-    transport: server?.transport === 'stdio' ? 'stdio' : server ? 'http' : 'http',
+    transport: server?.transport === 'stdio' ? 'stdio' : 'http',
     url: server?.url ?? '',
     command: server?.command ?? '',
     args: (server?.args ?? []).join(' '),
     env: '',
+    bearerToken: '',
   }));
 
-  const nameOk = /^[A-Za-z0-9._-]+$/.test(draft.name);
+  // Only a new name is ours to constrain; an existing one is already on disk,
+  // and refusing to save a server because of how it was once named would leave
+  // no way to fix its URL.
+  const nameOk = !draft.isNew || /^[A-Za-z0-9._-]+$/.test(draft.name);
   const targetOk =
     draft.transport === 'http' ? draft.url.trim() !== '' : draft.command.trim() !== '';
 
@@ -345,14 +316,19 @@ function ServerForm({
         </label>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(['http', 'stdio'] as const).map((mode) => (
           <button
             key={mode}
             type="button"
+            // Locked on an existing server: see `mcpUpdatePayload`. The merge
+            // this page edits through can add a key but never remove one, and
+            // Hermes picks the transport by which key is present — so a switch
+            // would look saved and change nothing.
+            disabled={!draft.isNew}
             onClick={() => setDraft({ ...draft, transport: mode })}
             aria-pressed={draft.transport === mode}
-            className={`rounded-lg border px-3 py-1 text-xs transition-colors ${
+            className={`rounded-lg border px-3 py-1 text-xs transition-colors disabled:opacity-40 ${
               draft.transport === mode
                 ? 'border-[var(--color-accent)]/40 text-[var(--color-accent)]'
                 : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)]'
@@ -361,18 +337,40 @@ function ServerForm({
             {mode === 'http' ? t('mcp.overHttp') : t('mcp.overCommand')}
           </button>
         ))}
+        {!draft.isNew && (
+          <p className="w-full text-xs text-[var(--color-ink-faint)]">{t('mcp.transportLocked')}</p>
+        )}
       </div>
 
       {draft.transport === 'http' ? (
-        <label className="block">
-          <span className="text-xs text-[var(--color-ink-faint)]">{t('mcp.url')}</span>
-          <input
-            value={draft.url}
-            onChange={(event) => setDraft({ ...draft, url: event.target.value })}
-            placeholder="https://example.com/mcp"
-            className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-sm outline-none focus-visible:border-[var(--color-accent)]"
-          />
-        </label>
+        <>
+          <label className="block">
+            <span className="text-xs text-[var(--color-ink-faint)]">{t('mcp.url')}</span>
+            <input
+              value={draft.url}
+              onChange={(event) => setDraft({ ...draft, url: event.target.value })}
+              placeholder="https://example.com/mcp"
+              className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-sm outline-none focus-visible:border-[var(--color-accent)]"
+            />
+          </label>
+          {draft.isNew ? (
+            <label className="block">
+              <span className="text-xs text-[var(--color-ink-faint)]">{t('mcp.bearer')}</span>
+              <input
+                value={draft.bearerToken}
+                onChange={(event) => setDraft({ ...draft, bearerToken: event.target.value })}
+                spellCheck={false}
+                autoComplete="off"
+                className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-sm outline-none focus-visible:border-[var(--color-accent)]"
+              />
+              <span className="mt-1 block text-xs text-[var(--color-ink-faint)]">
+                {t('mcp.bearerHint')}
+              </span>
+            </label>
+          ) : (
+            <p className="text-xs text-[var(--color-ink-faint)]">{t('mcp.bearerLocked')}</p>
+          )}
+        </>
       ) : (
         <>
           <label className="block">
@@ -396,7 +394,9 @@ function ServerForm({
         </>
       )}
 
-      {server && server.envKeys.length > 0 && (
+      {/* Environment variables reach a process, so Hermes only accepts them for
+          a command server — its create normalizer refuses them alongside a URL. */}
+      {draft.transport === 'stdio' && server && server.envKeys.length > 0 && (
         <div>
           <p className="text-xs text-[var(--color-ink-faint)]">{t('mcp.envExisting')}</p>
           <ul className="mt-1 space-y-0.5">
@@ -410,20 +410,22 @@ function ServerForm({
         </div>
       )}
 
-      <label className="block">
-        <span className="text-xs text-[var(--color-ink-faint)]">{t('mcp.env')}</span>
-        <textarea
-          value={draft.env}
-          onChange={(event) => setDraft({ ...draft, env: event.target.value })}
-          rows={3}
-          spellCheck={false}
-          placeholder={'API_KEY=…'}
-          className="mt-1 w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
-        />
-        <span className="mt-1 block text-xs text-[var(--color-ink-faint)]">
-          {draft.isNew ? t('mcp.envHintNew') : t('mcp.envHintEdit')}
-        </span>
-      </label>
+      {draft.transport === 'stdio' && (
+        <label className="block">
+          <span className="text-xs text-[var(--color-ink-faint)]">{t('mcp.env')}</span>
+          <textarea
+            value={draft.env}
+            onChange={(event) => setDraft({ ...draft, env: event.target.value })}
+            rows={3}
+            spellCheck={false}
+            placeholder={'API_KEY=…'}
+            className="mt-1 w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+          />
+          <span className="mt-1 block text-xs text-[var(--color-ink-faint)]">
+            {draft.isNew ? t('mcp.envHintNew') : t('mcp.envHintEdit')}
+          </span>
+        </label>
+      )}
 
       <div className="flex gap-2">
         <button
