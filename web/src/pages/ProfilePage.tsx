@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, FileText, Pencil, Plus, Radio, Star, Trash2 } from 'lucide-react';
+import { Check, FileText, Pencil, Plus, Radio, Star, TextCursorInput, Trash2 } from 'lucide-react';
 import {
   createProfile,
   deleteProfile,
@@ -21,6 +21,13 @@ import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
+
+/**
+ * A profile name becomes a directory under `~/.hermes/profiles`, so the server
+ * schema constrains it to this set. Checking it while typing means the rule is
+ * visible instead of arriving as a regex in a 400.
+ */
+const NAME_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 /**
  * Profiles are whole installations of the agent side by side: each has its own
@@ -46,7 +53,15 @@ export function ProfilePage() {
   const [describing, setDescribing] = useState<{ name: string; text: string } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [soulFor, setSoulFor] = useState<string | null>(null);
-  const [soulDraft, setSoulDraft] = useState('');
+  /**
+   * `null` means "untouched, show what the server has". It cannot be an empty
+   * string standing in for that: Hermes writes the body verbatim
+   * (`soul_path.write_text(body.content)`), so a draft that starts as `''` and
+   * is sent unchanged would blank out an existing SOUL.md on a save the user
+   * meant as a no-op — and would also make clearing the box impossible,
+   * because an empty draft would fall back to the loaded text.
+   */
+  const [soulDraft, setSoulDraft] = useState<string | null>(null);
 
   const profiles = useQuery({
     queryKey: queryKeys.profiles,
@@ -101,9 +116,13 @@ export function ProfilePage() {
   });
 
   const saveSoul = useMutation({
-    mutationFn: () => saveProfileSoul(soulFor ?? '', soulDraft),
-    onSuccess: () => {
+    mutationFn: (content: string) => saveProfileSoul(soulFor ?? '', content),
+    onSuccess: async () => {
+      // The editor reads through this key, so a reopen must not serve the text
+      // from before the write.
+      await queryClient.invalidateQueries({ queryKey: queryKeys.profileSoul(soulFor ?? '') });
       setSoulFor(null);
+      setSoulDraft(null);
       toast.push({ tone: 'success', title: t('profile.soulSaved') });
     },
     onError: (error: Error) =>
@@ -154,6 +173,11 @@ export function ProfilePage() {
                   placeholder="research"
                   className="mt-1 w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-sm outline-none focus-visible:border-[var(--color-accent)]"
                 />
+                {draft.name !== '' && !NAME_PATTERN.test(draft.name) && (
+                  <span className="mt-1 block text-xs text-[var(--color-danger)]">
+                    {t('profile.nameInvalid')}
+                  </span>
+                )}
               </label>
               <label className="block">
                 <span className="text-xs text-[var(--color-ink-faint)]">
@@ -205,7 +229,7 @@ export function ProfilePage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  disabled={draft.name.trim() === '' || create.isPending}
+                  disabled={!NAME_PATTERN.test(draft.name.trim()) || create.isPending}
                   onClick={() => create.mutate()}
                   className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-sm text-[var(--color-accent)] disabled:opacity-40"
                 >
@@ -241,7 +265,7 @@ export function ProfilePage() {
                   }
                   onSoul={() => {
                     setSoulFor(profile.name);
-                    setSoulDraft('');
+                    setSoulDraft(null);
                   }}
                   onDelete={() => setConfirmDelete(profile.name)}
                   providers={models.data?.providers ?? []}
@@ -267,6 +291,9 @@ export function ProfilePage() {
                     onCancel={() => setRenaming(null)}
                     saveLabel={t('profile.rename')}
                     cancelLabel={t('common.cancel')}
+                    invalid={
+                      NAME_PATTERN.test(renaming.next.trim()) ? undefined : t('profile.nameInvalid')
+                    }
                     mono
                   />
                 )}
@@ -292,13 +319,20 @@ export function ProfilePage() {
                   <div className="mt-3">
                     {soul.isPending ? (
                       <SkeletonText lines={4} />
+                    ) : soul.error ? (
+                      // Without the current text there is nothing to edit, and
+                      // offering Save anyway would overwrite a file we could
+                      // not read.
+                      <p className="text-xs text-[var(--color-danger)]" role="alert">
+                        {soul.error.message}
+                      </p>
                     ) : (
                       <>
                         <p className="mb-1 text-xs text-[var(--color-ink-faint)]">
                           {soul.data?.exists ? t('profile.soulExists') : t('profile.soulNew')}
                         </p>
                         <textarea
-                          value={soulDraft || (soul.data?.content ?? '')}
+                          value={soulDraft ?? soul.data?.content ?? ''}
                           onChange={(event) => setSoulDraft(event.target.value)}
                           rows={12}
                           className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
@@ -306,15 +340,18 @@ export function ProfilePage() {
                         <div className="mt-2 flex gap-2">
                           <button
                             type="button"
-                            disabled={saveSoul.isPending}
-                            onClick={() => saveSoul.mutate()}
+                            disabled={saveSoul.isPending || soulDraft === null}
+                            onClick={() => saveSoul.mutate(soulDraft ?? '')}
                             className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)] disabled:opacity-40"
                           >
                             {t('common.save')}
                           </button>
                           <button
                             type="button"
-                            onClick={() => setSoulFor(null)}
+                            onClick={() => {
+                              setSoulFor(null);
+                              setSoulDraft(null);
+                            }}
                             className="rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)]"
                           >
                             {t('common.cancel')}
@@ -429,7 +466,7 @@ function ProfileRow({
             <Pencil size={13} aria-hidden />
           </RowButton>
           <RowButton onClick={onRename} title={t('profile.rename')}>
-            <Copy size={13} aria-hidden />
+            <TextCursorInput size={13} aria-hidden />
           </RowButton>
           {/* Out of reach on purpose: the default profile (Hermes refuses anyway),
               the one this dashboard is running as, and any profile whose gateway
@@ -523,6 +560,7 @@ function InlineEdit({
   onCancel,
   saveLabel,
   cancelLabel,
+  invalid,
   mono,
 }: {
   value: string;
@@ -531,6 +569,8 @@ function InlineEdit({
   onCancel: () => void;
   saveLabel: string;
   cancelLabel: string;
+  /** Why the value cannot be saved, shown beneath the field. */
+  invalid?: string;
   mono?: boolean;
 }) {
   return (
@@ -545,7 +585,7 @@ function InlineEdit({
       <button
         type="button"
         onClick={onSave}
-        disabled={value.trim() === ''}
+        disabled={value.trim() === '' || invalid !== undefined}
         className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)] disabled:opacity-40"
       >
         <Check size={12} aria-hidden />
@@ -558,6 +598,9 @@ function InlineEdit({
       >
         {cancelLabel}
       </button>
+      {invalid !== undefined && value.trim() !== '' && (
+        <span className="w-full text-xs text-[var(--color-danger)]">{invalid}</span>
+      )}
     </div>
   );
 }
