@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Copy, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { Check, ClipboardCopy, CopyPlus, Pencil, Plus, Trash2, X } from 'lucide-react';
 import {
   createPrompt,
   deletePrompt,
@@ -179,6 +179,31 @@ export function PromptsPage() {
       }),
   });
 
+  /*
+   * A copy to work from. The title gets a suffix rather than clashing — prompts
+   * have no unique-name rule, and two identical titles in a list are worse than
+   * a slightly clumsy one. The use counter starts at zero: it counts what this
+   * copy is used for, not what the original was.
+   */
+  const duplicate = useMutation({
+    mutationFn: (prompt: Prompt) =>
+      createPrompt({
+        title: t('prompts.duplicateTitle', { title: prompt.title }),
+        body: prompt.body,
+        tags: prompt.tags,
+      }),
+    onSuccess: async () => {
+      await invalidate();
+      toast.push({ tone: 'success', title: t('prompts.duplicated') });
+    },
+    onError: (mutationError: Error) =>
+      toast.push({
+        tone: 'error',
+        title: t('toast.saveFailed'),
+        description: mutationError.message,
+      }),
+  });
+
   const remove = useMutation({
     mutationFn: deletePrompt,
     onSuccess: async () => {
@@ -291,7 +316,22 @@ export function PromptsPage() {
                     aria-label={t('prompts.copyAria', { title: prompt.title })}
                     title={t('prompts.copyText')}
                   >
-                    <Copy size={14} aria-hidden />
+                    <ClipboardCopy size={14} aria-hidden />
+                  </button>
+                  {/*
+                   * Distinct from the clipboard button next to it: this makes a
+                   * second entry. A single copy icon was read as "duplicate", so
+                   * the two jobs now have two icons and two words.
+                   */}
+                  <button
+                    type="button"
+                    onClick={() => duplicate.mutate(prompt)}
+                    disabled={duplicate.isPending}
+                    className="rounded-lg p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
+                    aria-label={t('prompts.duplicateAria', { title: prompt.title })}
+                    title={t('prompts.duplicate')}
+                  >
+                    <CopyPlus size={14} aria-hidden />
                   </button>
                   <button
                     type="button"

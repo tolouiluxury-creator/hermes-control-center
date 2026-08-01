@@ -506,7 +506,11 @@ export const fa: Dict = {
   'prompts.copyAria': 'کپی {title}',
   'prompts.editAria': 'ویرایش {title}',
   'prompts.deleteAria': 'حذف {title}',
-  'prompts.copyText': 'کپی متن',
+  'prompts.copyText': 'کپی متن در کلیپ‌بورد',
+  'prompts.duplicate': 'تکثیر به‌عنوان پرامپت تازه',
+  'prompts.duplicateAria': 'تکثیر {title}',
+  'prompts.duplicateTitle': '{title} (کپی)',
+  'prompts.duplicated': 'کپی ساخته شد',
 
   // Agents (presets)
   'workflows.editTitle': 'ویرایش گردش‌کار',

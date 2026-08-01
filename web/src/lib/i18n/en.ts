@@ -507,7 +507,11 @@ export const en: Dict = {
   'prompts.copyAria': 'copy {title}',
   'prompts.editAria': 'edit {title}',
   'prompts.deleteAria': 'delete {title}',
-  'prompts.copyText': 'Copy text',
+  'prompts.copyText': 'Copy text to clipboard',
+  'prompts.duplicate': 'Duplicate as a new prompt',
+  'prompts.duplicateAria': 'duplicate {title}',
+  'prompts.duplicateTitle': '{title} (copy)',
+  'prompts.duplicated': 'Copy created',
 
   // Agents (presets)
   'workflows.editTitle': 'Edit workflow',
