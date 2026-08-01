@@ -44,6 +44,7 @@ export function WorkspacePage() {
     setEditing(null);
   };
   const [creating, setCreating] = useState(false);
+  const [createKind, setCreateKind] = useState<'folder' | 'file'>('folder');
   const [newName, setNewName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<{ path: string; directory: boolean } | null>(
     null,
@@ -80,13 +81,32 @@ export function WorkspacePage() {
     if (name === '.' || name === '..') return t('workspace.nameNoDots');
     return null;
   })();
-  const mkdir = useMutation({
-    mutationFn: () => createWorkspaceDirectory(`${listing.data?.path ?? ''}/${newName.trim()}`),
+  /*
+   * One mutation for both kinds. A new file is created empty and opened straight
+   * into the editor — creating a file only to hunt for it in the list would be
+   * a step nobody wants.
+   */
+  const create = useMutation({
+    mutationFn: () => {
+      const target = `${listing.data?.path ?? ''}/${newName.trim()}`;
+      return createKind === 'folder'
+        ? createWorkspaceDirectory(target)
+        : writeWorkspaceFile(target, '');
+    },
     onSuccess: async () => {
+      const target = `${listing.data?.path ?? ''}/${newName.trim()}`;
+      const madeFile = createKind === 'file';
       setCreating(false);
       setNewName('');
       await refresh();
-      toast.push({ tone: 'success', title: t('workspace.created') });
+      if (madeFile) {
+        setOpenFile(target);
+        setEditing('');
+      }
+      toast.push({
+        tone: 'success',
+        title: t(madeFile ? 'workspace.fileCreated' : 'workspace.created'),
+      });
     },
     onError: fail,
   });
@@ -109,7 +129,7 @@ export function WorkspacePage() {
 
   /* Also waits for the listing: the new folder's path is built from it. */
   const canCreate =
-    newName.trim() !== '' && nameError === null && !mkdir.isPending && listing.data !== undefined;
+    newName.trim() !== '' && nameError === null && !create.isPending && listing.data !== undefined;
 
   const remove = useMutation({
     mutationFn: ({ path: target, directory }: { path: string; directory: boolean }) =>
@@ -164,7 +184,7 @@ export function WorkspacePage() {
           className="inline-flex items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20"
         >
           <FolderPlus size={14} aria-hidden />
-          {t('workspace.newFolder')}
+          {t('workspace.new')}
         </button>
       }
       wide
@@ -188,17 +208,40 @@ export function WorkspacePage() {
 
       {creating && (
         <div className="card mb-3 flex flex-wrap items-center gap-2 p-3">
+          {/* Folder or file: Hermes' write-text creates as well as overwrites. */}
+          <div
+            className="flex shrink-0 gap-1"
+            role="radiogroup"
+            aria-label={t('workspace.newWhat')}
+          >
+            {(['folder', 'file'] as const).map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                role="radio"
+                aria-checked={createKind === kind}
+                onClick={() => setCreateKind(kind)}
+                className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
+                  createKind === kind
+                    ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                    : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                }`}
+              >
+                {t(kind === 'folder' ? 'workspace.kindFolder' : 'workspace.kindFile')}
+              </button>
+            ))}
+          </div>
           <input
             value={newName}
             onChange={(event) => setNewName(event.target.value)}
-            placeholder={t('workspace.folderName')}
+            placeholder={t(createKind === 'folder' ? 'workspace.folderName' : 'workspace.fileName')}
             autoFocus
             className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
           />
           <button
             type="button"
             disabled={!canCreate}
-            onClick={() => mkdir.mutate()}
+            onClick={() => create.mutate()}
             className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
           >
             {t('workspace.create')}
