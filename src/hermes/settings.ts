@@ -164,19 +164,27 @@ export const toolsetsSchema = z.array(
     description: z.string().nullish(),
     platform_label: z.string().nullish(),
     enabled: z.boolean().nullish(),
-    available: z.boolean().nullish(),
     configured: z.boolean().nullish(),
     tools: z.array(z.string()).nullish(),
   }),
 );
 
+/**
+ * A configurable toolset.
+ *
+ * Hermes also sends an `available` flag, and it is deliberately dropped here:
+ * the endpoint assigns `"available": is_enabled` — the same value as `enabled`,
+ * not an independent fact (`web_server.py:15819`). Carrying it forward invited
+ * reading it as "may be switched on", which locked every toolset off the moment
+ * it was switched off. `configured` is the real capability signal: it reports
+ * whether the toolset's required API keys are present.
+ */
 export interface Toolset {
   name: string;
   label: string;
   description: string | null;
   platformLabel: string | null;
   enabled: boolean;
-  available: boolean;
   configured: boolean;
   tools: string[];
 }
@@ -189,7 +197,6 @@ export function normalizeToolsets(raw: z.infer<typeof toolsetsSchema>): Toolset[
       description: toolset.description?.trim() || null,
       platformLabel: toolset.platform_label?.trim() || null,
       enabled: toolset.enabled === true,
-      available: toolset.available !== false,
       configured: toolset.configured === true,
       tools: toolset.tools ?? [],
     }))

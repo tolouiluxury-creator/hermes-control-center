@@ -388,13 +388,17 @@ export interface UpdateStatus {
   message: string | null;
 }
 
+/**
+ * A configurable toolset. No `available` field on purpose — upstream sets it to
+ * the same value as `enabled`, so it says nothing about whether the toolset can
+ * be switched on. `configured` reports whether its API keys are present.
+ */
 export interface Toolset {
   name: string;
   label: string;
   description: string | null;
   platformLabel: string | null;
   enabled: boolean;
-  available: boolean;
   configured: boolean;
   tools: string[];
 }

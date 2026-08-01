@@ -236,7 +236,7 @@ export const fa: Dict = {
   'settings.theme.system': 'سیستم',
   'settings.tools': 'ابزارها',
   'settings.tools.desc': 'مجموعه‌ابزارهایی که در اختیار ایجنت شماست.',
-  'settings.tools.unavailable': 'در دسترس نیست',
+  'settings.tools.needsKeys': 'کلیدی تنظیم نشده',
   'settings.maintenance': 'نگهداری',
   'settings.maintenance.desc': 'نسخه و نگهداری حافظه بلندمدت.',
   'settings.version': 'نسخه',

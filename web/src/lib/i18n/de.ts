@@ -241,7 +241,7 @@ export const de: Dict = {
   'settings.theme.system': 'System',
   'settings.tools': 'Werkzeuge',
   'settings.tools.desc': 'Werkzeugsätze, die deinem Agenten zur Verfügung stehen.',
-  'settings.tools.unavailable': 'nicht verfügbar',
+  'settings.tools.needsKeys': 'keine Schlüssel hinterlegt',
   'settings.maintenance': 'Wartung',
   'settings.maintenance.desc': 'Version und die Pflege des Langzeitgedächtnisses.',
   'settings.version': 'Version',

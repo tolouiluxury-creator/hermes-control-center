@@ -77,16 +77,32 @@ describe('normalizeUpdate', () => {
 describe('normalizeToolsets', () => {
   it('puts enabled toolsets first and counts their tools', () => {
     const toolsets = normalizeToolsets([
-      { name: 'off', label: 'Off', enabled: false, available: true, tools: [] },
+      { name: 'off', label: 'Off', enabled: false, tools: [] },
       {
         name: 'web',
         label: 'Web',
         enabled: true,
-        available: true,
         tools: ['web_search', 'web_extract'],
       },
     ]);
     expect(toolsets[0]?.name).toBe('web');
     expect(toolsets[0]?.tools).toHaveLength(2);
+  });
+
+  // Hermes sends `"available": is_enabled` — the same value as `enabled`. Read
+  // as "may be switched on", it locked a toolset off the moment it went off.
+  it('drops the available flag instead of mistaking it for a capability', () => {
+    const [toolset] = normalizeToolsets([
+      { name: 'browser', label: 'Browser', enabled: false, available: false, configured: true },
+    ]);
+    expect(toolset).not.toHaveProperty('available');
+    expect(toolset?.configured).toBe(true);
+  });
+
+  it('reports missing keys through configured, which is a separate fact', () => {
+    const [toolset] = normalizeToolsets([
+      { name: 'homeassistant', label: 'Home Assistant', enabled: false, configured: false },
+    ]);
+    expect(toolset?.configured).toBe(false);
   });
 });

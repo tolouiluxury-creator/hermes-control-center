@@ -239,7 +239,7 @@ export const en: Dict = {
   'settings.theme.system': 'System',
   'settings.tools': 'Tools',
   'settings.tools.desc': 'The toolsets available to your agent.',
-  'settings.tools.unavailable': 'unavailable',
+  'settings.tools.needsKeys': 'no keys set',
   'settings.maintenance': 'Maintenance',
   'settings.maintenance.desc': 'Version and the upkeep of long-term memory.',
   'settings.version': 'Version',

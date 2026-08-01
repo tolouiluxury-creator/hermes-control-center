@@ -136,9 +136,11 @@ function ToolsetRow({
           <span className="font-mono text-[0.65rem] text-[var(--color-ink-faint)]">
             {toolset.name}
           </span>
-          {!toolset.available && (
+          {/* Not a lock — a toolset can be switched on before its keys exist,
+              and Hermes will simply have nothing to reach until they do. */}
+          {!toolset.configured && (
             <span className="text-[0.65rem] text-[var(--color-warn)]">
-              {t('settings.tools.unavailable')}
+              {t('settings.tools.needsKeys')}
             </span>
           )}
         </div>
@@ -152,7 +154,7 @@ function ToolsetRow({
         aria-checked={toolset.enabled}
         aria-label={`${toolset.label} ${toolset.enabled ? t('common.disable') : t('common.enable')}`}
         onClick={() => onToggle(toolset)}
-        disabled={pending || !toolset.available}
+        disabled={pending}
         className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40"
         style={{ background: toolset.enabled ? 'var(--color-ok)' : 'var(--color-raised)' }}
       >
