@@ -17,12 +17,17 @@ import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 
+/** How many of a provider's models are listed before the rest are folded away. */
+const VISIBLE_MODELS = 12;
+
 export function ModelsPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { t, lang } = useI18n();
   /** The provider+model a switch is being confirmed for, if any. */
   const [pending, setPending] = useState<{ provider: string; model: string } | null>(null);
+  /** Which provider is showing its full model list, if any. */
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const options = useQuery({
     queryKey: queryKeys.models,
@@ -48,6 +53,9 @@ export function ModelsPage() {
       }),
   });
 
+  const currentProviderName =
+    options.data?.providers.find((provider) => provider.isCurrent)?.name ?? null;
+
   return (
     <PageShell title={t('nav.modelle')} description={t('page.modelle.desc')}>
       {options.isPending ? (
@@ -64,8 +72,18 @@ export function ModelsPage() {
               {options.data?.currentModel ?? '—'}
             </p>
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-ink-muted)]">
-              {options.data?.currentProvider && (
-                <span>{t('models.provider', { name: options.data.currentProvider })}</span>
+              {/*
+               * The provider that carries `is_current`, not the short name from
+               * `/api/model/info`: Hermes reports "custom" there while the
+               * provider is listed as "custom:local-(localhost:20128)", and two
+               * names for one thing on one screen is a puzzle, not information.
+               */}
+              {(currentProviderName ?? options.data?.currentProvider) && (
+                <span>
+                  {t('models.provider', {
+                    name: currentProviderName ?? options.data?.currentProvider ?? '',
+                  })}
+                </span>
               )}
               {info.data?.contextLength && (
                 <span>
@@ -127,8 +145,17 @@ export function ModelsPage() {
 
                 {provider.models.length > 0 && (
                   <ul className="mt-2 flex flex-wrap gap-1">
-                    {provider.models.slice(0, 12).map((model) => {
-                      const isCurrent = model === options.data?.currentModel;
+                    {(expanded === provider.slug
+                      ? provider.models
+                      : provider.models.slice(0, VISIBLE_MODELS)
+                    ).map((model) => {
+                      /*
+                       * The provider has to match too. The same model name can sit
+                       * under two providers, and comparing names alone would mark
+                       * it current under both — `is_current` is what Hermes itself
+                       * uses to say which one is in play.
+                       */
+                      const isCurrent = provider.isCurrent && model === options.data?.currentModel;
                       // Only an authenticated provider's non-current models can be
                       // switched to; the rest are shown but not clickable.
                       const switchable = provider.authenticated === true && !isCurrent;
@@ -159,9 +186,28 @@ export function ModelsPage() {
                         </li>
                       );
                     })}
-                    {provider.totalModels !== null && provider.totalModels > 12 && (
-                      <li className="px-2 py-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                        {t('models.moreModels', { count: provider.totalModels - 12 })}
+                    {/*
+                     * The rest are reachable, not just counted. A provider with a
+                     * few hundred models used to show twelve and name the number
+                     * hidden — which made every one of them unpickable.
+                     */}
+                    {provider.models.length > VISIBLE_MODELS && (
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpanded((current) =>
+                              current === provider.slug ? null : provider.slug,
+                            )
+                          }
+                          className="rounded-full px-2 py-0.5 text-[0.65rem] text-[var(--color-accent)] hover:underline"
+                        >
+                          {expanded === provider.slug
+                            ? t('models.showFewer')
+                            : t('models.showAll', {
+                                count: provider.models.length - VISIBLE_MODELS,
+                              })}
+                        </button>
                       </li>
                     )}
                   </ul>
