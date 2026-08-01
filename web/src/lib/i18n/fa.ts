@@ -271,8 +271,10 @@ export const fa: Dict = {
   'settings.config.desc':
     'پیکربندی کامل هرمس. اشتباه این‌جا می‌تواند ایجنت را مختل کند — با دقت ویرایش کنید.',
   'settings.config.empty': '(خالی)',
+  'settings.config.commentsWarning':
+    'ذخیره‌کردن فایل را از محتوای تجزیه‌شده‌اش بازنویسی می‌کند — {count} خط توضیح درون آن جزو این محتوا نیست و از بین می‌رود.',
   'settings.config.overwriteConfirm':
-    'پیکربندی بازنویسی شود؟ YAML نامعتبر می‌تواند بر ایجنت اثر بگذارد.',
+    'پیکربندی بازنویسی شود؟ YAML خراب رد می‌شود؛ پس خطر، فایلی معتبر با معنایی ناخواسته است — و توضیح‌ها باقی نمی‌مانند.',
   'settings.security': 'امنیت',
   'settings.security.desc': 'دسترسی به خود کنترل‌سنتر.',
   'settings.security.password':

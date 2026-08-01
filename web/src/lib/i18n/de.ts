@@ -276,8 +276,10 @@ export const de: Dict = {
   'settings.config.desc':
     'Die vollständige Hermes-Konfiguration. Fehler hier können den Agenten stören — mit Bedacht bearbeiten.',
   'settings.config.empty': '(leer)',
+  'settings.config.commentsWarning':
+    'Speichern schreibt die Datei aus ihrem geparsten Inhalt neu — die {count} Kommentarzeilen darin gehören nicht dazu und sind danach weg.',
   'settings.config.overwriteConfirm':
-    'Konfiguration überschreiben? Ungültiges YAML kann den Agenten beeinträchtigen.',
+    'Konfiguration überschreiben? Kaputtes YAML wird abgelehnt; das Risiko ist also eine gültige Datei mit ungewollter Aussage — und die Kommentare überleben nicht.',
   'settings.security': 'Sicherheit',
   'settings.security.desc': 'Zugang zum Control Center selbst.',
   'settings.security.password':

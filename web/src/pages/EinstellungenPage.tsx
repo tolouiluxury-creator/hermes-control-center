@@ -354,7 +354,6 @@ function EnvRow({
   onDelete: () => void;
 }) {
   const { t } = useI18n();
-  const [value, setValue] = useState('');
 
   return (
     <li className="border-b border-[var(--color-hairline)] px-3 py-2.5 last:border-b-0">
@@ -401,38 +400,65 @@ function EnvRow({
       </div>
 
       {editing && (
-        <form
-          className="mt-2 flex flex-wrap items-center gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (value.trim() !== '') onSave(value);
-          }}
-        >
-          <input
-            type={entry.isPassword ? 'password' : 'text'}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            autoFocus
-            placeholder={t('settings.env.valueFor', { key: entry.key })}
-            className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
-          />
-          <button
-            type="submit"
-            disabled={pending || value.trim() === ''}
-            className="rounded-lg bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)] disabled:opacity-40"
-          >
-            Speichern
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg px-3 py-1.5 text-xs text-[var(--color-ink-muted)]"
-          >
-            Abbrechen
-          </button>
-        </form>
+        <EnvValueForm entry={entry} pending={pending} onSave={onSave} onCancel={onCancel} />
       )}
     </li>
+  );
+}
+
+/**
+ * The value field for one variable.
+ *
+ * Its own component on purpose: it holds a secret in state, and mounting it
+ * only while the row is open means cancelling or saving unmounts it and the
+ * typed value is gone. Kept on the row instead, the next "Change" click would
+ * hand the previous secret back.
+ */
+function EnvValueForm({
+  entry,
+  pending,
+  onSave,
+  onCancel,
+}: {
+  entry: EnvVar;
+  pending: boolean;
+  onSave: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useI18n();
+  const [value, setValue] = useState('');
+
+  return (
+    <form
+      className="mt-2 flex flex-wrap items-center gap-2"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (value.trim() !== '') onSave(value);
+      }}
+    >
+      <input
+        type={entry.isPassword ? 'password' : 'text'}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        autoFocus
+        placeholder={t('settings.env.valueFor', { key: entry.key })}
+        className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+      />
+      <button
+        type="submit"
+        disabled={pending || value.trim() === ''}
+        className="rounded-lg bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)] disabled:opacity-40"
+      >
+        {t('common.save')}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="rounded-lg px-3 py-1.5 text-xs text-[var(--color-ink-muted)]"
+      >
+        {t('common.cancel')}
+      </button>
+    </form>
   );
 }
 
@@ -608,6 +634,20 @@ function ConfigSection() {
     staleTime: 30_000,
   });
 
+  /**
+   * How many comment lines a save would drop.
+   *
+   * Reading returns the file verbatim, but Hermes parses the submitted YAML and
+   * re-serialises the resulting mapping (`save_config` → `atomic_yaml_write`).
+   * Comments live in the text, not in the mapping, so they do not survive the
+   * round trip — and Hermes' config ships with long explanatory blocks. Naming
+   * the number beats a vague "edit with care".
+   */
+  const comments = useMemo(
+    () => (data?.yaml ?? '').split('\n').filter((line) => line.trimStart().startsWith('#')).length,
+    [data?.yaml],
+  );
+
   const save = useMutation({
     mutationFn: (yaml: string) => saveConfigRaw(yaml),
     onSuccess: async () => {
@@ -660,14 +700,14 @@ function ConfigSection() {
                     onClick={() => setConfirm(true)}
                     className="rounded-lg bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)]"
                   >
-                    Speichern
+                    {t('common.save')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditing(false)}
                     className="rounded-lg px-3 py-1.5 text-xs text-[var(--color-ink-muted)]"
                   >
-                    Abbrechen
+                    {t('common.cancel')}
                   </button>
                 </div>
               )}
@@ -675,8 +715,13 @@ function ConfigSection() {
           ) : (
             <>
               <pre className="max-h-72 overflow-auto rounded-lg bg-[var(--color-base)] p-3 font-mono text-xs whitespace-pre-wrap text-[var(--color-ink-muted)]">
-                {data?.yaml || '(leer)'}
+                {data?.yaml || t('settings.config.empty')}
               </pre>
+              {comments > 0 && (
+                <p className="mt-2 text-xs text-[var(--color-warn)]">
+                  {t('settings.config.commentsWarning', { count: comments })}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -685,7 +730,7 @@ function ConfigSection() {
                 }}
                 className="mt-2 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
               >
-                Bearbeiten
+                {t('common.edit')}
               </button>
             </>
           )}
