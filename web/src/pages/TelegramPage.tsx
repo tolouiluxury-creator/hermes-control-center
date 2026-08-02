@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { ExternalLink, MessagesSquare, Radio, Send, UserRound } from 'lucide-react';
 import {
-  getChatHistory,
   getMessaging,
   getProfiles,
   getSessionsBySource,
@@ -19,6 +18,7 @@ import { ChipMenu, type ChipMenuOption } from '@/components/ChipMenu';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
+import { useResumedChat } from '@/lib/useResumedChat';
 
 /**
  * Everything about the Telegram bot in one place: how it is wired up, and what
@@ -79,11 +79,10 @@ export function TelegramPage() {
     staleTime: 30_000,
   });
 
-  const history = useQuery({
-    queryKey: ['telegram', 'history', openId, profile],
-    queryFn: () => getChatHistory(openId ?? '', profile),
-    enabled: openId !== null,
-  });
+  const chat = useResumedChat(openId, profile, (error) =>
+    toast.push({ tone: 'error', title: t('chat.sendFailed'), description: error.message }),
+  );
+  const [draft, setDraft] = useState('');
 
   const telegram = messaging.data?.platforms.find((entry) => entry.id === 'telegram') ?? null;
 
@@ -259,36 +258,66 @@ export function TelegramPage() {
                     </button>
                   </div>
 
-                  {history.isPending ? (
-                    <SkeletonText lines={8} />
-                  ) : history.error ? (
-                    <p className="text-sm text-[var(--color-danger)]" role="alert">
-                      {history.error.message}
-                    </p>
-                  ) : (
-                    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
-                      {(history.data?.messages ?? []).map((message, index) => (
+                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+                    {chat.messages.map((message, index) => (
+                      <div
+                        key={index}
+                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
                         <div
-                          key={index}
-                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
+                            message.role === 'user'
+                              ? 'bg-[var(--color-accent)]/15'
+                              : 'bg-[var(--color-raised)]'
+                          }`}
                         >
-                          <div
-                            className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
-                              message.role === 'user'
-                                ? 'bg-[var(--color-accent)]/15'
-                                : 'bg-[var(--color-raised)]'
-                            }`}
-                          >
-                            {message.text}
-                          </div>
+                          {message.text}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    ))}
+                  </div>
 
-                  <p className="mt-3 border-t border-[var(--color-hairline)] pt-2 text-[0.7rem] text-[var(--color-ink-faint)]">
-                    {t('telegram.readOnlyNote')}
-                  </p>
+                  <form
+                    className="mt-3 border-t border-[var(--color-hairline)] pt-3"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const text = draft;
+                      setDraft('');
+                      void chat.send(text);
+                    }}
+                  >
+                    <div className="flex items-end gap-2">
+                      <textarea
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            const text = draft;
+                            setDraft('');
+                            void chat.send(text);
+                          }
+                        }}
+                        rows={2}
+                        placeholder={t('telegram.replyPlaceholder')}
+                        aria-label={t('telegram.replyLabel')}
+                        className="min-h-0 flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 text-sm outline-none focus-visible:border-[var(--color-accent)]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={chat.streaming || draft.trim() === ''}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] disabled:opacity-40"
+                      >
+                        <Send size={13} aria-hidden />
+                        {chat.streaming ? t('common.running') : t('telegram.reply')}
+                      </button>
+                    </div>
+                    {/* The one thing a message box on a Telegram page must not
+                        leave unsaid: this does not reach Telegram. */}
+                    <p className="mt-2 text-[0.7rem] text-[var(--color-warn)]">
+                      {t('telegram.replyStaysHere')}
+                    </p>
+                  </form>
                 </>
               )}
             </div>

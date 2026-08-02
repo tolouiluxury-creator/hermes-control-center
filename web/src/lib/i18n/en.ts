@@ -161,8 +161,11 @@ export const en: Dict = {
   'telegram.pickChat': 'Pick a conversation to read it.',
   'telegram.unknownChat': 'Unknown chat',
   'telegram.continueHere': 'Continue here',
-  'telegram.readOnlyNote':
-    'Reading only. Replying over Telegram is the bot’s job — “Continue here” carries the conversation on in the chat area instead, where the answer stays.',
+  'telegram.reply': 'Reply',
+  'telegram.replyPlaceholder': 'carry the conversation on here …',
+  'telegram.replyLabel': 'Continue this conversation',
+  'telegram.replyStaysHere':
+    'The answer appears here, not in Telegram — the control center has no delivery path to any platform. It does land in the same conversation the bot reads, so the next Telegram message sees it as history.',
   'telegram.enabled': 'Telegram switched on',
   'telegram.disabled': 'Telegram switched off',
   'telegram.disableConfirm':

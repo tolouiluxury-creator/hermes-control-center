@@ -163,8 +163,11 @@ export const de: Dict = {
   'telegram.pickChat': 'Wähle eine Unterhaltung zum Lesen.',
   'telegram.unknownChat': 'Unbekannter Chat',
   'telegram.continueHere': 'Hier fortsetzen',
-  'telegram.readOnlyNote':
-    'Nur lesend. Das Antworten über Telegram ist Sache des Bots — „Hier fortsetzen“ führt die Unterhaltung stattdessen im Chat-Bereich weiter, wo die Antwort auch bleibt.',
+  'telegram.reply': 'Antworten',
+  'telegram.replyPlaceholder': 'Unterhaltung hier fortführen …',
+  'telegram.replyLabel': 'Diese Unterhaltung fortsetzen',
+  'telegram.replyStaysHere':
+    'Die Antwort erscheint hier, nicht in Telegram — das Control Center hat keinen Auslieferungsweg zu einer Plattform. Sie landet aber in derselben Unterhaltung, die der Bot liest; die nächste Telegram-Nachricht sieht sie als Vorgeschichte.',
   'telegram.enabled': 'Telegram eingeschaltet',
   'telegram.disabled': 'Telegram ausgeschaltet',
   'telegram.disableConfirm':
