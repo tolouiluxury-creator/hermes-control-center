@@ -253,6 +253,8 @@ export const de: Dict = {
   'settings.curator.resume': 'Fortsetzen',
   'settings.curator.pause': 'Pausieren',
   'settings.curator.lastRun': 'zuletzt {time}',
+  'settings.curator.otherProfile':
+    'Der Status oben gehört zum Profil „{running}“, mit dem dieses Dashboard läuft. „Jetzt ausführen“ startet dagegen den Kurator des sticky Profils „{sticky}“ — Hermes nimmt bei keinem der beiden Aufrufe ein Profil entgegen, ein Lauf hier verändert die Zahlen oben also nicht.',
   'settings.env': 'Umgebung & Schlüssel',
   'settings.env.desc':
     'API-Schlüssel und Umgebungsvariablen deines Hermes. Werte werden nie im Klartext angezeigt.',

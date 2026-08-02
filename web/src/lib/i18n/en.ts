@@ -251,6 +251,8 @@ export const en: Dict = {
   'settings.curator.resume': 'Resume',
   'settings.curator.pause': 'Pause',
   'settings.curator.lastRun': 'last run {time}',
+  'settings.curator.otherProfile':
+    'The status above is profile “{running}”, the one this dashboard runs as. “Run now” runs the curator for the sticky profile “{sticky}” instead — Hermes takes no profile on either call, so a run here will not change the figures above.',
   'settings.env': 'Environment & keys',
   'settings.env.desc':
     'API keys and environment variables of your Hermes. Values are never shown in clear text.',

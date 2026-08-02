@@ -6,6 +6,7 @@ import {
   getConfigRaw,
   getCurator,
   getEnv,
+  getProfiles,
   getToolsets,
   getUpdate,
   queryKeys,
@@ -225,6 +226,28 @@ function MaintenanceSection() {
   const { t, lang } = useI18n();
   const update = useQuery({ queryKey: queryKeys.update, queryFn: getUpdate, staleTime: 300_000 });
   const curator = useQuery({ queryKey: queryKeys.curator, queryFn: getCurator, staleTime: 60_000 });
+  const profiles = useQuery({
+    queryKey: queryKeys.profiles,
+    queryFn: getProfiles,
+    staleTime: 30_000,
+  });
+
+  /**
+   * Whether "Run now" and the status above it are about the same profile.
+   *
+   * They need not be. `GET /api/curator` answers from the dashboard's own
+   * process, so it reports the profile the dashboard runs as. `POST
+   * /api/curator/run` spawns `hermes curator run` with no `-p`, so it picks up
+   * the sticky profile. Neither endpoint accepts a profile, so this cannot be
+   * steered from here — only said out loud. Verified on a server where the two
+   * differ: the run reported `checked=71`, the sticky profile's skill count,
+   * while the card kept showing the other profile's untouched "last run".
+   */
+  const runsElsewhere =
+    profiles.data != null &&
+    profiles.data.active != null &&
+    profiles.data.current != null &&
+    profiles.data.active !== profiles.data.current;
 
   const invalidateCurator = () => queryClient.invalidateQueries({ queryKey: queryKeys.curator });
 
@@ -319,6 +342,14 @@ function MaintenanceSection() {
                     : t('settings.curator.pause')}
                 </button>
               </div>
+              {runsElsewhere && (
+                <p className="mt-2 text-xs text-[var(--color-warn)]">
+                  {t('settings.curator.otherProfile', {
+                    running: profiles.data?.current ?? '',
+                    sticky: profiles.data?.active ?? '',
+                  })}
+                </p>
+              )}
             </>
           )}
         </div>
