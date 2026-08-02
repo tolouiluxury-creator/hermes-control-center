@@ -54,7 +54,11 @@ function ProviderConfigForm({ name, onClose }: { name: string; onClose: () => vo
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.memory });
       await queryClient.invalidateQueries({ queryKey: queryKeys.memoryProviderConfig(name) });
-      setEdits({});
+      // Closing is the visible half of the answer. Clearing the edits and
+      // re-reading the stored values leaves the form looking exactly as it did
+      // before the click, so a form that stays open reads as "nothing happened"
+      // — every other form here closes on success.
+      onClose();
       toast.push({ tone: 'success', title: t('wissen.config.saved', { name }) });
     },
     onError: (error: Error) =>
