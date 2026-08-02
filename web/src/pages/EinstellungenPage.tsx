@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Monitor, Moon, Sun } from 'lucide-react';
+import { KeyRound, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import {
   deleteEnv,
   getConfigRaw,
@@ -18,6 +18,7 @@ import {
 import { FilterChips, PageShell, SearchField } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
+import { ChipMenu, type ChipMenuOption } from '@/components/ChipMenu';
 import { useToast } from '@/components/Toast';
 import { useTheme, type ThemePreference } from '@/lib/theme';
 import { useI18n, LANGUAGES } from '@/lib/i18n';
@@ -494,6 +495,15 @@ function EnvValueForm({
   );
 }
 
+/**
+ * The variables and secrets of one profile's `.env`.
+ *
+ * Profile-scoped on purpose. Every profile keeps its own `.env`, and the
+ * profile the dashboard was launched with is not necessarily the one whose
+ * gateway is running — on a real install those differ. Writing
+ * `TELEGRAM_ALLOWED_USERS` into the wrong one is a lock on a door nobody uses:
+ * the list looks set, and the bot keeps answering everybody.
+ */
 function EnvSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -502,17 +512,31 @@ function EnvSection() {
   const [category, setCategory] = useState<string>('gesetzt');
   const [editing, setEditing] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** Null means the profile the dashboard runs as. */
+  const [profile, setProfile] = useState<string | null>(null);
+
+  const profiles = useQuery({
+    queryKey: queryKeys.profiles,
+    queryFn: getProfiles,
+    staleTime: 60_000,
+  });
 
   const { data, isPending, error } = useQuery({
-    queryKey: queryKeys.env,
-    queryFn: getEnv,
+    queryKey: queryKeys.envFor(profile),
+    queryFn: () => getEnv(profile),
     staleTime: 30_000,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.env });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.envFor(profile) });
+
+  const profileOptions: ChipMenuOption[] = (profiles.data?.profiles ?? []).map((entry) => ({
+    value: entry.name === profiles.data?.current ? '' : entry.name,
+    label: entry.name,
+    hint: entry.gatewayRunning ? t('telegram.gatewayUp') : null,
+  }));
 
   const save = useMutation({
-    mutationFn: ({ key, value }: { key: string; value: string }) => setEnv(key, value),
+    mutationFn: ({ key, value }: { key: string; value: string }) => setEnv(key, value, profile),
     onSuccess: async (_r, variables) => {
       setEditing(null);
       await invalidate();
@@ -523,7 +547,7 @@ function EnvSection() {
   });
 
   const remove = useMutation({
-    mutationFn: (key: string) => deleteEnv(key),
+    mutationFn: (key: string) => deleteEnv(key, profile),
     onSuccess: async (_r, key) => {
       setConfirmDelete(null);
       await invalidate();
@@ -556,6 +580,25 @@ function EnvSection() {
 
   return (
     <Section title={t('settings.env')} description={t('settings.env.desc')}>
+      {profileOptions.length > 1 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <ChipMenu
+            icon={<UserRound size={12} />}
+            label={profile ?? profiles.data?.current ?? '—'}
+            title={t('settings.env.profileTitle')}
+            options={profileOptions}
+            value={profile ?? ''}
+            onChange={(value) => {
+              setProfile(value === '' ? null : value);
+              setEditing(null);
+              setConfirmDelete(null);
+            }}
+          />
+          <span className="text-xs text-[var(--color-ink-faint)]">
+            {t('settings.env.profileNote')}
+          </span>
+        </div>
+      )}
       {isPending ? (
         <SkeletonText lines={5} />
       ) : error ? (

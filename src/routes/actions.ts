@@ -206,11 +206,16 @@ const cronUpdateSchema = z.object({
     .refine((updates) => Object.keys(updates).length > 0, { message: 'Nothing to change.' }),
 });
 
+/** `profile` picks which `.env` is written; empty means the launch profile. */
 const envSetSchema = z.object({
   key: z.string().trim().min(1),
   value: z.string(),
+  profile: z.string().trim().max(64).optional(),
 });
-const envDeleteSchema = z.object({ key: z.string().trim().min(1) });
+const envDeleteSchema = z.object({
+  key: z.string().trim().min(1),
+  profile: z.string().trim().max(64).optional(),
+});
 const pausedSchema = z.object({ paused: z.boolean() });
 
 /**
@@ -417,8 +422,10 @@ export async function registerActionRoutes(
     const input = parse(reply, envSetSchema, request.body);
     if (!input) return reply;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.setEnv(input.key, input.value);
-      cache.invalidate(CACHE_KEYS.env);
+      const result = await ctx.dashboard.setEnv(input.key, input.value, input.profile);
+      // Every profile's list is cached under its own key; a write to one of them
+      // must not leave the others serving a stale read.
+      cache.invalidatePrefix(CACHE_KEYS.env);
       return result;
     });
   });
@@ -427,8 +434,8 @@ export async function registerActionRoutes(
     const input = parse(reply, envDeleteSchema, request.body);
     if (!input) return reply;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.deleteEnv(input.key);
-      cache.invalidate(CACHE_KEYS.env);
+      const result = await ctx.dashboard.deleteEnv(input.key, input.profile);
+      cache.invalidatePrefix(CACHE_KEYS.env);
       return result;
     });
   });

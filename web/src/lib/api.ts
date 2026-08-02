@@ -202,18 +202,32 @@ export const testPlatform = (id: string, profile?: string | null): Promise<TestR
 
 // --- Settings ---------------------------------------------------------------
 
-export const getEnv = (): Promise<EnvVar[]> => apiRequest<EnvVar[]>('/hermes/env');
+export const getEnv = (profile?: string | null): Promise<EnvVar[]> =>
+  apiRequest<EnvVar[]>(
+    profile ? `/hermes/env?profile=${encodeURIComponent(profile)}` : '/hermes/env',
+  );
 export const getConfigRaw = (): Promise<ConfigRaw> => apiRequest<ConfigRaw>('/hermes/config/raw');
 export const getCurator = (): Promise<CuratorStatus> =>
   apiRequest<CuratorStatus>('/hermes/curator');
 export const getUpdate = (): Promise<UpdateStatus> => apiRequest<UpdateStatus>('/hermes/update');
 export const getToolsets = (): Promise<Toolset[]> => apiRequest<Toolset[]>('/hermes/toolsets');
 
-export const setEnv = (key: string, value: string): Promise<ActionResult> =>
-  apiRequest<ActionResult>('/hermes/env', { method: 'PUT', ...jsonBody({ key, value }) });
+/** Writes into `profile`'s own .env; empty means the profile the dashboard runs as. */
+export const setEnv = (
+  key: string,
+  value: string,
+  profile?: string | null,
+): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/env', {
+    method: 'PUT',
+    ...jsonBody({ key, value, ...(profile ? { profile } : {}) }),
+  });
 
-export const deleteEnv = (key: string): Promise<ActionResult> =>
-  apiRequest<ActionResult>('/hermes/env', { method: 'DELETE', ...jsonBody({ key }) });
+export const deleteEnv = (key: string, profile?: string | null): Promise<ActionResult> =>
+  apiRequest<ActionResult>('/hermes/env', {
+    method: 'DELETE',
+    ...jsonBody({ key, ...(profile ? { profile } : {}) }),
+  });
 
 export const setCuratorPaused = (paused: boolean): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/curator/paused', { method: 'PUT', ...jsonBody({ paused }) });
@@ -746,7 +760,7 @@ export const queryKeys = {
   messagingFor: (profile: string | null) => ['hermes', 'messaging', profile ?? ''] as const,
   webhooks: ['hermes', 'webhooks'] as const,
   pairing: ['hermes', 'pairing'] as const,
-  env: ['hermes', 'env'] as const,
+  envFor: (profile: string | null) => ['hermes', 'env', profile ?? ''] as const,
   configRaw: ['hermes', 'config', 'raw'] as const,
   curator: ['hermes', 'curator'] as const,
   update: ['hermes', 'update'] as const,

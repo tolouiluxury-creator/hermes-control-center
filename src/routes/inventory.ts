@@ -137,9 +137,13 @@ export async function registerInventoryRoutes(
     guard(reply, () => cache.get(CACHE_KEYS.pairing, () => ctx.dashboard.pairing())),
   );
 
-  app.get('/api/hermes/env', async (_request, reply) =>
-    guard(reply, () => cache.get(CACHE_KEYS.env, () => ctx.dashboard.env())),
-  );
+  app.get('/api/hermes/env', async (request, reply) => {
+    const profile =
+      (request.query as { profile?: string } | undefined)?.profile?.trim() || undefined;
+    return guard(reply, () =>
+      cache.get(`${CACHE_KEYS.env}:${profile ?? ''}`, () => ctx.dashboard.env(profile)),
+    );
+  });
 
   app.get('/api/hermes/config/raw', async (_request, reply) =>
     guard(reply, () => cache.get(CACHE_KEYS.configRaw, () => ctx.dashboard.configRaw())),

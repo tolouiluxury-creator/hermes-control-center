@@ -784,8 +784,17 @@ export class DashboardClient {
 
   // --- Settings: reads ------------------------------------------------------
 
-  env(options?: RequestOptions): Promise<EnvVar[]> {
-    return this.client.json(envSchema, '/api/env', options).then(normalizeEnv);
+  /**
+   * The profile's environment variables.
+   *
+   * `profile` is not decoration: every profile has its own `.env`, and the one
+   * the dashboard was launched with need not be the one whose gateway is
+   * running. `TELEGRAM_ALLOWED_USERS` written into the wrong profile is a lock
+   * on a door nobody uses — the bot keeps answering everyone.
+   */
+  env(profile?: string, options?: RequestOptions): Promise<EnvVar[]> {
+    const path = profile ? `/api/env?profile=${encodeURIComponent(profile)}` : '/api/env';
+    return this.client.json(envSchema, path, options).then(normalizeEnv);
   }
 
   configRaw(options?: RequestOptions): Promise<ConfigRaw> {
@@ -958,19 +967,24 @@ export class DashboardClient {
 
   // --- Settings: writes -----------------------------------------------------
 
-  setEnv(key: string, value: string, options?: RequestOptions): Promise<ActionResult> {
+  setEnv(
+    key: string,
+    value: string,
+    profile?: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
     return this.client.json(actionResultSchema, '/api/env', {
       ...options,
       method: 'PUT',
-      body: { key, value },
+      body: { key, value, ...(profile ? { profile } : {}) },
     });
   }
 
-  deleteEnv(key: string, options?: RequestOptions): Promise<ActionResult> {
+  deleteEnv(key: string, profile?: string, options?: RequestOptions): Promise<ActionResult> {
     return this.client.json(actionResultSchema, '/api/env', {
       ...options,
       method: 'DELETE',
-      body: { key },
+      body: { key, ...(profile ? { profile } : {}) },
     });
   }
 

@@ -256,6 +256,9 @@ export const fa: Dict = {
   'settings.env.valueFor': 'مقدار برای {key}',
   'settings.env.removeConfirm': '{key} حذف شود؟ مقدار از دست می‌رود.',
   'settings.env.searchLabel': 'جستجوی متغیرها',
+  'settings.env.profileTitle': 'فایل ‎.env کدام پروفایل نشان داده و نوشته می‌شود',
+  'settings.env.profileNote':
+    'هر پروفایل ‎.env خودش را دارد. مقداری که این‌جا تنظیم شود تنها به همین پروفایل می‌رسد — و در نتیجه تنها به رباتی که زیر آن اجرا می‌شود.',
   'settings.env.scope': 'حوزه',
   'settings.env.scope.set': 'تنظیم‌شده',
   'settings.env.savedToast': '{key} ذخیره شد',

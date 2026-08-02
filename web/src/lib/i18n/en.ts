@@ -259,6 +259,9 @@ export const en: Dict = {
   'settings.env.valueFor': 'Value for {key}',
   'settings.env.removeConfirm': 'Remove {key}? The value is lost.',
   'settings.env.searchLabel': 'Search variables',
+  'settings.env.profileTitle': 'Which profile’s .env is shown and written',
+  'settings.env.profileNote':
+    'Each profile keeps its own .env. A value set here reaches only this profile — including the bot running under it.',
   'settings.env.scope': 'Area',
   'settings.env.scope.set': 'Set',
   'settings.env.savedToast': '{key} saved',
