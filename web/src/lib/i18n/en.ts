@@ -261,16 +261,11 @@ export const en: Dict = {
   'settings.curator.pausedToast': 'Curator paused',
   'settings.curator.resumedToast': 'Curator resumed',
   'settings.curator.startedToast': 'Curator started',
-  'settings.config.savedToast': 'Configuration saved',
   'settings.env.limited': 'Only the first 100 are shown — search to find more.',
   'settings.config': 'Raw configuration (YAML)',
   'settings.config.desc':
-    'The full Hermes configuration. Mistakes here can disturb the agent — edit with care.',
+    'The full Hermes configuration, as it stands on disk. Read-only here — it is edited on the server, in a terminal.',
   'settings.config.empty': '(empty)',
-  'settings.config.commentsWarning':
-    'Saving rewrites the file from its parsed contents — the {count} comment lines in it are not part of that and will be gone.',
-  'settings.config.overwriteConfirm':
-    'Overwrite the configuration? Broken YAML is refused, so the risk is a valid file that says something you did not mean — and the comments do not survive.',
   'settings.security': 'Security',
   'settings.security.desc': 'Access to the control center itself.',
   'settings.security.password':

@@ -11,7 +11,6 @@ import {
   getUpdate,
   queryKeys,
   runCurator,
-  saveConfigRaw,
   setCuratorPaused,
   setEnv,
   toggleToolset,
@@ -653,44 +652,22 @@ function EnvSection() {
 
 // --- Raw config -------------------------------------------------------------
 
+/**
+ * The Hermes configuration, shown and not editable.
+ *
+ * Editing used to live here and was removed on purpose: the file is edited on
+ * the server, in a terminal. A web editor could only write it the way Hermes
+ * writes it — parse the text and re-serialise the mapping — which silently
+ * dropped every comment in the file, and Hermes ships long explanatory blocks.
+ * Reading is verbatim (`path.read_text()`), so what stands here is the file.
+ */
 function ConfigSection() {
-  const queryClient = useQueryClient();
-  const toast = useToast();
   const { t } = useI18n();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [confirm, setConfirm] = useState(false);
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.configRaw,
     queryFn: getConfigRaw,
     staleTime: 30_000,
-  });
-
-  /**
-   * How many comment lines a save would drop.
-   *
-   * Reading returns the file verbatim, but Hermes parses the submitted YAML and
-   * re-serialises the resulting mapping (`save_config` → `atomic_yaml_write`).
-   * Comments live in the text, not in the mapping, so they do not survive the
-   * round trip — and Hermes' config ships with long explanatory blocks. Naming
-   * the number beats a vague "edit with care".
-   */
-  const comments = useMemo(
-    () => (data?.yaml ?? '').split('\n').filter((line) => line.trimStart().startsWith('#')).length,
-    [data?.yaml],
-  );
-
-  const save = useMutation({
-    mutationFn: (yaml: string) => saveConfigRaw(yaml),
-    onSuccess: async () => {
-      setConfirm(false);
-      setEditing(false);
-      await queryClient.invalidateQueries({ queryKey: queryKeys.configRaw });
-      toast.push({ tone: 'success', title: t('settings.config.savedToast') });
-    },
-    onError: (e: Error) =>
-      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
   });
 
   return (
@@ -708,65 +685,9 @@ function ConfigSection() {
               {data.path}
             </p>
           )}
-          {editing ? (
-            <>
-              <textarea
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={18}
-                spellCheck={false}
-                className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-3 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
-              />
-              {confirm ? (
-                <ConfirmInline
-                  tone="danger"
-                  message={t('settings.config.overwriteConfirm')}
-                  confirmLabel={t('common.save')}
-                  pending={save.isPending}
-                  onConfirm={() => save.mutate(draft)}
-                  onCancel={() => setConfirm(false)}
-                />
-              ) : (
-                <div className="mt-2 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setConfirm(true)}
-                    className="rounded-lg bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)]"
-                  >
-                    {t('common.save')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditing(false)}
-                    className="rounded-lg px-3 py-1.5 text-xs text-[var(--color-ink-muted)]"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <pre className="max-h-72 overflow-auto rounded-lg bg-[var(--color-base)] p-3 font-mono text-xs whitespace-pre-wrap text-[var(--color-ink-muted)]">
-                {data?.yaml || t('settings.config.empty')}
-              </pre>
-              {comments > 0 && (
-                <p className="mt-2 text-xs text-[var(--color-warn)]">
-                  {t('settings.config.commentsWarning', { count: comments })}
-                </p>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setDraft(data?.yaml ?? '');
-                  setEditing(true);
-                }}
-                className="mt-2 rounded-lg border border-[var(--color-hairline)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
-              >
-                {t('common.edit')}
-              </button>
-            </>
-          )}
+          <pre className="max-h-72 overflow-auto rounded-lg bg-[var(--color-base)] p-3 font-mono text-xs whitespace-pre-wrap text-[var(--color-ink-muted)]">
+            {data?.yaml || t('settings.config.empty')}
+          </pre>
         </div>
       )}
     </Section>

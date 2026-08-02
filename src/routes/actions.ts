@@ -211,7 +211,6 @@ const envSetSchema = z.object({
   value: z.string(),
 });
 const envDeleteSchema = z.object({ key: z.string().trim().min(1) });
-const configRawSchema = z.object({ yaml: z.string() });
 const pausedSchema = z.object({ paused: z.boolean() });
 
 /**
@@ -430,19 +429,6 @@ export async function registerActionRoutes(
     return guard(reply, async () => {
       const result = await ctx.dashboard.deleteEnv(input.key);
       cache.invalidate(CACHE_KEYS.env);
-      return result;
-    });
-  });
-
-  // --- Raw config -----------------------------------------------------------
-
-  app.put('/api/hermes/config/raw', async (request, reply) => {
-    const input = parse(reply, configRawSchema, request.body);
-    if (!input) return reply;
-    return guard(reply, async () => {
-      const result = await ctx.dashboard.saveConfigRaw(input.yaml);
-      // A config change can ripple into almost anything the dashboard reports.
-      cache.clear();
       return result;
     });
   });

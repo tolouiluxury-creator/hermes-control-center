@@ -974,14 +974,6 @@ export class DashboardClient {
     });
   }
 
-  saveConfigRaw(yamlText: string, options?: RequestOptions): Promise<ActionResult> {
-    return this.client.json(actionResultSchema, '/api/config/raw', {
-      ...options,
-      method: 'PUT',
-      body: { yaml_text: yamlText },
-    });
-  }
-
   setCuratorPaused(paused: boolean, options?: RequestOptions): Promise<ActionResult> {
     return this.client.json(actionResultSchema, '/api/curator/paused', {
       ...options,

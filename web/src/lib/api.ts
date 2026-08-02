@@ -215,9 +215,6 @@ export const setEnv = (key: string, value: string): Promise<ActionResult> =>
 export const deleteEnv = (key: string): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/env', { method: 'DELETE', ...jsonBody({ key }) });
 
-export const saveConfigRaw = (yaml: string): Promise<ActionResult> =>
-  apiRequest<ActionResult>('/hermes/config/raw', { method: 'PUT', ...jsonBody({ yaml }) });
-
 export const setCuratorPaused = (paused: boolean): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/curator/paused', { method: 'PUT', ...jsonBody({ paused }) });
 

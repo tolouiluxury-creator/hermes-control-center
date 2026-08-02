@@ -263,16 +263,11 @@ export const de: Dict = {
   'settings.curator.pausedToast': 'Kurator pausiert',
   'settings.curator.resumedToast': 'Kurator fortgesetzt',
   'settings.curator.startedToast': 'Kurator gestartet',
-  'settings.config.savedToast': 'Konfiguration gespeichert',
   'settings.env.limited': 'Nur die ersten 100 werden gezeigt — suche, um weitere zu finden.',
   'settings.config': 'Rohkonfiguration (YAML)',
   'settings.config.desc':
-    'Die vollständige Hermes-Konfiguration. Fehler hier können den Agenten stören — mit Bedacht bearbeiten.',
+    'Die vollständige Hermes-Konfiguration, so wie sie auf der Platte steht. Hier nur zum Ansehen — bearbeitet wird sie auf dem Server, im Terminal.',
   'settings.config.empty': '(leer)',
-  'settings.config.commentsWarning':
-    'Speichern schreibt die Datei aus ihrem geparsten Inhalt neu — die {count} Kommentarzeilen darin gehören nicht dazu und sind danach weg.',
-  'settings.config.overwriteConfirm':
-    'Konfiguration überschreiben? Kaputtes YAML wird abgelehnt; das Risiko ist also eine gültige Datei mit ungewollter Aussage — und die Kommentare überleben nicht.',
   'settings.security': 'Sicherheit',
   'settings.security.desc': 'Zugang zum Control Center selbst.',
   'settings.security.password':
