@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { ExternalLink, MessagesSquare, Radio, Send, UserRound } from 'lucide-react';
@@ -83,6 +83,21 @@ export function TelegramPage() {
     toast.push({ tone: 'error', title: t('chat.sendFailed'), description: error.message }),
   );
   const [draft, setDraft] = useState('');
+  const threadRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // A conversation opens at its newest message, the way every chat does, and
+  // keeps the newest in view as tokens arrive. Without this a 391-message
+  // history opens at its oldest line and buries the reply box.
+  useEffect(() => {
+    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
+  }, [chat.messages, chat.streaming]);
+
+  // Opening a conversation is already the gesture that says "I want to write
+  // here", so it should not also cost a click into the field.
+  useEffect(() => {
+    if (openId) inputRef.current?.focus();
+  }, [openId]);
 
   const telegram = messaging.data?.platforms.find((entry) => entry.id === 'telegram') ?? null;
 
@@ -179,8 +194,8 @@ export function TelegramPage() {
             onTest={() => test.mutate()}
           />
 
-          <section className="mt-4 grid gap-4 lg:grid-cols-[18rem_1fr]">
-            <div className="card p-3">
+          <section className="mt-4 grid gap-4 lg:h-[calc(100vh-22rem)] lg:min-h-[30rem] lg:grid-cols-[18rem_1fr]">
+            <div className="card flex min-h-0 flex-col overflow-y-auto p-3">
               <p className="mb-2 text-xs font-medium">{t('telegram.conversations')}</p>
               {sessions.isPending ? (
                 <SkeletonText lines={4} />
@@ -225,7 +240,11 @@ export function TelegramPage() {
               )}
             </div>
 
-            <div className="card flex min-h-[24rem] flex-col p-4">
+            {/* Bounded at every width, not just on a wide screen: an unbounded
+                transcript grows the page instead of scrolling itself, and
+                pushes the reply box below the fold — which is exactly what a
+                391-message history did. */}
+            <div className="card flex h-[70dvh] flex-col p-4 lg:h-auto lg:min-h-0">
               {openId === null ? (
                 <div className="grid flex-1 place-items-center text-center">
                   <div>
@@ -258,7 +277,7 @@ export function TelegramPage() {
                     </button>
                   </div>
 
-                  <div className="min-h-0 flex-1 space-y-3 overflow-y-auto">
+                  <div ref={threadRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto">
                     {chat.messages.map((message, index) => (
                       <div
                         key={index}
@@ -298,6 +317,7 @@ export function TelegramPage() {
                             void chat.send(text);
                           }
                         }}
+                        ref={inputRef}
                         rows={2}
                         placeholder={t('telegram.replyPlaceholder')}
                         aria-label={t('telegram.replyLabel')}
