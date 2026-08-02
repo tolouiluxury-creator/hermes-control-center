@@ -149,6 +149,11 @@ export const fa: Dict = {
   'telegram.envNote':
     'این‌ها در فایل .env نمایه قرار دارند. این صفحه فقط می‌گوید مقداری هست یا نه — نه اینکه چیست.',
   'telegram.gatewayUp': 'دروازه در حال اجرا',
+  'telegram.gateway': 'دروازه',
+  'telegram.gatewayYes': 'در حال اجرا',
+  'telegram.gatewayNo': 'اجرا نمی‌شود',
+  'telegram.onWithoutGateway':
+    'روشن است، اما برای این پروفایل هیچ دروازه‌ای اجرا نمی‌شود — کسی آن را عملی نمی‌کند، پس ربات پاسخی نمی‌دهد. دروازه روی سرور راه‌اندازی می‌شود.',
   'telegram.conversations': 'گفتگوها',
   'telegram.noChats': 'هنوز چیزی از راه ربات در این نمایه نیامده است.',
   'telegram.pickChat': 'یک گفتگو را برای خواندن انتخاب کنید.',
@@ -583,6 +588,8 @@ export const fa: Dict = {
   'integrations.webhooks.secretOnce':
     'کلید امضای {name} — تنها یک بار نشان داده می‌شود. همین حالا رونوشت بگیرید؛ بعداً خواندنی نیست.',
   'integrations.webhooks.secretCopied': 'برداشتم',
+  'integrations.webhooks.copySecret': 'کپی کردن راز',
+  'integrations.webhooks.created': 'مسیر {name} ساخته شد',
   'integrations.pairing.approve': 'تأیید',
   'integrations.pairing.approved': 'کاربر تأیید شد',
   'integrations.pairing.platform': 'پلتفرم',

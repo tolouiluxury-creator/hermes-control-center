@@ -1089,6 +1089,7 @@ export const messagingPlatformsSchema = z.looseObject({
         docs_url: z.string().nullish(),
         enabled: z.boolean().nullish(),
         configured: z.boolean().nullish(),
+        gateway_running: z.boolean().nullish(),
         state: z.string().nullish(),
         error_message: z.string().nullish(),
         // Older Hermes returns a plain chat id; 0.19 returns an object. Accept both.
@@ -1131,6 +1132,14 @@ export interface MessagingPlatform {
   docsUrl: string | null;
   enabled: boolean;
   configured: boolean;
+  /**
+   * Whether a gateway is up to act on any of the above.
+   *
+   * Reported per platform by Hermes and easy to drop, which is exactly what
+   * makes it worth keeping: "switched on" without a running gateway is a bot
+   * that answers nothing, and every other field looks healthy in that state.
+   */
+  gatewayRunning: boolean;
   state: string | null;
   errorMessage: string | null;
   homeChannel: string | null;
@@ -1180,6 +1189,7 @@ export function normalizeMessagingPlatforms(
         docsUrl: platform.docs_url?.trim() || null,
         enabled: platform.enabled === true,
         configured: platform.configured === true,
+        gatewayRunning: platform.gateway_running === true,
         state: platform.state ?? null,
         errorMessage: platform.error_message?.trim() || null,
         homeChannel,

@@ -365,12 +365,24 @@ function ConnectionCard({
         </span>
       </div>
 
-      <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-5">
         <Field label={t('telegram.switchedOn')} value={platform.enabled} />
         <Field label={t('telegram.credentials')} value={platform.configured} />
+        {/* The one that decides whether any of the others matter: switched on
+            without a gateway is a bot that answers nothing. */}
+        <Field
+          label={t('telegram.gateway')}
+          value={platform.gatewayRunning}
+          trueLabel={t('telegram.gatewayYes')}
+          falseLabel={t('telegram.gatewayNo')}
+        />
         <Field label={t('telegram.reportedState')} text={platform.state ?? '—'} />
         <Field label={t('telegram.homeChannel')} text={platform.homeChannel ?? '—'} />
       </dl>
+
+      {platform.enabled && !platform.gatewayRunning && (
+        <p className="mt-2 text-xs text-[var(--color-warn)]">{t('telegram.onWithoutGateway')}</p>
+      )}
 
       {platform.errorMessage && (
         <p className="mt-2 text-xs text-[var(--color-danger)]">{platform.errorMessage}</p>
@@ -426,7 +438,20 @@ function ConnectionCard({
   );
 }
 
-function Field({ label, value, text }: { label: string; value?: boolean; text?: string }) {
+function Field({
+  label,
+  value,
+  text,
+  trueLabel,
+  falseLabel,
+}: {
+  label: string;
+  value?: boolean;
+  text?: string;
+  /** Wording for a boolean that is not about being switched on. */
+  trueLabel?: string;
+  falseLabel?: string;
+}) {
   const { t } = useI18n();
   return (
     <div>
@@ -439,7 +464,11 @@ function Field({ label, value, text }: { label: string; value?: boolean; text?: 
             : { color: value ? 'var(--color-ok)' : 'var(--color-ink-faint)' }
         }
       >
-        {value === undefined ? text : value ? t('common.enabled') : t('common.disabled')}
+        {value === undefined
+          ? text
+          : value
+            ? (trueLabel ?? t('common.enabled'))
+            : (falseLabel ?? t('common.disabled'))}
       </dd>
     </div>
   );

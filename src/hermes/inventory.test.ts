@@ -628,6 +628,19 @@ describe('normalizeMessagingPlatforms', () => {
     });
     expect(bare.platforms[0]?.homeChannel).toBe('@chan');
   });
+
+  // Switched on with no gateway is a bot that answers nothing, and every other
+  // field looks healthy in that state — so this one must survive normalisation.
+  it('keeps whether a gateway is running, and treats a missing flag as not running', () => {
+    const { platforms } = normalizeMessagingPlatforms({
+      platforms: [
+        { id: 'telegram', enabled: true, gateway_running: true },
+        { id: 'discord', enabled: true },
+      ],
+    });
+    expect(platforms.find((p) => p.id === 'telegram')?.gatewayRunning).toBe(true);
+    expect(platforms.find((p) => p.id === 'discord')?.gatewayRunning).toBe(false);
+  });
 });
 
 describe('normalizeWebhooks', () => {

@@ -310,6 +310,8 @@ export interface MessagingPlatform {
   docsUrl: string | null;
   enabled: boolean;
   configured: boolean;
+  /** Whether a gateway is up to act on any of it — "on" without one answers nothing. */
+  gatewayRunning: boolean;
   state: string | null;
   errorMessage: string | null;
   homeChannel: string | null;

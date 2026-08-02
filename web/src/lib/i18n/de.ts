@@ -153,6 +153,11 @@ export const de: Dict = {
   'telegram.envNote':
     'Diese liegen in der .env des Profils und werden unter Einstellungen bearbeitet. Diese Seite meldet, ob ein Wert da ist — nie, welcher.',
   'telegram.gatewayUp': 'Gateway läuft',
+  'telegram.gateway': 'Gateway',
+  'telegram.gatewayYes': 'läuft',
+  'telegram.gatewayNo': 'läuft nicht',
+  'telegram.onWithoutGateway':
+    'Eingeschaltet, aber für dieses Profil läuft kein Gateway — es setzt niemand um, der Bot antwortet also nicht. Das Gateway wird auf dem Server gestartet.',
   'telegram.conversations': 'Unterhaltungen',
   'telegram.noChats': 'In diesem Profil ist noch nichts über den Bot gelaufen.',
   'telegram.pickChat': 'Wähle eine Unterhaltung zum Lesen.',
@@ -592,6 +597,8 @@ export const de: Dict = {
   'integrations.webhooks.secretOnce':
     'Signatur-Geheimnis für {name} — wird nur einmal gezeigt. Jetzt kopieren; es ist später nicht mehr auslesbar.',
   'integrations.webhooks.secretCopied': 'Habe ich',
+  'integrations.webhooks.copySecret': 'Geheimnis kopieren',
+  'integrations.webhooks.created': 'Route {name} angelegt',
   'integrations.pairing.approve': 'Freigeben',
   'integrations.pairing.approved': 'Nutzer freigegeben',
   'integrations.pairing.platform': 'Plattform',

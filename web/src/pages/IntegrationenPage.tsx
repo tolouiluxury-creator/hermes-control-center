@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ExternalLink, Plug, Plus, Trash2, Users, Webhook } from 'lucide-react';
+import { ClipboardCopy, ExternalLink, Plug, Plus, Trash2, Users, Webhook } from 'lucide-react';
 import {
   getMessaging,
   approvePairing,
@@ -100,6 +100,13 @@ function PlatformCard({
                   total: platform.requiredTotal,
                 })}
               </span>
+            )}
+            {/* This page is not profile-scoped: it shows the launch profile's
+                view, and a platform can be switched on here while the gateway
+                acting on it runs under a different profile. Saying so beats a
+                green "active" badge over a bot that answers nothing. */}
+            {platform.enabled && !platform.gatewayRunning && (
+              <span className="text-[var(--color-warn)]">{t('telegram.onWithoutGateway')}</span>
             )}
             {platform.errorMessage && (
               <span className="text-[var(--color-danger)]">{platform.errorMessage}</span>
@@ -340,6 +347,13 @@ function WebhooksSection() {
       setDraft({ name: '', description: '', events: '' });
       if (created.secret) setFreshSecret({ name: created.name ?? '', secret: created.secret });
       await invalidate();
+      // Without this, a route whose secret Hermes did not return would land in
+      // complete silence — the form closes and the list refreshes, which reads
+      // as nothing having happened.
+      toast.push({
+        tone: 'success',
+        title: t('integrations.webhooks.created', { name: created.name ?? draft.name }),
+      });
     },
     onError: fail,
   });
@@ -353,6 +367,19 @@ function WebhooksSection() {
     },
     onError: fail,
   });
+
+  const copySecret = async (secret: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(secret);
+      toast.push({ tone: 'success', title: t('prompts.copied') });
+    } catch {
+      toast.push({
+        tone: 'error',
+        title: t('prompts.copyFailed'),
+        description: t('prompts.copyFailedDesc'),
+      });
+    }
+  };
 
   const toggle = useMutation({
     mutationFn: ({ name, enabled }: { name: string; enabled: boolean }) =>
@@ -430,13 +457,25 @@ function WebhooksSection() {
             {t('integrations.webhooks.secretOnce', { name: freshSecret.name })}
           </p>
           <p className="mt-1 font-mono text-xs break-all">{freshSecret.secret}</p>
-          <button
-            type="button"
-            onClick={() => setFreshSecret(null)}
-            className="mt-2 rounded-lg border border-[var(--color-hairline)] px-2 py-1 text-xs text-[var(--color-ink-muted)]"
-          >
-            {t('integrations.webhooks.secretCopied')}
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {/* The dismiss button says "I have it" — so there has to be a way to
+                actually get it. This is the only moment the value exists. */}
+            <button
+              type="button"
+              onClick={() => void copySecret(freshSecret.secret)}
+              className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2 py-1 text-xs text-[var(--color-accent)]"
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {t('integrations.webhooks.copySecret')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setFreshSecret(null)}
+              className="rounded-lg border border-[var(--color-hairline)] px-2 py-1 text-xs text-[var(--color-ink-muted)]"
+            >
+              {t('integrations.webhooks.secretCopied')}
+            </button>
+          </div>
         </div>
       )}
 
