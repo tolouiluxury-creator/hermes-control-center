@@ -17,7 +17,6 @@ export const de: Dict = {
   'nav.dateien': 'Dateien',
   'nav.prompts': 'Prompt-Bibliothek',
   'nav.telegram': 'Telegram',
-  'nav.terminal': 'Terminal',
   'nav.workspace': 'Workspace',
   'nav.integrationen': 'API & Integrationen',
   'nav.analytics': 'Analytics',
@@ -112,7 +111,6 @@ export const de: Dict = {
     'Deine eigenen Vorlagen. Sie liegen im Control Center, nicht in Hermes — Hermes hat keine Prompt-Bibliothek.',
   'page.telegram.desc':
     'Der Bot, der Telegram mit deinem Agenten verbindet: wie er angebunden ist, und alles, was darüber gesagt wurde.',
-  'page.terminal.desc': 'Dein Agent, getippt statt geklickt.',
   'page.workspace.desc':
     'Dateien auf dem Hermes-Rechner, innerhalb des Ordners, den du freigegeben hast.',
   'workspace.notConfigured': 'Es ist kein Workspace-Ordner gesetzt.',
@@ -143,13 +141,6 @@ export const de: Dict = {
     'Ordner {name} mit allem darin löschen? Das lässt sich nicht rückgängig machen.',
   'workspace.deleted': 'Gelöscht',
   'workspace.failed': 'Aktion fehlgeschlagen',
-  'terminal.hint':
-    'Nachricht tippen und Enter drücken. ↑ und ↓ gehen durch das zuletzt Gesendete. /clear leert den Bildschirm, /new beginnt eine neue Unterhaltung.',
-  'terminal.placeholder': 'Nachricht an den Agenten …',
-  'terminal.inputLabel': 'Nachricht an den Agenten',
-  'terminal.newSession': '— neue Unterhaltung —',
-  'terminal.notShell':
-    'Das ist der Agent im Terminal-Look, keine Shell auf dem Server. Nichts, was du hier tippst, wird als Befehl ausgeführt — es geht an den Agenten, genau wie im Chat.',
   'telegram.connection': 'Verbindung',
   'telegram.switchedOn': 'Eingeschaltet',
   'telegram.credentials': 'Zugangsdaten',
@@ -815,7 +806,6 @@ export const de: Dict = {
   'navKeywords.profile': 'profile instanzen klonen soul getrennte agenten',
   'navKeywords.prompts': 'vorlagen templates systemprompt bibliothek',
   'navKeywords.telegram': 'telegram bot chatverlauf messenger',
-  'navKeywords.terminal': 'terminal konsole kommandozeile eingabe shell',
   'navKeywords.workspace': 'dateien ordner workspace verzeichnis durchsuchen',
   'navKeywords.integrationen': 'api webhooks telegram discord schnittstellen',
   'navKeywords.analytics': 'statistik kosten token auswertung nutzung',

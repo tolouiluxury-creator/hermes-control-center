@@ -11,7 +11,6 @@ import {
   FolderTree,
   ScrollText,
   Server,
-  SquareTerminal,
   Send,
   Settings,
   UserRound,
@@ -91,11 +90,6 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'workspace',
     path: '/workspace',
     icon: FolderTree,
-  },
-  {
-    id: 'terminal',
-    path: '/terminal',
-    icon: SquareTerminal,
   },
   {
     id: 'telegram',

@@ -17,7 +17,6 @@ export const fa: Dict = {
   'nav.dateien': 'فایل‌ها',
   'nav.prompts': 'کتابخانه پرامپت',
   'nav.telegram': 'تلگرام',
-  'nav.terminal': 'ترمینال',
   'nav.workspace': 'فضای کار',
   'nav.integrationen': 'API و یکپارچه‌سازی‌ها',
   'nav.analytics': 'تحلیل‌ها',
@@ -110,7 +109,6 @@ export const fa: Dict = {
     'قالب‌های خودتان. این‌ها در کنترل‌سنتر ذخیره می‌شوند، نه در هرمس — هرمس کتابخانه پرامپت ندارد.',
   'page.telegram.desc':
     'رباتی که تلگرام را به عامل شما وصل می‌کند: چگونگی اتصال و هرچه از راه آن گفته شده.',
-  'page.terminal.desc': 'عامل شما، تایپ‌شده نه کلیک‌شده.',
   'page.workspace.desc': 'فایل‌ها روی میزبان هرمس، درون پوشه‌ای که اجازه داده‌اید.',
   'workspace.notConfigured': 'هیچ پوشهٔ کاری تعیین نشده است.',
   'workspace.notConfiguredWhy':
@@ -139,13 +137,6 @@ export const fa: Dict = {
   'workspace.deleteFolderConfirm': 'پوشهٔ {name} و هرچه درون آن حذف شود؟ برگشت‌ناپذیر است.',
   'workspace.deleted': 'حذف شد',
   'workspace.failed': 'انجام نشد',
-  'terminal.hint':
-    'پیامی بنویسید و Enter بزنید. ↑ و ↓ در پیام‌های پیشین حرکت می‌کنند. /clear صفحه را پاک می‌کند، /new گفتگوی تازه می‌سازد.',
-  'terminal.placeholder': 'پیام به عامل …',
-  'terminal.inputLabel': 'پیام به عامل',
-  'terminal.newSession': '— گفتگوی تازه —',
-  'terminal.notShell':
-    'این عامل در پوستهٔ ترمینال است، نه یک شل روی سرور. هیچ چیزی که اینجا می‌نویسید به‌عنوان فرمان اجرا نمی‌شود — به عامل فرستاده می‌شود، دقیقاً مانند گفتگو.',
   'telegram.connection': 'اتصال',
   'telegram.switchedOn': 'روشن',
   'telegram.credentials': 'اعتبارنامه',
@@ -804,7 +795,6 @@ export const fa: Dict = {
   'navKeywords.profile': 'نمایه نمونه رونوشت soul عامل‌های جداگانه',
   'navKeywords.prompts': 'پرامپت قالب‌ها کتابخانه سیستمی',
   'navKeywords.telegram': 'تلگرام ربات تاریخچه گفتگو',
-  'navKeywords.terminal': 'ترمینال کنسول خط فرمان',
   'navKeywords.workspace': 'فایل پوشه فضای کار مسیر',
   'navKeywords.integrationen': 'یکپارچه‌سازی وب‌هوک تلگرام دیسکورد api',
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
