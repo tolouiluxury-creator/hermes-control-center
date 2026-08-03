@@ -16,6 +16,7 @@ import {
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
+import { ChatMarkdown } from '@/components/ChatMarkdown';
 import { ChatToolbar, type ModelPick } from '@/components/ChatToolbar';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
@@ -745,13 +746,19 @@ export function ChatsPage() {
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
+                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
                           message.role === 'user'
-                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-ink)]'
+                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
                             : 'bg-[var(--color-raised)] text-[var(--color-ink)]'
                         }`}
                       >
-                        {message.text || (
+                        {message.text ? (
+                          message.role === 'user' ? (
+                            message.text
+                          ) : (
+                            <ChatMarkdown text={message.text} />
+                          )
+                        ) : (
                           <span className="inline-flex gap-1 text-[var(--color-ink-faint)]">
                             <span className="animate-pulse">●</span>
                           </span>

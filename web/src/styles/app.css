@@ -274,6 +274,18 @@ body {
 }
 
 /*
+ * `code` renders identically whether it sits inline or inside a `pre` fenced
+ * block — react-markdown's `code` component has no way to tell the two apart
+ * (see ChatMarkdown.tsx). `pre` already carries the block's own background and
+ * padding, so its child just needs to give both back up.
+ */
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+/*
  * Motion is opt-out for anyone who asked the OS to reduce it. The skeleton keeps
  * a static gradient rather than disappearing, so loading is still legible.
  */
