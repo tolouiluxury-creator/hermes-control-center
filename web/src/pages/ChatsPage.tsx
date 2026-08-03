@@ -458,12 +458,19 @@ export function ChatsPage() {
     const pending = attachments.filter((entry) => entry.dataUrl !== null);
     if ((text === '' && pending.length === 0) || streaming) return;
     setInput('');
+    // Sending must not cost the caret. Clicking the button moves focus there,
+    // so it is handed back explicitly rather than left where the click put it.
     inputRef.current?.focus();
     setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setStreaming(true);
     try {
+      // The conversation starts here, not when the page opened — that is what
+      // keeps unused sessions from piling up on the agent.
       let live = liveRef.current;
       if (!live) {
+        // The toolbar's picks only ever reach Hermes here. Both are per-session
+        // overrides on session.create, so starting a chat with another model
+        // leaves the agent's configured default untouched.
         const ids = await createChatSession({
           model: modelPick?.model,
           provider: modelPick?.provider,
@@ -485,7 +492,7 @@ export function ChatsPage() {
         refs.push(refText);
       }
       const outgoing = refs.length > 0 ? `${refs.join('\n')}\n\n${text}` : text;
-      setAttachments([]);
+      setAttachments((current) => current.filter((entry) => !pending.includes(entry)));
       await sendChatPrompt(live, outgoing);
     } catch (error) {
       setStreaming(false);
