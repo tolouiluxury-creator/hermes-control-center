@@ -120,7 +120,8 @@ export function ChatsPage() {
   // Only follow new content when the user was already at the bottom — reading
   // older history should not get yanked to the newest message.
   useEffect(() => {
-    if (nearBottom) threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
+    if (nearBottom)
+      threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, streaming, nearBottom]);
 
   const handleThreadScroll = () => {
