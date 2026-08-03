@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { CheckSquare, MessagesSquare, Pin, Plus, Send, Square, Trash2 } from 'lucide-react';
+import {
+  CheckSquare,
+  MessagesSquare,
+  Paperclip,
+  Pin,
+  Plus,
+  Send,
+  Square,
+  Trash2,
+} from 'lucide-react';
 import {
   ApiError,
+  attachChatFile,
   createChatSession,
   deleteChatSessions,
   getChatHistory,
@@ -23,6 +33,7 @@ import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime, formatTime } from '@/lib/format';
 import { TypingDots } from '@/components/TypingDots';
+import { AttachmentChip, type PendingAttachment } from '@/components/AttachmentChip';
 
 interface GatewayEventData {
   type: string;
@@ -46,6 +57,8 @@ export function ChatsPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   /** Selection mode for the conversation list: pick several, then delete them. */
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -415,23 +428,42 @@ export function ChatsPage() {
     return () => source.close();
   }, []);
 
+  const readAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error ?? new Error('read failed'));
+      reader.readAsDataURL(file);
+    });
+
+  const addFiles = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    const staged: PendingAttachment[] = list.map((file) => ({ file, dataUrl: null }));
+    setAttachments((current) => [...current, ...staged]);
+    for (const item of staged) {
+      try {
+        const dataUrl = await readAsDataUrl(item.file);
+        setAttachments((current) =>
+          current.map((entry) => (entry.file === item.file ? { ...entry, dataUrl } : entry)),
+        );
+      } catch {
+        setAttachments((current) => current.filter((entry) => entry.file !== item.file));
+        toast.push({ tone: 'error', title: t('chat.attachReadFailed', { name: item.file.name }) });
+      }
+    }
+  };
+
   const send = async () => {
     const text = input.trim();
-    if (text === '' || streaming) return;
+    const pending = attachments.filter((entry) => entry.dataUrl !== null);
+    if ((text === '' && pending.length === 0) || streaming) return;
     setInput('');
-    // Sending must not cost the caret. Clicking the button moves focus there,
-    // so it is handed back explicitly rather than left where the click put it.
     inputRef.current?.focus();
     setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setStreaming(true);
     try {
-      // The conversation starts here, not when the page opened — that is what
-      // keeps unused sessions from piling up on the agent.
       let live = liveRef.current;
       if (!live) {
-        // The toolbar's picks only ever reach Hermes here. Both are per-session
-        // overrides on session.create, so starting a chat with another model
-        // leaves the agent's configured default untouched.
         const ids = await createChatSession({
           model: modelPick?.model,
           provider: modelPick?.provider,
@@ -446,7 +478,15 @@ export function ChatsPage() {
         setSessionId(ids.storedId ?? null);
         setStartedWithModel(modelPick?.model ?? null);
       }
-      await sendChatPrompt(live, text);
+      const refs: string[] = [];
+      for (const item of pending) {
+        // dataUrl is non-null here (filtered above), narrowed for TypeScript.
+        const { refText } = await attachChatFile(live, item.dataUrl as string, item.file.name);
+        refs.push(refText);
+      }
+      const outgoing = refs.length > 0 ? `${refs.join('\n')}\n\n${text}` : text;
+      setAttachments([]);
+      await sendChatPrompt(live, outgoing);
     } catch (error) {
       setStreaming(false);
       setMessages((current) => current.slice(0, -1));
@@ -777,13 +817,54 @@ export function ChatsPage() {
                 )}
               </div>
 
+              {attachments.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {attachments.map((attachment, index) => (
+                    <AttachmentChip
+                      key={`${attachment.file.name}-${index}`}
+                      attachment={attachment}
+                      onRemove={() =>
+                        setAttachments((current) => current.filter((_, i) => i !== index))
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+
               <form
                 className="mt-3 flex items-end gap-2"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (event.dataTransfer.files.length > 0) void addFiles(event.dataTransfer.files);
+                }}
                 onSubmit={(event) => {
                   event.preventDefault();
                   void send();
                 }}
               >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(event) => {
+                    if (event.target.files && event.target.files.length > 0) {
+                      void addFiles(event.target.files);
+                    }
+                    event.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={connecting}
+                  title={t('chat.attachFile')}
+                  aria-label={t('chat.attachFile')}
+                  className="inline-flex h-11 shrink-0 items-center justify-center rounded-xl border border-[var(--color-hairline)] px-3 text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] disabled:opacity-40"
+                >
+                  <Paperclip size={15} aria-hidden />
+                </button>
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -796,15 +877,16 @@ export function ChatsPage() {
                   }}
                   rows={1}
                   placeholder={connecting ? t('chat.connecting') : t('chat.placeholder')}
-                  // Deliberately still writable while the answer streams: a disabled
-                  // field drops the caret, and the next thought should not have to
-                  // wait for the agent. Only sending waits — see the button.
                   disabled={connecting}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  disabled={connecting || streaming || input.trim() === ''}
+                  disabled={
+                    connecting ||
+                    streaming ||
+                    (input.trim() === '' && attachments.every((a) => a.dataUrl === null))
+                  }
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
                 >
                   <Send size={15} aria-hidden />

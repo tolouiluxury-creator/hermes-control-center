@@ -186,6 +186,8 @@ export const fa: Dict = {
   'chat.placeholder': 'پیام به ایجنت … (اینتر ارسال می‌کند)',
   'chat.connecting': 'در حال اتصال …',
   'chat.send': 'ارسال',
+  'chat.attachFile': 'پیوست کردن فایل',
+  'chat.attachReadFailed': 'خواندن {name} ممکن نشد.',
   'chat.messages': 'پیام',
   'chat.conversation': 'گفتگو',
   'chat.overDashboard':

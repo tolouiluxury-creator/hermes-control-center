@@ -191,6 +191,8 @@ export const de: Dict = {
   'chat.placeholder': 'Nachricht an den Agenten … (Enter sendet)',
   'chat.connecting': 'Verbinde …',
   'chat.send': 'Senden',
+  'chat.attachFile': 'Datei anhängen',
+  'chat.attachReadFailed': 'Konnte {name} nicht lesen.',
   'chat.messages': 'Nachr.',
   'chat.conversation': 'Unterhaltung',
   'chat.overDashboard':
