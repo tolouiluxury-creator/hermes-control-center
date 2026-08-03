@@ -152,6 +152,7 @@ export const modelOptionsSchema = z.looseObject({
         authenticated: z.boolean().nullish(),
         auth_type: z.string().nullish(),
         warning: z.string().nullish(),
+        api_url: z.string().nullish(),
       }),
     )
     .nullish(),
@@ -168,6 +169,8 @@ export interface ProviderSummary {
   totalModels: number | null;
   warning: string | null;
   userDefined: boolean;
+  /** OpenAI-compatible base URL, present for user-defined providers only. */
+  apiUrl: string | null;
 }
 
 export interface ModelOptions {
@@ -193,6 +196,7 @@ export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): 
         totalModels: toNumber(provider.total_models),
         warning: provider.warning?.trim() || null,
         userDefined: provider.is_user_defined === true,
+        apiUrl: provider.api_url?.trim() || null,
       }))
       // The one in use first, then the ones that could be used.
       .sort((a, b) => {
@@ -201,6 +205,31 @@ export function normalizeModelOptions(raw: z.infer<typeof modelOptionsSchema>): 
         return a.name.localeCompare(b.name);
       }),
   };
+}
+
+/**
+ * Hermes treats a user-defined (custom/OpenAI-compatible) provider's model
+ * list as something you type once and it remembers — there is no live
+ * discovery, so a model added on the far end (e.g. a new combo in an AI
+ * router sitting behind that base URL) never shows up until someone retypes
+ * its name. Since the base URL is OpenAI-compatible, we can just ask it
+ * ourselves via GET {apiUrl}/models and merge the answer in, so the list
+ * reflects what is actually reachable right now instead of a stale guess.
+ */
+export async function withLiveCustomProviderModels(
+  options: ModelOptions,
+  fetchModelIds: (apiUrl: string) => Promise<string[]>,
+): Promise<ModelOptions> {
+  const providers = await Promise.all(
+    options.providers.map(async (provider) => {
+      if (!provider.userDefined || !provider.apiUrl) return provider;
+      const liveModels = await fetchModelIds(provider.apiUrl).catch(() => []);
+      if (liveModels.length === 0) return provider;
+      const models = Array.from(new Set([...liveModels, ...provider.models]));
+      return { ...provider, models, totalModels: models.length };
+    }),
+  );
+  return { ...options, providers };
 }
 
 // --- Auxiliary models -------------------------------------------------------

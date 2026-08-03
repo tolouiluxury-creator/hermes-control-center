@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   classifyLogLine,
   normalizeAnalytics,
@@ -9,6 +9,7 @@ import {
   normalizeMemoryProviderConfig,
   normalizeMessagingPlatforms,
   normalizeModelInfo,
+  normalizeModelOptions,
   normalizePairing,
   normalizeProfiles,
   normalizeSessionMessages,
@@ -16,6 +17,7 @@ import {
   normalizeSkills,
   normalizeWebhooks,
   toEpochMs,
+  withLiveCustomProviderModels,
 } from './inventory.js';
 
 /**
@@ -562,6 +564,103 @@ describe('normalizeModelInfo and normalizeMcpServers', () => {
     expect(server?.toolCount).toBe(2);
     expect(server?.transport).toBe('stdio');
     expect(server?.enabled).toBe(true);
+  });
+});
+
+describe('normalizeModelOptions', () => {
+  // Copied from a real Hermes 0.19.0 dashboard behind a 9Router combo.
+  const real = {
+    model: 'hermes-free',
+    provider: 'custom',
+    providers: [
+      {
+        slug: 'moa',
+        name: 'Mixture of Agents',
+        is_current: false,
+        is_user_defined: false,
+        models: ['default'],
+        total_models: 1,
+        source: 'virtual',
+        authenticated: true,
+        auth_type: 'virtual',
+      },
+      {
+        slug: 'custom:local-(localhost:20128)',
+        name: 'Local (localhost:20128)',
+        is_current: true,
+        is_user_defined: true,
+        models: ['hermes-free', 'Hermes-Free'],
+        total_models: 2,
+        source: 'user-config',
+        api_url: 'http://localhost:20128/v1',
+        authenticated: true,
+      },
+    ],
+  };
+
+  it('captures the api_url of a user-defined provider', () => {
+    const options = normalizeModelOptions(real);
+    const local = options.providers.find((p) => p.slug === 'custom:local-(localhost:20128)');
+    expect(local?.apiUrl).toBe('http://localhost:20128/v1');
+    expect(local?.userDefined).toBe(true);
+  });
+
+  it('leaves apiUrl null when Hermes reports none', () => {
+    const options = normalizeModelOptions(real);
+    const moa = options.providers.find((p) => p.slug === 'moa');
+    expect(moa?.apiUrl).toBeNull();
+  });
+});
+
+describe('withLiveCustomProviderModels', () => {
+  const base = normalizeModelOptions({
+    model: 'hermes-free',
+    provider: 'custom',
+    providers: [
+      {
+        slug: 'moa',
+        name: 'Mixture of Agents',
+        is_current: false,
+        is_user_defined: false,
+        models: ['default'],
+        total_models: 1,
+      },
+      {
+        slug: 'custom:local-(localhost:20128)',
+        name: 'Local (localhost:20128)',
+        is_current: true,
+        is_user_defined: true,
+        models: ['hermes-free', 'Hermes-Free'],
+        total_models: 2,
+        api_url: 'http://localhost:20128/v1',
+      },
+    ],
+  });
+
+  it('merges live model ids ahead of the stale list, deduplicated', async () => {
+    const result = await withLiveCustomProviderModels(base, async (apiUrl) => {
+      expect(apiUrl).toBe('http://localhost:20128/v1');
+      return ['hermes-free', 'hermes-coding'];
+    });
+    const local = result.providers.find((p) => p.slug === 'custom:local-(localhost:20128)');
+    expect(local?.models).toEqual(['hermes-free', 'hermes-coding', 'Hermes-Free']);
+    expect(local?.totalModels).toBe(3);
+  });
+
+  it('never queries a provider without an apiUrl', async () => {
+    const fetchModelIds = vi.fn().mockResolvedValue([]);
+    const result = await withLiveCustomProviderModels(base, fetchModelIds);
+    const moa = result.providers.find((p) => p.slug === 'moa');
+    expect(moa?.models).toEqual(['default']);
+    expect(fetchModelIds).toHaveBeenCalledTimes(1);
+  });
+
+  it('falls back to the stale list when the live fetch fails', async () => {
+    const result = await withLiveCustomProviderModels(base, async () => {
+      throw new Error('unreachable');
+    });
+    const local = result.providers.find((p) => p.slug === 'custom:local-(localhost:20128)');
+    expect(local?.models).toEqual(['hermes-free', 'Hermes-Free']);
   });
 });
 

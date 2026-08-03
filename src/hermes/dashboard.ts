@@ -60,6 +60,7 @@ import {
   normalizeSkills,
   normalizeWebhooks,
   modelOptionsSchema,
+  withLiveCustomProviderModels,
   pairingSchema,
   profileSoulSchema,
   profilesSchema,
@@ -183,7 +184,8 @@ export class DashboardClient {
   modelOptions(options?: RequestOptions): Promise<ModelOptions> {
     return this.client
       .json(modelOptionsSchema, '/api/model/options', options)
-      .then(normalizeModelOptions);
+      .then(normalizeModelOptions)
+      .then((result) => withLiveCustomProviderModels(result, fetchOpenAiCompatibleModelIds));
   }
 
   mcpServers(options?: RequestOptions): Promise<McpServerSummary[]> {
@@ -1011,4 +1013,23 @@ export class DashboardClient {
   raw(path: string, options?: RequestOptions): Promise<Response> {
     return this.client.fetch(path, options);
   }
+}
+
+const LIVE_MODEL_LIST_TIMEOUT_MS = 3_000;
+
+/**
+ * GET {apiUrl}/models against an OpenAI-compatible endpoint. Best-effort: a
+ * down or slow endpoint must not break the models page, so failures resolve
+ * to an empty list rather than throwing — the caller falls back to whatever
+ * Hermes already had on file.
+ */
+async function fetchOpenAiCompatibleModelIds(apiUrl: string): Promise<string[]> {
+  const url = `${apiUrl.replace(/\/+$/, '')}/models`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(LIVE_MODEL_LIST_TIMEOUT_MS) });
+  if (!response.ok) return [];
+
+  const payload = (await response.json()) as { data?: Array<{ id?: unknown }> };
+  return (payload.data ?? [])
+    .map((entry) => entry.id)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0);
 }
