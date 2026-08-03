@@ -884,6 +884,9 @@ export function ChatsPage() {
                   }}
                   rows={1}
                   placeholder={connecting ? t('chat.connecting') : t('chat.placeholder')}
+                  // Deliberately still writable while the answer streams: a disabled
+                  // field drops the caret, and the next thought should not have to
+                  // wait for the agent. Only sending waits — see the button.
                   disabled={connecting}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
