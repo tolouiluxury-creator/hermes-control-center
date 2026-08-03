@@ -205,7 +205,7 @@ export async function registerChatRoutes(
     }
   });
 
-  app.post('/api/chat/attach', async (request, reply) => {
+  app.post('/api/chat/attach', { bodyLimit: 15 * 1024 * 1024 }, async (request, reply) => {
     const parsed = attachSchema.safeParse(request.body ?? {});
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_request' });
     // ~10 MB of raw bytes is roughly 13.3 MB base64 — reject well before Fastify's
@@ -215,7 +215,6 @@ export async function registerChatRoutes(
     }
     try {
       const result = await ctx.gateway.request<{
-        attached?: boolean;
         name?: string;
         ref_text?: string;
       }>('file.attach', {
