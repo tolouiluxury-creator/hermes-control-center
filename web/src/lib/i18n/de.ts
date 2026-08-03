@@ -922,4 +922,13 @@ export const de: Dict = {
   'insight.tokenSpike.body': 'Die letzten drei Tage im Vergleich zu den drei davor.',
   'insight.tokenSpike.recent': 'letzte 3 Tage',
   'insight.tokenSpike.earlier': 'davor',
+
+  // Todos
+  'todos.quickAddPlaceholder': 'ToDo hinzufügen …',
+  'todos.add': 'Hinzufügen',
+  'todos.empty': 'Noch keine ToDos.',
+  'todos.pin': 'Anpinnen',
+  'todos.unpin': 'Lösen',
+  'todos.actionFailed': 'Aktion fehlgeschlagen',
+  'todos.needsSession': 'Erst eine Unterhaltung öffnen oder starten.',
 };

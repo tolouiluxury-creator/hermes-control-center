@@ -911,4 +911,13 @@ export const fa: Dict = {
   'insight.tokenSpike.body': 'سه روز گذشته در مقایسه با سه روز پیش از آن.',
   'insight.tokenSpike.recent': '۳ روز گذشته',
   'insight.tokenSpike.earlier': 'پیش از آن',
+
+  // Todos
+  'todos.quickAddPlaceholder': 'افزودن کار جدید …',
+  'todos.add': 'افزودن',
+  'todos.empty': 'هنوز کاری ثبت نشده.',
+  'todos.pin': 'سنجاق کردن',
+  'todos.unpin': 'برداشتن سنجاق',
+  'todos.actionFailed': 'عملیات ناموفق بود',
+  'todos.needsSession': 'اول یک گفتگو را باز یا شروع کنید.',
 };

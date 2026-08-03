@@ -912,4 +912,13 @@ export const en: Dict = {
   'insight.tokenSpike.body': 'The last three days compared with the three before them.',
   'insight.tokenSpike.recent': 'last 3 days',
   'insight.tokenSpike.earlier': 'before that',
+
+  // Todos
+  'todos.quickAddPlaceholder': 'Add a to-do …',
+  'todos.add': 'Add',
+  'todos.empty': 'No to-dos yet.',
+  'todos.pin': 'Pin',
+  'todos.unpin': 'Unpin',
+  'todos.actionFailed': 'Action failed',
+  'todos.needsSession': 'Open or start a conversation first.',
 };
