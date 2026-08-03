@@ -98,7 +98,7 @@ export function createContext(
     }),
   );
 
-  const gateway = new GatewayClient(connection.dashboard.url, dashboardToken);
+  const gateway = new GatewayClient(connection.dashboard.url, dashboardToken, connection.profile);
 
   const store = Store.open(controlCenterDatabasePath(env));
   const settings = new SettingsRepo(store);

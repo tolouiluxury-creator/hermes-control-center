@@ -49,6 +49,16 @@ export class GatewayClient {
   constructor(
     private readonly dashboardUrl: string,
     private readonly tokenProvider: TokenProvider,
+    /**
+     * Scopes every request that doesn't name its own profile. Unlike the REST
+     * `HermesClient`, this had no notion of a default profile at all: a caller
+     * that left `profile` out (the normal case — nothing prompts a user to
+     * pick one) got whatever Hermes considers current on the gateway side,
+     * which is not necessarily the profile this deployment was started with
+     * and scopes every other request to. That silently listed, resumed and
+     * created sessions in the wrong profile's store.
+     */
+    private readonly defaultProfile: string | null = null,
   ) {}
 
   /** Subscribe to streaming events; returns an unsubscribe function. */
@@ -163,7 +173,14 @@ export class GatewayClient {
     }
   }
 
-  /** Send a JSON-RPC request and await its result. */
+  /**
+   * Send a JSON-RPC request and await its result.
+   *
+   * `params.profile` wins if the caller set one (including explicitly
+   * clearing it with `null`/`''` for a method that doesn't take one); an
+   * absent key falls back to `defaultProfile` so every call is scoped to
+   * something rather than whatever Hermes considers current.
+   */
   async request<T = Record<string, unknown>>(
     method: string,
     params: Record<string, unknown> = {},
@@ -171,6 +188,11 @@ export class GatewayClient {
     await this.ensureConnected();
     const socket = this.ws;
     if (!socket) throw new GatewayError('WebSocket is not connected.');
+
+    const scopedParams =
+      'profile' in params || !this.defaultProfile
+        ? params
+        : { ...params, profile: this.defaultProfile };
 
     const id = `cc-${this.nextId++}`;
     return new Promise<T>((resolve, reject) => {
@@ -186,7 +208,7 @@ export class GatewayClient {
       });
 
       try {
-        socket.send(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
+        socket.send(JSON.stringify({ jsonrpc: '2.0', id, method, params: scopedParams }));
       } catch (error) {
         this.pending.delete(id);
         clearTimeout(timer);
