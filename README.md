@@ -200,13 +200,6 @@ reached through `minimatch` in ESLint's glob handling. ESLint is a lint-time dev
 not part of the published package: `npm audit --omit=dev` reports zero vulnerabilities, and the
 published tarball contains no ESLint code.
 
-## Not affiliated with Nous Research
-
-Hermes Agent is a project of [Nous Research](https://github.com/NousResearch). This is an
-independent community front end. Related projects worth knowing:
-[`nesquena/hermes-webui`](https://github.com/nesquena/hermes-webui) and
-[`EKKOLearnAI/hermes-studio`](https://github.com/EKKOLearnAI/hermes-studio) — both chat-first, where
-this one is dashboard-first.
 
 ## License
 
