@@ -43,7 +43,7 @@ export const envSchema = z.record(
 export interface EnvVar {
   key: string;
   isSet: boolean;
-  /** The dashboard's own masked preview (e.g. "8627…7lkE"); never the real value. */
+  /** The dashboard's own masked preview (e.g. "1111…zzzz"); never the real value. */
   redactedValue: string | null;
   description: string | null;
   url: string | null;

@@ -21,6 +21,10 @@ import {
 /**
  * The payloads below are copied from a real Hermes 0.19.0. Keeping them here is
  * what stops these normalisers from drifting back to assumptions.
+ *
+ * Shapes are real; identities are not. Chat ids, user names and masked token
+ * previews are replaced with obvious stand-ins — a fixture has no business
+ * carrying somebody's Telegram account into a public repository.
  */
 
 describe('normalizeSkills', () => {
@@ -585,13 +589,13 @@ describe('normalizeMessagingPlatforms', () => {
         configured: true,
         state: 'disabled',
         // Hermes 0.19 returns an object here, not a bare id.
-        home_channel: { platform: 'telegram', chat_id: '170753950', name: 'Home' },
+        home_channel: { platform: 'telegram', chat_id: '100000001', name: 'Home' },
         env_vars: [
           {
             key: 'TELEGRAM_BOT_TOKEN',
             required: true,
             is_set: true,
-            redacted_value: '8627...7lkE',
+            redacted_value: '1111...zzzz',
             is_password: true,
           },
           { key: 'TELEGRAM_ALLOWED_USERS', required: false, is_set: false },
@@ -611,7 +615,7 @@ describe('normalizeMessagingPlatforms', () => {
     expect(telegram?.requiredTotal).toBe(1);
     expect(telegram?.requiredMissing).toBe(0);
     // The redacted secret must never survive normalisation.
-    expect(JSON.stringify(telegram)).not.toContain('7lkE');
+    expect(JSON.stringify(telegram)).not.toContain('zzzz');
   });
 
   it('reports counts for the header', () => {
@@ -663,8 +667,8 @@ describe('normalizePairing', () => {
     approved: [
       {
         platform: 'telegram',
-        user_id: '170753950',
-        user_name: 'TestUser',
+        user_id: '100000001',
+        user_name: 'Alex',
         approved_at: 1784467966.31,
       },
     ],
@@ -672,7 +676,7 @@ describe('normalizePairing', () => {
 
   it('scales the seconds timestamp to milliseconds', () => {
     const { approved } = normalizePairing(real);
-    expect(approved[0]?.userName).toBe('TestUser');
+    expect(approved[0]?.userName).toBe('Alex');
     expect(approved[0]?.at).toBe(Math.round(1784467966.31 * 1000));
   });
 });

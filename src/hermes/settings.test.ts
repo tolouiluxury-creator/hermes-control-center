@@ -15,7 +15,7 @@ describe('normalizeEnv', () => {
     },
     TELEGRAM_BOT_TOKEN: {
       is_set: true,
-      redacted_value: '8627…7lkE',
+      redacted_value: '1111…zzzz',
       description: 'Telegram bot token',
       category: 'messaging',
       is_password: true,
@@ -27,7 +27,7 @@ describe('normalizeEnv', () => {
     expect(vars[0]?.key).toBe('TELEGRAM_BOT_TOKEN');
     expect(vars[0]?.isSet).toBe(true);
     // Only the dashboard's own masked preview survives.
-    expect(vars[0]?.redactedValue).toBe('8627…7lkE');
+    expect(vars[0]?.redactedValue).toBe('1111…zzzz');
     expect(vars[0]?.isPassword).toBe(true);
   });
 
