@@ -24,10 +24,14 @@ const todoCreateSchema = z.object({
   text: z.string().trim().min(1).max(2000),
 });
 
-const todoUpdateSchema = z.object({
-  done: z.boolean().optional(),
-  pinned: z.boolean().optional(),
-});
+const todoUpdateSchema = z
+  .object({
+    done: z.boolean().optional(),
+    pinned: z.boolean().optional(),
+  })
+  .refine((data) => data.done !== undefined || data.pinned !== undefined, {
+    message: 'at least one of done or pinned is required',
+  });
 
 const workflowInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
