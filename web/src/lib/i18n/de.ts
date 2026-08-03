@@ -201,6 +201,7 @@ export const de: Dict = {
   'chat.openFailed': 'Öffnen fehlgeschlagen',
   'chat.connectFailed': 'Verbindung fehlgeschlagen',
   'chat.thinking': 'denkt nach …',
+  'chat.newMessageJump': 'Neue Nachricht',
   'chat.select': 'Auswählen',
   'chat.pin': 'Anheften',
   'chat.unpin': 'Nicht mehr anheften',

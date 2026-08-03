@@ -60,6 +60,7 @@ export function ChatsPage() {
   const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [nearBottom, setNearBottom] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -116,10 +117,17 @@ export function ChatsPage() {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const todosPanelRef = useRef<TodosPanelHandle>(null);
 
-  // Keep the newest message in view as tokens arrive.
+  // Only follow new content when the user was already at the bottom — reading
+  // older history should not get yanked to the newest message.
   useEffect(() => {
-    threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
-  }, [messages, streaming]);
+    if (nearBottom) threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
+  }, [messages, streaming, nearBottom]);
+
+  const handleThreadScroll = () => {
+    const el = threadRef.current;
+    if (!el) return;
+    setNearBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 80);
+  };
 
   // A conversation that just became ready should be typeable without a click —
   // opening one is already the gesture that says "I want to write here".
@@ -829,7 +837,8 @@ export function ChatsPage() {
 
               <div
                 ref={threadRef}
-                className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] p-4"
+                onScroll={handleThreadScroll}
+                className="relative min-h-0 flex-1 space-y-3 overflow-y-auto rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] p-4"
               >
                 {messages.length === 0 && !connecting ? (
                   <div className="grid h-full place-items-center text-center">
@@ -880,6 +889,21 @@ export function ChatsPage() {
                       </div>
                     );
                   })
+                )}
+                {!nearBottom && messages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      threadRef.current?.scrollTo({
+                        top: threadRef.current.scrollHeight,
+                        behavior: 'smooth',
+                      });
+                      setNearBottom(true);
+                    }}
+                    className="sticky bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-[var(--color-hairline)] bg-[var(--color-raised)] px-3 py-1.5 text-xs text-[var(--color-ink-muted)] shadow-[var(--shadow-card)] hover:text-[var(--color-ink)]"
+                  >
+                    ↓ {t('chat.newMessageJump')}
+                  </button>
                 )}
               </div>
 

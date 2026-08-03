@@ -199,6 +199,7 @@ export const en: Dict = {
   'chat.openFailed': 'Failed to open',
   'chat.connectFailed': 'Connection failed',
   'chat.thinking': 'thinking …',
+  'chat.newMessageJump': 'New message',
   'chat.select': 'Select',
   'chat.pin': 'Pin',
   'chat.unpin': 'Unpin',
