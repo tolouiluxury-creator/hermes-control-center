@@ -6,6 +6,7 @@ import {
   Paperclip,
   Pin,
   Plus,
+  Search,
   Send,
   Square,
   Trash2,
@@ -32,6 +33,7 @@ import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime, formatTime } from '@/lib/format';
+import { groupByRecency } from '@/lib/chatGroups';
 import { TypingDots } from '@/components/TypingDots';
 import { AttachmentChip, type PendingAttachment } from '@/components/AttachmentChip';
 
@@ -45,6 +47,7 @@ export function ChatsPage() {
   const toast = useToast();
   const { t, lang } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [listSearch, setListSearch] = useState('');
   const [listPending, setListPending] = useState(true);
   /**
    * The row this conversation is: what the list highlights, what the transcript
@@ -505,6 +508,15 @@ export function ChatsPage() {
     }
   };
 
+  const visibleSessions =
+    listSearch.trim() === ''
+      ? sessions
+      : sessions.filter((session) => {
+          const haystack = `${session.title ?? ''} ${session.preview ?? ''}`.toLowerCase();
+          return haystack.includes(listSearch.trim().toLowerCase());
+        });
+  const groups = groupByRecency(visibleSessions);
+
   return (
     <PageShell title={t('nav.chats')} description={t('page.chats.desc')} wide>
       <div className="flex h-[calc(100vh-11rem)] gap-4">
@@ -519,6 +531,23 @@ export function ChatsPage() {
             <Plus size={14} aria-hidden />
             {t('chat.newConversation')}
           </button>
+
+          {sessions.length > 0 && (
+            <div className="relative mt-2">
+              <Search
+                size={12}
+                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-[var(--color-ink-faint)]"
+                aria-hidden
+              />
+              <input
+                value={listSearch}
+                onChange={(event) => setListSearch(event.target.value)}
+                placeholder={t('chat.searchConversations')}
+                aria-label={t('chat.searchConversations')}
+                className="w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] py-1.5 pr-2 pl-7 text-xs outline-none focus-visible:border-[var(--color-accent)]"
+              />
+            </div>
+          )}
 
           {sessions.length > 0 && (
             <div className="mt-2 flex items-center gap-2 text-[0.7rem]">
@@ -584,116 +613,132 @@ export function ChatsPage() {
                 {t('chat.noConversations')}
               </p>
             ) : (
-              <ul className="space-y-1">
-                {sessions.map((session) => {
-                  const active = session.id === sessionId;
-                  const label = session.title || session.preview || t('chat.conversation');
-                  const picked = selected.has(session.id);
-                  return (
-                    <li key={session.id}>
-                      {/* `group` so the row's own hover reveals its buttons. */}
-                      <div className="group flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            selecting ? toggleSelected(session.id) : void openExisting(session.id)
-                          }
-                          aria-pressed={selecting ? picked : undefined}
-                          // `min-w-0 flex-1`, not `w-full`: a flex item defaults
-                          // to min-width:auto and so refuses to shrink below its
-                          // content. With a long preview the button claimed the
-                          // whole row and pushed the pin and trash out of sight.
-                          className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
-                            active && !selecting
-                              ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
-                              : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
-                          }`}
-                        >
-                          {selecting &&
-                            (picked ? (
-                              <CheckSquare
-                                size={13}
-                                className="mt-0.5 shrink-0 text-[var(--color-accent)]"
-                                aria-hidden
-                              />
-                            ) : (
-                              <Square
-                                size={13}
-                                className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
-                                aria-hidden
-                              />
-                            ))}
-                          <span className="min-w-0 flex-1">
-                            <p className="truncate text-xs font-medium">{label}</p>
-                            <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                              {session.messageCount > 0 && (
-                                <span>
-                                  {session.messageCount} {t('chat.messages')}
+              <div className="space-y-3">
+                {groups.map((group) => (
+                  <div key={group.label}>
+                    <p className="mb-1 px-1 text-[0.65rem] font-medium tracking-wide text-[var(--color-ink-faint)] uppercase">
+                      {t(group.label)}
+                    </p>
+                    <ul className="space-y-1">
+                      {group.sessions.map((session) => {
+                        const active = session.id === sessionId;
+                        const label = session.title || session.preview || t('chat.conversation');
+                        const picked = selected.has(session.id);
+                        return (
+                          <li key={session.id}>
+                            {/* `group` so the row's own hover reveals its buttons. */}
+                            <div className="group flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  selecting
+                                    ? toggleSelected(session.id)
+                                    : void openExisting(session.id)
+                                }
+                                aria-pressed={selecting ? picked : undefined}
+                                // `min-w-0 flex-1`, not `w-full`: a flex item defaults
+                                // to min-width:auto and so refuses to shrink below its
+                                // content. With a long preview the button claimed the
+                                // whole row and pushed the pin and trash out of sight.
+                                className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                                  active && !selecting
+                                    ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
+                                    : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
+                                }`}
+                              >
+                                {selecting &&
+                                  (picked ? (
+                                    <CheckSquare
+                                      size={13}
+                                      className="mt-0.5 shrink-0 text-[var(--color-accent)]"
+                                      aria-hidden
+                                    />
+                                  ) : (
+                                    <Square
+                                      size={13}
+                                      className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
+                                      aria-hidden
+                                    />
+                                  ))}
+                                <span className="min-w-0 flex-1">
+                                  <p className="truncate text-xs font-medium">{label}</p>
+                                  <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                                    {session.messageCount > 0 && (
+                                      <span>
+                                        {session.messageCount} {t('chat.messages')}
+                                      </span>
+                                    )}
+                                    {session.startedAt && (
+                                      <span>· {formatRelativeTime(session.startedAt, lang)}</span>
+                                    )}
+                                  </p>
+                                </span>
+                              </button>
+
+                              {/* Pin and delete stay reachable without entering
+                                  selection mode, which is what the list needed most.
+                                  Side by side and vertically centred: stacked, they
+                                  stretched every row and read as status rather than
+                                  as buttons. They stay faint until the row is hovered
+                                  so the list itself keeps the eye. */}
+                              {!selecting && (
+                                <span className="flex shrink-0 items-center gap-0.5 self-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => void togglePin(session)}
+                                    disabled={pinning === session.id}
+                                    title={session.pinned ? t('chat.unpin') : t('chat.pin')}
+                                    aria-label={session.pinned ? t('chat.unpin') : t('chat.pin')}
+                                    aria-pressed={session.pinned}
+                                    className={`rounded-md p-1 transition-colors disabled:opacity-40 ${
+                                      session.pinned
+                                        ? // A pinned row keeps its marker visible; the
+                                          // filled pin says "pinned", the tooltip says undo.
+                                          'text-[var(--color-accent)]'
+                                        : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-ink)]'
+                                    }`}
+                                  >
+                                    <Pin
+                                      size={12}
+                                      aria-hidden
+                                      fill={session.pinned ? 'currentColor' : 'none'}
+                                    />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmOne(session.id)}
+                                    title={t('common.delete')}
+                                    aria-label={`${t('common.delete')} ${label}`}
+                                    className="rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-colors group-hover:opacity-100 hover:text-[var(--color-danger)] focus-visible:opacity-100"
+                                  >
+                                    <Trash2 size={12} aria-hidden />
+                                  </button>
                                 </span>
                               )}
-                              {session.startedAt && (
-                                <span>· {formatRelativeTime(session.startedAt, lang)}</span>
-                              )}
-                            </p>
-                          </span>
-                        </button>
+                            </div>
 
-                        {/* Pin and delete stay reachable without entering
-                            selection mode, which is what the list needed most.
-                            Side by side and vertically centred: stacked, they
-                            stretched every row and read as status rather than
-                            as buttons. They stay faint until the row is hovered
-                            so the list itself keeps the eye. */}
-                        {!selecting && (
-                          <span className="flex shrink-0 items-center gap-0.5 self-center">
-                            <button
-                              type="button"
-                              onClick={() => void togglePin(session)}
-                              disabled={pinning === session.id}
-                              title={session.pinned ? t('chat.unpin') : t('chat.pin')}
-                              aria-label={session.pinned ? t('chat.unpin') : t('chat.pin')}
-                              aria-pressed={session.pinned}
-                              className={`rounded-md p-1 transition-colors disabled:opacity-40 ${
-                                session.pinned
-                                  ? // A pinned row keeps its marker visible; the
-                                    // filled pin says "pinned", the tooltip says undo.
-                                    'text-[var(--color-accent)]'
-                                  : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-ink)]'
-                              }`}
-                            >
-                              <Pin
-                                size={12}
-                                aria-hidden
-                                fill={session.pinned ? 'currentColor' : 'none'}
+                            {confirmOne === session.id && (
+                              <ConfirmInline
+                                tone="danger"
+                                message={t('chat.deleteOneConfirm', { name: label })}
+                                confirmLabel={t('common.delete')}
+                                pending={deleting}
+                                onConfirm={() => void removeOne(session.id)}
+                                onCancel={() => setConfirmOne(null)}
                               />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmOne(session.id)}
-                              title={t('common.delete')}
-                              aria-label={`${t('common.delete')} ${label}`}
-                              className="rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-colors group-hover:opacity-100 hover:text-[var(--color-danger)] focus-visible:opacity-100"
-                            >
-                              <Trash2 size={12} aria-hidden />
-                            </button>
-                          </span>
-                        )}
-                      </div>
-
-                      {confirmOne === session.id && (
-                        <ConfirmInline
-                          tone="danger"
-                          message={t('chat.deleteOneConfirm', { name: label })}
-                          confirmLabel={t('common.delete')}
-                          pending={deleting}
-                          onConfirm={() => void removeOne(session.id)}
-                          onCancel={() => setConfirmOne(null)}
-                        />
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+                {groups.length === 0 && listSearch.trim() !== '' && (
+                  <p className="px-1 text-xs text-[var(--color-ink-faint)]">
+                    {t('chat.noSearchResults')}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </aside>
