@@ -724,6 +724,16 @@ export const setSessionPinned = (
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
 
+export const attachChatFile = (
+  liveId: string,
+  dataUrl: string,
+  name: string,
+): Promise<{ name: string; refText: string }> =>
+  apiRequest<{ name: string; refText: string }>('/chat/attach', {
+    method: 'POST',
+    ...jsonBody({ liveId, dataUrl, name }),
+  });
+
 export const getChatHistory = (
   sessionId: string,
   profile?: ChatProfile,
