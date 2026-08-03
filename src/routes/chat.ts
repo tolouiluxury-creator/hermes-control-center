@@ -106,6 +106,12 @@ const resumeSchema = z.object({
   profile: profileSchema,
 });
 
+const attachSchema = z.object({
+  liveId: z.string().trim().min(1),
+  dataUrl: z.string().trim().min(1),
+  name: z.string().trim().min(1).max(255),
+});
+
 interface ChatSession {
   id: string;
   title: string;
@@ -194,6 +200,33 @@ export async function registerChatRoutes(
         liveId: result.session_id ?? null,
         storedId: result.session_key ?? result.resumed ?? parsed.data.sessionId,
       };
+    } catch (error) {
+      return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
+    }
+  });
+
+  app.post('/api/chat/attach', async (request, reply) => {
+    const parsed = attachSchema.safeParse(request.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_request' });
+    // ~10 MB of raw bytes is roughly 13.3 MB base64 — reject well before Fastify's
+    // own body-size limit so the failure reads as "too big" and not "server error".
+    if (parsed.data.dataUrl.length > 14_000_000) {
+      return reply.code(413).send({ error: 'too_large', message: 'File is too large (max 10 MB).' });
+    }
+    try {
+      const result = await ctx.gateway.request<{
+        attached?: boolean;
+        name?: string;
+        ref_text?: string;
+      }>('file.attach', {
+        session_id: parsed.data.liveId,
+        data_url: parsed.data.dataUrl,
+        name: parsed.data.name,
+      });
+      if (!result.ref_text) {
+        return reply.code(503).send({ error: 'gateway_error', message: 'Attachment was not accepted.' });
+      }
+      return { name: result.name ?? parsed.data.name, refText: result.ref_text };
     } catch (error) {
       return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
     }
