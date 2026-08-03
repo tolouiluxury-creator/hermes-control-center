@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { deriveInsights, type Insight } from '../insights.js';
 import { PromptsRepo } from '../store/prompts.js';
+import { TodosRepo } from '../store/todos.js';
 import { WorkflowsRepo } from '../store/workflows.js';
 import { log } from '../log.js';
 
@@ -16,6 +17,16 @@ const promptInputSchema = z.object({
   title: z.string().trim().min(1).max(200),
   body: z.string().min(1).max(100_000),
   tags: z.array(z.string().max(40)).max(20).optional(),
+});
+
+const todoCreateSchema = z.object({
+  sessionId: z.string().trim().min(1),
+  text: z.string().trim().min(1).max(2000),
+});
+
+const todoUpdateSchema = z.object({
+  done: z.boolean().optional(),
+  pinned: z.boolean().optional(),
 });
 
 const workflowInputSchema = z.object({
@@ -39,6 +50,7 @@ export async function registerWorkspaceRoutes(
   ctx: AppContext,
 ): Promise<void> {
   const prompts = new PromptsRepo(ctx.store);
+  const todos = new TodosRepo(ctx.store);
   const workflows = new WorkflowsRepo(ctx.store);
 
   app.get('/api/prompts', async () => ({ prompts: prompts.list() }));
@@ -80,6 +92,50 @@ export async function registerWorkspaceRoutes(
     const uses = prompts.recordUse(id);
     if (uses === null) return reply.code(404).send({ error: 'not_found' });
     return { uses };
+  });
+
+  // --- ToDos -----------------------------------------------------------------
+
+  app.get('/api/todos', async (request, reply) => {
+    const query = request.query as { sessionId?: string } | undefined;
+    const sessionId = query?.sessionId?.trim();
+    if (!sessionId) return reply.code(400).send({ error: 'missing_session_id' });
+    return { todos: todos.listForSession(sessionId) };
+  });
+
+  app.post('/api/todos', async (request, reply) => {
+    const parsed = todoCreateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'invalid_todo',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
+      });
+    }
+    return reply
+      .code(201)
+      .send({ todo: todos.create(parsed.data.sessionId, { text: parsed.data.text }) });
+  });
+
+  app.put('/api/todos/:id', async (request, reply) => {
+    const parsed = todoUpdateSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: 'invalid_todo',
+        message: parsed.error.issues[0]?.message ?? 'invalid request',
+      });
+    }
+    const { id } = request.params as { id: string };
+    let updated = null;
+    if (parsed.data.done !== undefined) updated = todos.setDone(id, parsed.data.done);
+    if (parsed.data.pinned !== undefined) updated = todos.setPinned(id, parsed.data.pinned);
+    if (!updated) return reply.code(404).send({ error: 'not_found' });
+    return { todo: updated };
+  });
+
+  app.delete('/api/todos/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!todos.delete(id)) return reply.code(404).send({ error: 'not_found' });
+    return { ok: true };
   });
 
   // --- Workflows ------------------------------------------------------------
