@@ -881,13 +881,13 @@ export function ChatsPage() {
                         className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                       >
                         <div className="flex max-w-[80%] items-end gap-1.5">
-                          {!isUser && (
+                          {!isUser && message.text && (
                             <button
                               type="button"
                               onClick={() => sendToTodos(message.text)}
                               title={t('chat.addToTodos')}
                               aria-label={t('chat.addToTodos')}
-                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-accent)]"
+                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
                             >
                               <ListPlus size={12} aria-hidden />
                             </button>
@@ -909,13 +909,13 @@ export function ChatsPage() {
                               <TypingDots />
                             )}
                           </div>
-                          {isUser && (
+                          {isUser && message.text && (
                             <button
                               type="button"
                               onClick={() => sendToTodos(message.text)}
                               title={t('chat.addToTodos')}
                               aria-label={t('chat.addToTodos')}
-                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-accent)]"
+                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
                             >
                               <ListPlus size={12} aria-hidden />
                             </button>
