@@ -157,6 +157,13 @@ const auxiliarySetSchema = z.object({
 const cronActions = new Set(['pause', 'resume', 'trigger']);
 
 /**
+ * Every cron endpoint takes a profile (see the comment on `cronCreateSchema`
+ * below) — pause/resume/trigger/delete are query-string, not body, since none
+ * of them otherwise needs a request body.
+ */
+const cronProfileQuerySchema = z.object({ profile: z.string().trim().min(1) });
+
+/**
  * Creating a scheduled job. `schedule` is the only field Hermes insists on, but
  * an agent job also needs something to do, so prompt-or-skills is required here
  * rather than letting Hermes answer 400 with its own wording.
@@ -290,8 +297,14 @@ export async function registerActionRoutes(
     if (!cronActions.has(action)) {
       return reply.code(400).send({ error: 'invalid_request', message: 'Unknown action' });
     }
+    const query = parse(reply, cronProfileQuerySchema, request.query);
+    if (!query) return undefined;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.cronAction(id, action as 'pause' | 'resume' | 'trigger');
+      const result = await ctx.dashboard.cronAction(
+        id,
+        action as 'pause' | 'resume' | 'trigger',
+        query.profile,
+      );
       cache.invalidate(CACHE_KEYS.cron);
       return result;
     });
@@ -299,8 +312,10 @@ export async function registerActionRoutes(
 
   app.delete('/api/hermes/cron/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
+    const query = parse(reply, cronProfileQuerySchema, request.query);
+    if (!query) return undefined;
     return guard(reply, async () => {
-      const result = await ctx.dashboard.deleteCron(id);
+      const result = await ctx.dashboard.deleteCron(id, query.profile);
       cache.invalidate(CACHE_KEYS.cron);
       return result;
     });

@@ -287,8 +287,15 @@ export function TasksPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.cron });
 
   const runAction = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'pause' | 'resume' | 'trigger' }) =>
-      cronAction(id, action),
+    mutationFn: ({
+      id,
+      action,
+      profile,
+    }: {
+      id: string;
+      action: 'pause' | 'resume' | 'trigger';
+      profile: string;
+    }) => cronAction(id, action, profile),
     onSuccess: async (_result, variables) => {
       await invalidate();
       const key =
@@ -308,7 +315,7 @@ export function TasksPage() {
   });
 
   const remove = useMutation({
-    mutationFn: deleteCronJob,
+    mutationFn: ({ id, profile }: { id: string; profile: string }) => deleteCronJob(id, profile),
     onSuccess: async () => {
       setConfirmDelete(null);
       await invalidate();
@@ -344,7 +351,7 @@ export function TasksPage() {
 
   const busy = (id: string) =>
     (runAction.isPending && runAction.variables?.id === id) ||
-    (remove.isPending && remove.variables === id);
+    (remove.isPending && remove.variables?.id === id);
 
   const jobs = data ?? [];
   const active = jobs.filter((job: CronJobSummary) => !job.paused).length;
@@ -480,7 +487,13 @@ export function TasksPage() {
 
                     <div className="flex shrink-0 items-center gap-0.5">
                       <ActionButton
-                        onClick={() => runAction.mutate({ id: job.id, action: 'trigger' })}
+                        onClick={() =>
+                          runAction.mutate({
+                            id: job.id,
+                            action: 'trigger',
+                            profile: job.profile ?? '',
+                          })
+                        }
                         disabled={disabled}
                         label={t('tasks.trigger', { name: jobName })}
                         title={t('tasks.runNow')}
@@ -489,7 +502,11 @@ export function TasksPage() {
                       </ActionButton>
                       <ActionButton
                         onClick={() =>
-                          runAction.mutate({ id: job.id, action: job.paused ? 'resume' : 'pause' })
+                          runAction.mutate({
+                            id: job.id,
+                            action: job.paused ? 'resume' : 'pause',
+                            profile: job.profile ?? '',
+                          })
                         }
                         disabled={disabled}
                         label={
@@ -551,8 +568,8 @@ export function TasksPage() {
                       tone="danger"
                       message={t('tasks.deleteConfirm', { name: jobName })}
                       confirmLabel={t('common.delete')}
-                      pending={remove.isPending && remove.variables === job.id}
-                      onConfirm={() => remove.mutate(job.id)}
+                      pending={remove.isPending && remove.variables?.id === job.id}
+                      onConfirm={() => remove.mutate({ id: job.id, profile: job.profile ?? '' })}
                       onCancel={() => setConfirmDelete(null)}
                     />
                   )}

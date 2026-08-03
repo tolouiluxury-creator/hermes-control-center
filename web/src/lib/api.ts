@@ -118,11 +118,18 @@ export const toggleSkill = (name: string, enabled: boolean): Promise<ActionResul
 export const cronAction = (
   id: string,
   action: 'pause' | 'resume' | 'trigger',
+  profile: string,
 ): Promise<ActionResult> =>
-  apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
+  apiRequest<ActionResult>(
+    `/hermes/cron/${encodeURIComponent(id)}/${action}?profile=${encodeURIComponent(profile)}`,
+    { method: 'POST' },
+  );
 
-export const deleteCronJob = (id: string): Promise<ActionResult> =>
-  apiRequest<ActionResult>(`/hermes/cron/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const deleteCronJob = (id: string, profile: string): Promise<ActionResult> =>
+  apiRequest<ActionResult>(
+    `/hermes/cron/${encodeURIComponent(id)}?profile=${encodeURIComponent(profile)}`,
+    { method: 'DELETE' },
+  );
 
 export const createCronJob = (input: CronJobInput & { profile: string }): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/cron', { method: 'POST', ...jsonBody(input) });

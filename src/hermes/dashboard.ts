@@ -373,20 +373,32 @@ export class DashboardClient {
     });
   }
 
-  /** Pause, resume or trigger a scheduled job. */
-  cronAction(id: string, action: CronAction, options?: RequestOptions): Promise<ActionResult> {
+  /**
+   * Pause, resume or trigger a scheduled job. `profile` is required for the
+   * same reason as `createCron`/`updateCron`: each profile runs its own cron
+   * store and gateway, and without it Hermes falls back to its own idea of
+   * the current profile — which silently targets the wrong (likely
+   * gateway-less) store instead of erroring.
+   */
+  cronAction(
+    id: string,
+    action: CronAction,
+    profile: string,
+    options?: RequestOptions,
+  ): Promise<ActionResult> {
     return this.client.json(
       actionResultSchema,
-      `/api/cron/jobs/${encodeURIComponent(id)}/${action}`,
+      `/api/cron/jobs/${encodeURIComponent(id)}/${action}?profile=${encodeURIComponent(profile)}`,
       { ...options, method: 'POST' },
     );
   }
 
-  deleteCron(id: string, options?: RequestOptions): Promise<ActionResult> {
-    return this.client.json(actionResultSchema, `/api/cron/jobs/${encodeURIComponent(id)}`, {
-      ...options,
-      method: 'DELETE',
-    });
+  deleteCron(id: string, profile: string, options?: RequestOptions): Promise<ActionResult> {
+    return this.client.json(
+      actionResultSchema,
+      `/api/cron/jobs/${encodeURIComponent(id)}?profile=${encodeURIComponent(profile)}`,
+      { ...options, method: 'DELETE' },
+    );
   }
 
   /**
