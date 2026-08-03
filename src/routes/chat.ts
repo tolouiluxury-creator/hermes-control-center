@@ -211,7 +211,9 @@ export async function registerChatRoutes(
     // ~10 MB of raw bytes is roughly 13.3 MB base64 — reject well before Fastify's
     // own body-size limit so the failure reads as "too big" and not "server error".
     if (parsed.data.dataUrl.length > 14_000_000) {
-      return reply.code(413).send({ error: 'too_large', message: 'File is too large (max 10 MB).' });
+      return reply
+        .code(413)
+        .send({ error: 'too_large', message: 'File is too large (max 10 MB).' });
     }
     try {
       const result = await ctx.gateway.request<{
@@ -223,7 +225,9 @@ export async function registerChatRoutes(
         name: parsed.data.name,
       });
       if (!result.ref_text) {
-        return reply.code(503).send({ error: 'gateway_error', message: 'Attachment was not accepted.' });
+        return reply
+          .code(503)
+          .send({ error: 'gateway_error', message: 'Attachment was not accepted.' });
       }
       return { name: result.name ?? parsed.data.name, refText: result.ref_text };
     } catch (error) {
