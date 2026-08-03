@@ -224,6 +224,16 @@ export interface PromptInput {
   tags?: string[];
 }
 
+export interface Todo {
+  id: string;
+  sessionId: string;
+  text: string;
+  done: boolean;
+  pinned: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type WorkflowStepKind = 'prompt' | 'cron' | 'note';
 
 export interface WorkflowStep {

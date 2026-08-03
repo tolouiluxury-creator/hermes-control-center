@@ -10,6 +10,7 @@ import type {
   LogsResponse,
   Prompt,
   PromptInput,
+  Todo,
   ConfigRaw,
   CuratorStatus,
   EnvVar,
@@ -442,6 +443,27 @@ export const deletePrompt = (id: string): Promise<{ ok: boolean }> =>
 export const recordPromptUse = (id: string): Promise<{ uses: number }> =>
   apiRequest<{ uses: number }>(`/prompts/${encodeURIComponent(id)}/use`, { method: 'POST' });
 
+export const getTodos = (sessionId: string): Promise<{ todos: Todo[] }> =>
+  apiRequest<{ todos: Todo[] }>(`/todos?sessionId=${encodeURIComponent(sessionId)}`);
+
+export const createTodo = (sessionId: string, text: string): Promise<{ todo: Todo }> =>
+  apiRequest<{ todo: Todo }>('/todos', { method: 'POST', ...jsonBody({ sessionId, text }) });
+
+export const setTodoDone = (id: string, done: boolean): Promise<{ todo: Todo }> =>
+  apiRequest<{ todo: Todo }>(`/todos/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    ...jsonBody({ done }),
+  });
+
+export const setTodoPinned = (id: string, pinned: boolean): Promise<{ todo: Todo }> =>
+  apiRequest<{ todo: Todo }>(`/todos/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    ...jsonBody({ pinned }),
+  });
+
+export const deleteTodo = (id: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/todos/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
 export const getWorkflows = (): Promise<{ workflows: Workflow[] }> =>
   apiRequest<{ workflows: Workflow[] }>('/workflows');
 
@@ -755,6 +777,7 @@ export const queryKeys = {
   dashboardLayout: ['dashboard', 'layout'] as const,
   insights: ['insights'] as const,
   prompts: ['prompts'] as const,
+  todos: (sessionId: string) => ['todos', sessionId] as const,
   workflows: ['workflows'] as const,
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,
