@@ -15,9 +15,23 @@ npm run lint && npm run format:check && npm run typecheck && npm test && npm run
 There is no git remote configured yet, and no `gh` CLI on this machine — the commands below are
 meant to be run by you, in this order.
 
-Create the repository first (empty, no README, no licence, no `.gitignore` — the repo already has
-all three) at <https://github.com/new>, named `hermes-control-center` under
-`tolouiluxury-creator`. Then:
+Create the repository first at <https://github.com/new>, named `hermes-control-center` under
+`tolouiluxury-creator`, **set to Private**, and **empty** — no README, no licence, no `.gitignore`,
+because the repo already has all three and GitHub's copies would collide with the first push.
+
+**Private first is deliberate.** It gives you a real clone-and-install rehearsal without an audience,
+and it keeps `docs/HANDOFF.md` out of public view — that file names the server, its address and a
+Telegram account (see [Before going public](#before-going-public)).
+
+Copy-paste for the repository's own fields:
+
+| Field | Value |
+| --- | --- |
+| Description | `A dashboard-first web control center for Hermes Agent — widgets, chat, and management pages over the dashboard your agent already runs.` |
+| Website | leave empty for now |
+| Topics | `hermes-agent` `ai-agent` `dashboard` `control-panel` `typescript` `react` `fastify` `self-hosted` `llm` `agent-management` |
+
+Then:
 
 ```bash
 git remote add origin git@github.com:tolouiluxury-creator/hermes-control-center.git
@@ -42,8 +56,12 @@ git tag -a v0.1.0 -m "v0.1.0 — first release"
 git push origin v0.1.0
 ```
 
-The CI workflow in `.github/workflows/ci.yml` runs on push, so the badge in the README goes live
-with the first push. It runs the gate above on Node 22 and 24, then smoke-tests the built CLI.
+The CI workflow in `.github/workflows/ci.yml` runs on push, so it starts checking with the first
+push. It runs the gate above on Node 22 and 24, then smoke-tests the built CLI.
+
+⚠️ **The README's CI badge stays broken while the repo is private.** shields.io fetches it
+anonymously and gets a 404; you will see the result on the Actions tab regardless. It fixes itself
+the moment the repo goes public — nothing to change in the README.
 
 ### Optional: the GitHub release entry
 
@@ -68,6 +86,21 @@ no tests, no ESLint. Verified with `npm pack` and a clean install from the tarba
 
 If you do not publish to npm, drop the `npx` line from the README, or leave the note that says it is
 not on npm yet.
+
+## Before going public
+
+Private is a decision to revisit, not a permanent state. Three things to settle first:
+
+1. **`docs/HANDOFF.md` names your infrastructure** — the server's IP address, a Telegram account id,
+   the hostname of a separate service, profile names and paths. Either replace those with
+   placeholders, move the file to a private repository of its own, or stop tracking it. The file is
+   worth keeping: it is the reason this project's decisions are reconstructable.
+2. **Git history keeps what a later commit removes.** Cleaning the file in a new commit does not
+   clean it out of the 100-odd commits behind it. Going public means either rewriting history
+   (`git filter-repo`) or starting the public repository from a fresh initial commit.
+3. **Test fixtures were already cleaned** — they carried a real Telegram id, an account name and the
+   visible ends of a live bot token. Shapes kept, identities replaced. Worth re-checking with
+   `git grep` before the switch in case new ones crept in.
 
 ## 2. Run it on your server
 

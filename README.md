@@ -38,6 +38,11 @@ browser.
   messaging integrations, logs with level filters and a follow toggle, and analytics broken down by
   day, model and tool — each with the write actions that belong to it, behind a confirmation that
   spells out the consequence.
+- **The Telegram area.** Everything the bot is wired up with — whether it is switched on, whether
+  its credentials are there, and whether a gateway is actually running to act on any of it — plus
+  every conversation that has come through it, readable in full. You can carry a conversation on
+  from here; the answer appears in the control center and never goes back out over Telegram, which
+  the page says out loud rather than leaving you to find out.
 - **Workflows.** Ordered chains of prompts and scheduled jobs, in the control center's own database.
 - **A prompt library** — your own reusable prompts with `{{placeholders}}`, tags and a use counter.
   Hermes has no such thing, so this lives in the control center's database.
