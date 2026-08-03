@@ -61,6 +61,12 @@ export function ChatsPage() {
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [nearBottom, setNearBottom] = useState(true);
+  // Mirrors nearBottom for the auto-follow effect below, so a bare
+  // nearBottom change (manual scroll, jump-button click) doesn't retrigger it.
+  const nearBottomRef = useRef(nearBottom);
+  useEffect(() => {
+    nearBottomRef.current = nearBottom;
+  }, [nearBottom]);
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -120,9 +126,8 @@ export function ChatsPage() {
   // Only follow new content when the user was already at the bottom — reading
   // older history should not get yanked to the newest message.
   useEffect(() => {
-    if (nearBottom)
-      threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, streaming, nearBottom]);
+    if (nearBottomRef.current) threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
+  }, [messages, streaming]);
 
   const handleThreadScroll = () => {
     const el = threadRef.current;
