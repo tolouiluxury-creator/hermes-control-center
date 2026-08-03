@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import {
   CheckSquare,
+  ListPlus,
   MessagesSquare,
   Paperclip,
   Pin,
@@ -29,7 +30,7 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ChatMarkdown } from '@/components/ChatMarkdown';
 import { ChatToolbar, type ModelPick } from '@/components/ChatToolbar';
-import { ChatSidebar } from '@/components/ChatSidebar';
+import { ChatSidebar, type ChatSidebarHandle } from '@/components/ChatSidebar';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { type TodosPanelHandle } from '@/components/TodosPanel';
 import { useToast } from '@/components/Toast';
@@ -122,6 +123,7 @@ export function ChatsPage() {
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const todosPanelRef = useRef<TodosPanelHandle>(null);
+  const chatSidebarRef = useRef<ChatSidebarHandle>(null);
 
   // Only follow new content when the user was already at the bottom — reading
   // older history should not get yanked to the newest message.
@@ -521,6 +523,14 @@ export function ChatsPage() {
     }
   };
 
+  const sendToTodos = (text: string) => {
+    chatSidebarRef.current?.openTodosTab();
+    // The panel only mounts its ToDos tab content once open — the ref call
+    // above triggers that synchronously in React's commit phase, so this
+    // runs after the tab (and thus the input) exists.
+    requestAnimationFrame(() => todosPanelRef.current?.prefillAndFocus(text));
+  };
+
   const visibleSessions =
     listSearch.trim() === ''
       ? sessions
@@ -868,23 +878,47 @@ export function ChatsPage() {
                     return (
                       <div
                         key={index}
-                        className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                        className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                       >
-                        <div
-                          className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                            isUser
-                              ? 'rounded-br-md bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
-                              : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)] text-[var(--color-ink)]'
-                          }`}
-                        >
-                          {message.text ? (
-                            isUser ? (
-                              message.text
+                        <div className="flex max-w-[80%] items-end gap-1.5">
+                          {!isUser && (
+                            <button
+                              type="button"
+                              onClick={() => sendToTodos(message.text)}
+                              title={t('chat.addToTodos')}
+                              aria-label={t('chat.addToTodos')}
+                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-accent)]"
+                            >
+                              <ListPlus size={12} aria-hidden />
+                            </button>
+                          )}
+                          <div
+                            className={`rounded-2xl px-3.5 py-2 text-sm ${
+                              isUser
+                                ? 'rounded-br-md bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
+                                : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)] text-[var(--color-ink)]'
+                            }`}
+                          >
+                            {message.text ? (
+                              isUser ? (
+                                message.text
+                              ) : (
+                                <ChatMarkdown text={message.text} />
+                              )
                             ) : (
-                              <ChatMarkdown text={message.text} />
-                            )
-                          ) : (
-                            <TypingDots />
+                              <TypingDots />
+                            )}
+                          </div>
+                          {isUser && (
+                            <button
+                              type="button"
+                              onClick={() => sendToTodos(message.text)}
+                              title={t('chat.addToTodos')}
+                              aria-label={t('chat.addToTodos')}
+                              className="mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-accent)]"
+                            >
+                              <ListPlus size={12} aria-hidden />
+                            </button>
                           )}
                         </div>
                         {time && (
@@ -996,7 +1030,7 @@ export function ChatsPage() {
           )}
         </div>
 
-        <ChatSidebar sessionId={sessionId} todosPanelRef={todosPanelRef} />
+        <ChatSidebar ref={chatSidebarRef} sessionId={sessionId} todosPanelRef={todosPanelRef} />
       </div>
     </PageShell>
   );

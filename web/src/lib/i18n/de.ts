@@ -218,6 +218,7 @@ export const de: Dict = {
   'chat.groupYesterday': 'Gestern',
   'chat.groupThisWeek': 'Diese Woche',
   'chat.groupOlder': 'Älter',
+  'chat.addToTodos': 'Als ToDo übernehmen',
   'chat.toolbar.modelTitle': 'Modell für die nächste Unterhaltung',
   'chat.toolbar.modelLive': 'Modell für diese Unterhaltung',
   'chat.toolbar.modelBusy': 'Erst die Antwort abwarten, dann das Modell wechseln',

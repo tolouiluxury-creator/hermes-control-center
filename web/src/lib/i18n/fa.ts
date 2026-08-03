@@ -213,6 +213,7 @@ export const fa: Dict = {
   'chat.groupYesterday': 'دیروز',
   'chat.groupThisWeek': 'این هفته',
   'chat.groupOlder': 'قدیمی‌تر',
+  'chat.addToTodos': 'افزودن به کارها',
   'chat.toolbar.modelTitle': 'مدل برای گفتگوی بعدی',
   'chat.toolbar.modelLive': 'مدل این گفتگو',
   'chat.toolbar.modelBusy': 'پیش از تعویض مدل، پاسخ را به پایان برسانید',

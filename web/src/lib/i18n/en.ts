@@ -216,6 +216,7 @@ export const en: Dict = {
   'chat.groupYesterday': 'Yesterday',
   'chat.groupThisWeek': 'This week',
   'chat.groupOlder': 'Older',
+  'chat.addToTodos': 'Add as a to-do',
   'chat.toolbar.modelTitle': 'Model for the next conversation',
   'chat.toolbar.modelLive': 'Model for this conversation',
   'chat.toolbar.modelBusy': 'Wait for the answer before switching models',

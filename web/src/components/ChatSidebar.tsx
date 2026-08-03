@@ -1,4 +1,4 @@
-import { useState, type Ref } from 'react';
+import { forwardRef, useImperativeHandle, useState, type Ref } from 'react';
 import { ChevronLeft, ChevronRight, FolderOpen, ListTodo } from 'lucide-react';
 import { TodosPanel, type TodosPanelHandle } from '@/components/TodosPanel';
 import { WorkspaceBrowser } from '@/components/WorkspaceBrowser';
@@ -17,13 +17,14 @@ function readStoredTab(): SidebarTab {
   return localStorage.getItem(TAB_KEY) === 'workspace' ? 'workspace' : 'todos';
 }
 
-export function ChatSidebar({
-  sessionId,
-  todosPanelRef,
-}: {
-  sessionId: string | null;
-  todosPanelRef: Ref<TodosPanelHandle>;
-}) {
+export interface ChatSidebarHandle {
+  openTodosTab: () => void;
+}
+
+export const ChatSidebar = forwardRef<
+  ChatSidebarHandle,
+  { sessionId: string | null; todosPanelRef: Ref<TodosPanelHandle> }
+>(function ChatSidebar({ sessionId, todosPanelRef }, ref) {
   const { t } = useI18n();
   const [open, setOpen] = useState(readStoredOpen);
   const [tab, setTab] = useState<SidebarTab>(readStoredTab);
@@ -36,6 +37,13 @@ export function ChatSidebar({
     setTab(value);
     localStorage.setItem(TAB_KEY, value);
   };
+
+  useImperativeHandle(ref, () => ({
+    openTodosTab: () => {
+      setTabPersist('todos');
+      setOpenPersist(true);
+    },
+  }));
 
   if (!open) {
     return (
@@ -123,4 +131,4 @@ export function ChatSidebar({
       </div>
     </aside>
   );
-}
+});
