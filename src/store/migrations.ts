@@ -138,6 +138,24 @@ export const MIGRATIONS: readonly Migration[] = [
     // drop reaches databases that already ran it.
     sql: `DROP TABLE IF EXISTS agents;`,
   },
+  {
+    version: 3,
+    name: 'add todos',
+    // Chat-scoped quick notes. Hermes has no such thing, same reasoning as
+    // the prompt library: this is the control center's own data.
+    sql: `
+      CREATE TABLE todos (
+        id          TEXT PRIMARY KEY,
+        session_id  TEXT NOT NULL,
+        text        TEXT NOT NULL,
+        done        INTEGER NOT NULL DEFAULT 0,
+        pinned      INTEGER NOT NULL DEFAULT 0,
+        created_at  INTEGER NOT NULL,
+        updated_at  INTEGER NOT NULL
+      );
+      CREATE INDEX todos_session_idx ON todos (session_id);
+    `,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(
