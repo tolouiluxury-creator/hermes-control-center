@@ -310,10 +310,6 @@ export function ChatsPage() {
     }
   };
 
-  const allSelected = sessions.length > 0 && selected.size === sessions.length;
-  const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(sessions.map((session) => session.id)));
-
   const leaveSelection = () => {
     setSelecting(false);
     setSelected(new Set());
@@ -516,6 +512,11 @@ export function ChatsPage() {
           return haystack.includes(listSearch.trim().toLowerCase());
         });
   const groups = groupByRecency(visibleSessions);
+
+  const allSelected =
+    visibleSessions.length > 0 && visibleSessions.every((session) => selected.has(session.id));
+  const toggleAll = () =>
+    setSelected(allSelected ? new Set() : new Set(visibleSessions.map((session) => session.id)));
 
   return (
     <PageShell title={t('nav.chats')} description={t('page.chats.desc')} wide>
