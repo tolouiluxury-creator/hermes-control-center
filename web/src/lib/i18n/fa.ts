@@ -143,6 +143,7 @@ export const fa: Dict = {
   'telegram.reportedState': 'وضعیت گزارش‌شده',
   'telegram.homeChannel': 'کانال خانگی',
   'telegram.settings': 'تنظیمات',
+  'telegram.settingsSummary': '{total} متغیر · {missing} مورد الزامی هنوز تنظیم نشده',
   'telegram.required': 'الزامی',
   'telegram.isSet': 'تنظیم شده',
   'telegram.notSet': 'تنظیم نشده',

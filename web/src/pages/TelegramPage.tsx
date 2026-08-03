@@ -182,7 +182,7 @@ export function TelegramPage() {
           {t('telegram.notAvailable')}
         </p>
       ) : (
-        <>
+        <div className="lg:flex lg:h-[calc(100dvh-11rem)] lg:flex-col">
           <ConnectionCard
             platform={telegram}
             pending={toggle.isPending || test.isPending}
@@ -194,8 +194,8 @@ export function TelegramPage() {
             onTest={() => test.mutate()}
           />
 
-          <section className="mt-4 grid gap-4 lg:h-[calc(100vh-22rem)] lg:min-h-[30rem] lg:grid-cols-[18rem_1fr]">
-            <div className="card flex min-h-0 flex-col overflow-y-auto p-3">
+          <section className="mt-4 grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_1fr]">
+            <div className="card flex max-h-[70dvh] min-h-0 min-w-0 flex-col overflow-y-auto p-3 lg:max-h-none">
               <p className="mb-2 text-xs font-medium">{t('telegram.conversations')}</p>
               {sessions.isPending ? (
                 <SkeletonText lines={4} />
@@ -243,8 +243,13 @@ export function TelegramPage() {
             {/* Bounded at every width, not just on a wide screen: an unbounded
                 transcript grows the page instead of scrolling itself, and
                 pushes the reply box below the fold — which is exactly what a
-                391-message history did. */}
-            <div className="card flex h-[70dvh] flex-col p-4 lg:h-auto lg:min-h-0">
+                391-message history did. The height is a share of the viewport
+                and not `100vh` minus a guess at the header. On a wide screen the
+                pane takes the leftover height of a flex column instead, so the
+                connection card above — which grows with the platform's env vars
+                — is subtracted by the browser rather than estimated here. Both
+                earlier attempts guessed, and both hung off the bottom. */}
+            <div className="card flex h-[70dvh] min-w-0 flex-col p-4 lg:h-auto lg:min-h-0">
               {openId === null ? (
                 <div className="grid flex-1 place-items-center text-center">
                   <div>
@@ -277,6 +282,10 @@ export function TelegramPage() {
                     </button>
                   </div>
 
+                  {/* Note: resizing the window while a conversation is open
+                      leaves the view where it was rather than following the
+                      newest line. A ResizeObserver was tried and measurably did
+                      not fix it, so it is not in here pretending to. */}
                   <div ref={threadRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto">
                     {chat.messages.map((message, index) => (
                       <div
@@ -284,7 +293,7 @@ export function TelegramPage() {
                         className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm whitespace-pre-wrap ${
+                          className={`max-w-[80%] overflow-x-auto rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-wrap ${
                             message.role === 'user'
                               ? 'bg-[var(--color-accent)]/15'
                               : 'bg-[var(--color-raised)]'
@@ -342,7 +351,7 @@ export function TelegramPage() {
               )}
             </div>
           </section>
-        </>
+        </div>
       )}
     </PageShell>
   );
@@ -448,9 +457,20 @@ function ConnectionCard({
         />
       )}
 
+      {/* Collapsed by default: this is reference, and on this page the space
+          belongs to the conversation below it. The summary carries the only
+          number worth acting on — how many required values are still missing. */}
       {platform.envVars.length > 0 && (
-        <div className="mt-4">
-          <p className="text-xs font-medium">{t('telegram.settings')}</p>
+        <details className="mt-4">
+          <summary className="cursor-pointer text-xs font-medium marker:text-[var(--color-ink-faint)]">
+            {t('telegram.settings')}
+            <span className="ms-2 font-normal text-[var(--color-ink-faint)]">
+              {t('telegram.settingsSummary', {
+                total: platform.envVars.length,
+                missing: platform.requiredMissing,
+              })}
+            </span>
+          </summary>
           <ul className="mt-1.5 space-y-1.5">
             {platform.envVars.map((variable) => (
               <li key={variable.key} className="flex flex-wrap items-baseline gap-x-2 text-xs">
@@ -481,7 +501,7 @@ function ConnectionCard({
           <p className="mt-2 text-[0.7rem] text-[var(--color-ink-faint)]">
             {t('telegram.envNote')}
           </p>
-        </div>
+        </details>
       )}
     </section>
   );

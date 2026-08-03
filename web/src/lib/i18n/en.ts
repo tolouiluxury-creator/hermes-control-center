@@ -145,6 +145,7 @@ export const en: Dict = {
   'telegram.reportedState': 'Reported state',
   'telegram.homeChannel': 'Home channel',
   'telegram.settings': 'Settings',
+  'telegram.settingsSummary': '{total} variables · {missing} required still missing',
   'telegram.required': 'required',
   'telegram.isSet': 'set',
   'telegram.notSet': 'not set',
