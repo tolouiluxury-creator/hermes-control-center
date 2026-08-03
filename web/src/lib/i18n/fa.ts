@@ -920,4 +920,11 @@ export const fa: Dict = {
   'todos.unpin': 'برداشتن سنجاق',
   'todos.actionFailed': 'عملیات ناموفق بود',
   'todos.needsSession': 'اول یک گفتگو را باز یا شروع کنید.',
+
+  // Chat sidebar
+  'chatSidebar.todos': 'کارها',
+  'chatSidebar.workspace': 'فضای کاری',
+  'chatSidebar.collapse': 'جمع کردن نوار کناری',
+  'chatSidebar.expand': 'باز کردن نوار کناری',
+  'chatSidebar.workspaceComingSoon': 'هنوز متصل نشده.',
 };

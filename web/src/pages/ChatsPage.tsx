@@ -29,7 +29,9 @@ import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ChatMarkdown } from '@/components/ChatMarkdown';
 import { ChatToolbar, type ModelPick } from '@/components/ChatToolbar';
+import { ChatSidebar } from '@/components/ChatSidebar';
 import { ConfirmInline } from '@/components/ConfirmInline';
+import { type TodosPanelHandle } from '@/components/TodosPanel';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime, formatTime } from '@/lib/format';
@@ -112,6 +114,7 @@ export function ChatsPage() {
   const [liveId, setLiveId] = useState<string | null>(null);
   const threadRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const todosPanelRef = useRef<TodosPanelHandle>(null);
 
   // Keep the newest message in view as tokens arrive.
   useEffect(() => {
@@ -962,6 +965,8 @@ export function ChatsPage() {
             </>
           )}
         </div>
+
+        <ChatSidebar sessionId={sessionId} todosPanelRef={todosPanelRef} />
       </div>
     </PageShell>
   );

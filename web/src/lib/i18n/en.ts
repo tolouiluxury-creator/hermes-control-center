@@ -921,4 +921,11 @@ export const en: Dict = {
   'todos.unpin': 'Unpin',
   'todos.actionFailed': 'Action failed',
   'todos.needsSession': 'Open or start a conversation first.',
+
+  // Chat sidebar
+  'chatSidebar.todos': 'ToDos',
+  'chatSidebar.workspace': 'Workspace',
+  'chatSidebar.collapse': 'Collapse sidebar',
+  'chatSidebar.expand': 'Expand sidebar',
+  'chatSidebar.workspaceComingSoon': 'Not wired up yet.',
 };

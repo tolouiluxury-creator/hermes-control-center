@@ -931,4 +931,11 @@ export const de: Dict = {
   'todos.unpin': 'Lösen',
   'todos.actionFailed': 'Aktion fehlgeschlagen',
   'todos.needsSession': 'Erst eine Unterhaltung öffnen oder starten.',
+
+  // Chat sidebar
+  'chatSidebar.todos': 'ToDos',
+  'chatSidebar.workspace': 'Workspace',
+  'chatSidebar.collapse': 'Seitenleiste einklappen',
+  'chatSidebar.expand': 'Seitenleiste ausklappen',
+  'chatSidebar.workspaceComingSoon': 'Wird noch angebunden.',
 };
