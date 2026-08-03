@@ -146,9 +146,12 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   });
 
   if (root.isPending) {
-    return (
+    const content = <SkeletonText lines={6} />;
+    return compact ? (
+      content
+    ) : (
       <PageShell title={t('nav.workspace')} description={t('page.workspace.desc')}>
-        <SkeletonText lines={6} />
+        {content}
       </PageShell>
     );
   }
@@ -156,17 +159,22 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   // Nothing configured means nothing shown. See the route module for why there
   // is no default: guessing which directory is safe to expose is not possible.
   if (!root.data?.configured) {
-    return (
+    const content = (
+      <div className="card p-8">
+        <p className="text-sm font-medium">{t('workspace.notConfigured')}</p>
+        <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
+          {t('workspace.notConfiguredWhy')}
+        </p>
+        <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-3 font-mono text-xs">
+          {'{\n  "workspaceRoot": "/root/workspace"\n}'}
+        </pre>
+      </div>
+    );
+    return compact ? (
+      content
+    ) : (
       <PageShell title={t('nav.workspace')} description={t('page.workspace.desc')}>
-        <div className="card p-8">
-          <p className="text-sm font-medium">{t('workspace.notConfigured')}</p>
-          <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-            {t('workspace.notConfiguredWhy')}
-          </p>
-          <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-3 font-mono text-xs">
-            {'{\n  "workspaceRoot": "/root/workspace"\n}'}
-          </pre>
-        </div>
+        {content}
       </PageShell>
     );
   }
@@ -174,7 +182,7 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   const entries = listing.data?.entries ?? [];
 
   return (
-    <div>
+    <div className={compact ? 'flex h-full min-h-0 flex-col' : undefined}>
       <div className="card mb-3 flex flex-wrap items-center gap-2 p-3">
         <span className="font-mono text-xs text-[var(--color-ink-muted)]">
           {listing.data?.display ?? '/'}
