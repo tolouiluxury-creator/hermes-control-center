@@ -26,16 +26,18 @@ import { formatRelativeTime } from '@/lib/format';
 import type { EnvVar, Toolset } from '@/lib/hermesTypes';
 
 function Section({
+  id,
   title,
   description,
   children,
 }: {
+  id?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mb-8">
+    <section id={id} className="mb-8 scroll-mt-4">
       <h3 className="text-sm font-semibold">{title}</h3>
       {description && (
         <p className="mt-0.5 mb-3 max-w-2xl text-xs text-[var(--color-ink-muted)]">{description}</p>
@@ -63,7 +65,7 @@ const THEME_LABEL_KEY: Record<ThemePreference, string> = {
 function LanguageSection() {
   const { t, lang, setLang } = useI18n();
   return (
-    <Section title={t('settings.language')} description={t('settings.language.desc')}>
+    <Section id="language" title={t('settings.language')} description={t('settings.language.desc')}>
       <div className="flex flex-wrap gap-2">
         {LANGUAGES.map(({ id, endonym }) => {
           const active = lang === id;
@@ -91,7 +93,11 @@ function AppearanceSection() {
   const { t } = useI18n();
   const { preference, setPreference } = useTheme();
   return (
-    <Section title={t('settings.appearance')} description={t('settings.appearance.desc')}>
+    <Section
+      id="appearance"
+      title={t('settings.appearance')}
+      description={t('settings.appearance.desc')}
+    >
       <div className="flex flex-wrap gap-2">
         {THEME_OPTIONS.map(({ id, icon: Icon }) => {
           const active = preference === id;
@@ -195,7 +201,7 @@ function ToolsetsSection() {
   });
 
   return (
-    <Section title={t('settings.tools')} description={t('settings.tools.desc')}>
+    <Section id="tools" title={t('settings.tools')} description={t('settings.tools.desc')}>
       {isPending ? (
         <SkeletonText lines={5} />
       ) : error ? (
@@ -275,7 +281,11 @@ function MaintenanceSection() {
   });
 
   return (
-    <Section title={t('settings.maintenance')} description={t('settings.maintenance.desc')}>
+    <Section
+      id="maintenance"
+      title={t('settings.maintenance')}
+      description={t('settings.maintenance.desc')}
+    >
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">
           <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.version')}</p>
@@ -579,7 +589,7 @@ function EnvSection() {
   }, [entries, search, category]);
 
   return (
-    <Section title={t('settings.env')} description={t('settings.env.desc')}>
+    <Section id="env" title={t('settings.env')} description={t('settings.env.desc')}>
       {profileOptions.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <ChipMenu
@@ -714,7 +724,7 @@ function ConfigSection() {
   });
 
   return (
-    <Section title={t('settings.config')} description={t('settings.config.desc')}>
+    <Section id="config" title={t('settings.config')} description={t('settings.config.desc')}>
       {isPending ? (
         <SkeletonText lines={6} />
       ) : error ? (
@@ -743,7 +753,7 @@ function SecuritySection() {
   const { t } = useI18n();
   const [before, after] = t('settings.security.password').split('{command}');
   return (
-    <Section title={t('settings.security')} description={t('settings.security.desc')}>
+    <Section id="security" title={t('settings.security')} description={t('settings.security.desc')}>
       <div className="card flex items-start gap-3 p-4">
         <KeyRound size={16} className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]" aria-hidden />
         <p className="text-xs text-[var(--color-ink-muted)]">
@@ -758,10 +768,44 @@ function SecuritySection() {
   );
 }
 
+/**
+ * Seven sections on one page, and the useful ones are at the bottom: the
+ * toolsets alone are twenty-six rows, which put "Environment & keys" some two
+ * thousand pixels down. Scrolling for it is how a user concludes a setting is
+ * not there at all — so the page names its own sections and jumps to them.
+ */
+function SectionIndex() {
+  const { t } = useI18n();
+  const entries: [string, string][] = [
+    ['language', t('settings.language')],
+    ['appearance', t('settings.appearance')],
+    ['tools', t('settings.tools')],
+    ['maintenance', t('settings.maintenance')],
+    ['env', t('settings.env')],
+    ['config', t('settings.config')],
+    ['security', t('settings.security')],
+  ];
+  return (
+    <nav aria-label={t('settings.jumpTo')} className="mb-6 flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-[var(--color-ink-faint)]">{t('settings.jumpTo')}</span>
+      {entries.map(([id, label]) => (
+        <a
+          key={id}
+          href={`#${id}`}
+          className="rounded-full border border-[var(--color-hairline)] px-2.5 py-1 text-[0.7rem] text-[var(--color-ink-muted)] transition-colors hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
+        >
+          {label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 export function EinstellungenPage() {
   const { t } = useI18n();
   return (
     <PageShell title={t('nav.einstellungen')} description={t('page.einstellungen.desc')}>
+      <SectionIndex />
       <LanguageSection />
       <AppearanceSection />
       <ToolsetsSection />

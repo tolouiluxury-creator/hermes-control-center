@@ -234,6 +234,7 @@ export const de: Dict = {
   // Settings
   'settings.appearance': 'Erscheinungsbild',
   'settings.appearance.desc': 'Gilt nur für dieses Gerät.',
+  'settings.jumpTo': 'Springe zu',
   'settings.language': 'Sprache',
   'settings.language.desc': 'Die Sprache der Oberfläche, für dieses Gerät.',
   'settings.theme.dark': 'Dunkel',

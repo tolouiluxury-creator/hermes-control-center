@@ -229,6 +229,7 @@ export const fa: Dict = {
   // Settings
   'settings.appearance': 'ظاهر',
   'settings.appearance.desc': 'فقط برای این دستگاه اعمال می‌شود.',
+  'settings.jumpTo': 'پرش به',
   'settings.language': 'زبان',
   'settings.language.desc': 'زبان رابط کاربری، برای این دستگاه.',
   'settings.theme.dark': 'تیره',
