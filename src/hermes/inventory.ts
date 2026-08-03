@@ -909,6 +909,7 @@ export const sessionMessagesSchema = z.looseObject({
       z.looseObject({
         role: z.string().nullish(),
         content: z.string().nullish(),
+        timestamp: numeric,
       }),
     )
     .nullish(),
@@ -917,12 +918,13 @@ export const sessionMessagesSchema = z.looseObject({
 export interface TranscriptMessage {
   role: string;
   text: string;
+  timestamp: number | null;
 }
 
 /**
- * Reduces a stored transcript to the {role, text} the chat thread renders.
- * Only user and assistant turns with text survive: tool-call turns and internal
- * roles would show as blank bubbles.
+ * Reduces a stored transcript to what the chat thread renders. Only user and
+ * assistant turns with text survive: tool-call turns and internal roles would
+ * show as blank bubbles.
  */
 export function normalizeSessionMessages(
   raw: z.infer<typeof sessionMessagesSchema>,
@@ -931,10 +933,11 @@ export function normalizeSessionMessages(
     .map((message) => ({
       role: message.role === 'user' ? 'user' : 'assistant',
       text: message.content?.trim() ?? '',
+      timestamp: toEpochMs(message.timestamp),
       keep: (message.role === 'user' || message.role === 'assistant') && !!message.content?.trim(),
     }))
     .filter((message) => message.keep)
-    .map(({ role, text }) => ({ role, text }));
+    .map(({ role, text, timestamp }) => ({ role, text, timestamp }));
 }
 
 // --- Memory / knowledge -----------------------------------------------------

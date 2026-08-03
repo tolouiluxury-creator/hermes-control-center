@@ -11,13 +11,15 @@ import {
   testPlatform,
 } from '@/lib/api';
 import type { MessagingPlatform, SessionSummary } from '@/lib/hermesTypes';
+import { ChatMarkdown } from '@/components/ChatMarkdown';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { ChipMenu, type ChipMenuOption } from '@/components/ChipMenu';
+import { TypingDots } from '@/components/TypingDots';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
-import { formatRelativeTime } from '@/lib/format';
+import { formatRelativeTime, formatTime } from '@/lib/format';
 import { useResumedChat } from '@/lib/useResumedChat';
 
 /**
@@ -260,6 +262,9 @@ export function TelegramPage() {
                       <MessagesSquare size={22} />
                     </span>
                     <p className="mt-3 text-sm font-medium">{t('telegram.pickChat')}</p>
+                    <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                      {t('telegram.pickChatHint')}
+                    </p>
                   </div>
                 </div>
               ) : (
@@ -287,22 +292,39 @@ export function TelegramPage() {
                       newest line. A ResizeObserver was tried and measurably did
                       not fix it, so it is not in here pretending to. */}
                   <div ref={threadRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto">
-                    {chat.messages.map((message, index) => (
-                      <div
-                        key={index}
-                        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                      >
+                    {chat.messages.map((message, index) => {
+                      const isUser = message.role === 'user';
+                      const time = formatTime(message.timestamp);
+                      return (
                         <div
-                          className={`max-w-[80%] overflow-x-auto rounded-2xl px-3.5 py-2 text-sm break-words whitespace-pre-wrap ${
-                            message.role === 'user'
-                              ? 'bg-[var(--color-accent)]/15'
-                              : 'bg-[var(--color-raised)]'
-                          }`}
+                          key={index}
+                          className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                         >
-                          {message.text}
+                          <div
+                            className={`max-w-[80%] overflow-x-auto rounded-2xl px-3.5 py-2 text-sm ${
+                              isUser
+                                ? 'rounded-br-md break-words whitespace-pre-wrap bg-[var(--color-accent)]/15'
+                                : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)]'
+                            }`}
+                          >
+                            {message.text ? (
+                              isUser ? (
+                                message.text
+                              ) : (
+                                <ChatMarkdown text={message.text} />
+                              )
+                            ) : (
+                              <TypingDots />
+                            )}
+                          </div>
+                          {time && (
+                            <span className="mt-1 px-1 text-[0.65rem] text-[var(--color-ink-faint)]">
+                              {time}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <form

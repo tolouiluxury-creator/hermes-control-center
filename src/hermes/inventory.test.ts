@@ -521,8 +521,8 @@ describe('normalizeSessionMessages', () => {
   const real = {
     session_id: '1438af28793a',
     messages: [
-      { role: 'user', content: 'bist du da' },
-      { role: 'assistant', content: 'Ja, ich bin da.' },
+      { role: 'user', content: 'bist du da', timestamp: 1785751923.0 },
+      { role: 'assistant', content: 'Ja, ich bin da.', timestamp: 1785751925.5 },
       { role: 'assistant', content: '' }, // tool-only turn: dropped
       { role: 'tool', content: 'result' }, // internal role: dropped
     ],
@@ -531,8 +531,8 @@ describe('normalizeSessionMessages', () => {
   it('keeps user and assistant turns with text, dropping empty and tool turns', () => {
     const messages = normalizeSessionMessages(real);
     expect(messages).toEqual([
-      { role: 'user', text: 'bist du da' },
-      { role: 'assistant', text: 'Ja, ich bin da.' },
+      { role: 'user', text: 'bist du da', timestamp: 1785751923000 },
+      { role: 'assistant', text: 'Ja, ich bin da.', timestamp: 1785751925500 },
     ]);
   });
 });

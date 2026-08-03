@@ -158,6 +158,7 @@ export const fa: Dict = {
   'telegram.conversations': 'گفتگوها',
   'telegram.noChats': 'هنوز چیزی از راه ربات در این نمایه نیامده است.',
   'telegram.pickChat': 'یک گفتگو را برای خواندن انتخاب کنید.',
+  'telegram.pickChatHint': 'برای دیدن تاریخچه، یک گفتگو را از سمت چپ انتخاب کنید.',
   'telegram.unknownChat': 'گفتگوی ناشناخته',
   'telegram.continueHere': 'ادامه در اینجا',
   'telegram.reply': 'پاسخ',

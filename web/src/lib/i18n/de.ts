@@ -162,6 +162,7 @@ export const de: Dict = {
   'telegram.conversations': 'Unterhaltungen',
   'telegram.noChats': 'In diesem Profil ist noch nichts über den Bot gelaufen.',
   'telegram.pickChat': 'Wähle eine Unterhaltung zum Lesen.',
+  'telegram.pickChatHint': 'Links eine Unterhaltung wählen, um ihren Verlauf zu sehen.',
   'telegram.unknownChat': 'Unbekannter Chat',
   'telegram.continueHere': 'Hier fortsetzen',
   'telegram.reply': 'Antworten',

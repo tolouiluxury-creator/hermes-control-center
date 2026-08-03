@@ -480,6 +480,8 @@ export const getConnection = (): Promise<PublicHermesConnection> =>
 export interface ChatMessage {
   role: string;
   text: string;
+  /** Absent for a message appended live this session — it just happened. */
+  timestamp?: number | null;
 }
 
 export interface ChatSessionSummary {

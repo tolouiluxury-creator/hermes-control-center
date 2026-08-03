@@ -160,6 +160,7 @@ export const en: Dict = {
   'telegram.conversations': 'Conversations',
   'telegram.noChats': 'Nothing has come through the bot in this profile yet.',
   'telegram.pickChat': 'Pick a conversation to read it.',
+  'telegram.pickChatHint': 'Choose a conversation on the left to see its history.',
   'telegram.unknownChat': 'Unknown chat',
   'telegram.continueHere': 'Continue here',
   'telegram.reply': 'Reply',

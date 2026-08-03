@@ -77,6 +77,14 @@ export function formatDateTime(timestamp: number | null | undefined, locale = 'd
   }).format(new Date(timestamp));
 }
 
+/** Clock time only, e.g. "18:29" — a transcript's own date is already in its header. */
+export function formatTime(timestamp: number | null | undefined, locale = 'de'): string | null {
+  if (timestamp === null || timestamp === undefined || !Number.isFinite(timestamp)) return null;
+  return new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(
+    new Date(timestamp),
+  );
+}
+
 /** Compact relative time, e.g. "vor 12 s". Locale-aware via Intl. */
 export function formatRelativeTime(timestamp: number, locale = 'de', now = Date.now()): string {
   const deltaSeconds = Math.round((timestamp - now) / 1000);

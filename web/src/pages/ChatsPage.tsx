@@ -21,7 +21,8 @@ import { ChatToolbar, type ModelPick } from '@/components/ChatToolbar';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
-import { formatRelativeTime } from '@/lib/format';
+import { formatRelativeTime, formatTime } from '@/lib/format';
+import { TypingDots } from '@/components/TypingDots';
 
 interface GatewayEventData {
   type: string;
@@ -740,32 +741,39 @@ export function ChatsPage() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((message, index) => (
-                    <div
-                      key={index}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                  messages.map((message, index) => {
+                    const isUser = message.role === 'user';
+                    const time = formatTime(message.timestamp);
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
-                          message.role === 'user'
-                            ? 'bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
-                            : 'bg-[var(--color-raised)] text-[var(--color-ink)]'
-                        }`}
+                        key={index}
+                        className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
                       >
-                        {message.text ? (
-                          message.role === 'user' ? (
-                            message.text
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${
+                            isUser
+                              ? 'rounded-br-md bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
+                              : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)] text-[var(--color-ink)]'
+                          }`}
+                        >
+                          {message.text ? (
+                            isUser ? (
+                              message.text
+                            ) : (
+                              <ChatMarkdown text={message.text} />
+                            )
                           ) : (
-                            <ChatMarkdown text={message.text} />
-                          )
-                        ) : (
-                          <span className="inline-flex gap-1 text-[var(--color-ink-faint)]">
-                            <span className="animate-pulse">●</span>
+                            <TypingDots />
+                          )}
+                        </div>
+                        {time && (
+                          <span className="mt-1 px-1 text-[0.65rem] text-[var(--color-ink-faint)]">
+                            {time}
                           </span>
                         )}
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
 
