@@ -105,7 +105,18 @@ function SystemInfo({ collapsed }: { collapsed: boolean }) {
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-[var(--color-ink-faint)]">{t('shell.profile')}</dt>
-          <dd className="truncate font-mono">{agent?.profile ?? agent?.profiles[0] ?? '—'}</dd>
+          {/*
+           * Hermes 0.19 reports every known profile in `agent.profiles`
+           * instead of which one is current (`agent.profile` is always
+           * null) — falling back to `profiles[0]` would show whichever
+           * profile happens to sort first, not the one this deployment
+           * actually runs as. `connection.profile` is ground truth: it is
+           * what this process was started with (`--profile`), the same
+           * value every request is scoped to.
+           */}
+          <dd className="truncate font-mono">
+            {snapshot?.connection.profile ?? agent?.profile ?? agent?.profiles[0] ?? '—'}
+          </dd>
         </div>
         <div className="flex justify-between gap-2">
           <dt className="text-[var(--color-ink-faint)]">{t('agentWidget.uptime')}</dt>
