@@ -937,5 +937,4 @@ export const de: Dict = {
   'chatSidebar.workspace': 'Workspace',
   'chatSidebar.collapse': 'Seitenleiste einklappen',
   'chatSidebar.expand': 'Seitenleiste ausklappen',
-  'chatSidebar.workspaceComingSoon': 'Wird noch angebunden.',
 };

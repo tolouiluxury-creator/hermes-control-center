@@ -926,5 +926,4 @@ export const fa: Dict = {
   'chatSidebar.workspace': 'فضای کاری',
   'chatSidebar.collapse': 'جمع کردن نوار کناری',
   'chatSidebar.expand': 'باز کردن نوار کناری',
-  'chatSidebar.workspaceComingSoon': 'هنوز متصل نشده.',
 };

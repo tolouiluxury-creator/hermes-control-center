@@ -927,5 +927,4 @@ export const en: Dict = {
   'chatSidebar.workspace': 'Workspace',
   'chatSidebar.collapse': 'Collapse sidebar',
   'chatSidebar.expand': 'Expand sidebar',
-  'chatSidebar.workspaceComingSoon': 'Not wired up yet.',
 };

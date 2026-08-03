@@ -1,6 +1,7 @@
 import { useState, type Ref } from 'react';
 import { ChevronLeft, ChevronRight, FolderOpen, ListTodo } from 'lucide-react';
 import { TodosPanel, type TodosPanelHandle } from '@/components/TodosPanel';
+import { WorkspaceBrowser } from '@/components/WorkspaceBrowser';
 import { useI18n } from '@/lib/i18n';
 
 type SidebarTab = 'todos' | 'workspace';
@@ -117,10 +118,7 @@ export function ChatSidebar({
         {tab === 'todos' ? (
           <TodosPanel ref={todosPanelRef} sessionId={sessionId} />
         ) : (
-          <div className="p-3 text-xs text-[var(--color-ink-muted)]">
-            {/* Placeholder — replaced by WorkspaceBrowser in Task 13. */}
-            {t('chatSidebar.workspaceComingSoon')}
-          </div>
+          <WorkspaceBrowser compact />
         )}
       </div>
     </aside>
