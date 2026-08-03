@@ -516,7 +516,17 @@ export function ChatsPage() {
   const allSelected =
     visibleSessions.length > 0 && visibleSessions.every((session) => selected.has(session.id));
   const toggleAll = () =>
-    setSelected(allSelected ? new Set() : new Set(visibleSessions.map((session) => session.id)));
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const session of visibleSessions) {
+        if (allSelected) {
+          next.delete(session.id);
+        } else {
+          next.add(session.id);
+        }
+      }
+      return next;
+    });
 
   return (
     <PageShell title={t('nav.chats')} description={t('page.chats.desc')} wide>
