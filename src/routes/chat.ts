@@ -112,6 +112,7 @@ const attachSchema = z.object({
     .string()
     .trim()
     .min(1)
+    .max(14 * 1024 * 1024, 'attachment too large')
     .refine((v) => v.startsWith('data:'), { message: 'must be a data URL' }),
   name: z.string().trim().min(1).max(255),
 });
