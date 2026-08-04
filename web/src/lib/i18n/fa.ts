@@ -130,6 +130,7 @@ export const fa: Dict = {
   'workspace.created': 'پوشه ساخته شد',
   'workspace.saved': 'فایل ذخیره شد',
   'workspace.up': 'یک سطح بالاتر',
+  'workspace.backToList': 'بازگشت به فهرست',
   'workspace.empty': 'این پوشه خالی است.',
   'workspace.pickFile': 'یک فایل را برای خواندن انتخاب کنید.',
   'workspace.binary': 'متن نیست — چیزی برای نمایش نیست.',

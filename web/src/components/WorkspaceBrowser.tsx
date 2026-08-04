@@ -364,7 +364,7 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
                 onClick={() => showFile(null)}
                 className="mb-2 self-start text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               >
-                ← {t('workspace.up')}
+                ← {t('workspace.backToList')}
               </button>
             )}
             {openFile === null ? (

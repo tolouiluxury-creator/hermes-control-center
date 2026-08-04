@@ -133,6 +133,7 @@ export const de: Dict = {
   'workspace.created': 'Ordner angelegt',
   'workspace.saved': 'Datei gespeichert',
   'workspace.up': 'Eine Ebene höher',
+  'workspace.backToList': 'Zurück zur Liste',
   'workspace.empty': 'Dieser Ordner ist leer.',
   'workspace.pickFile': 'Wähle eine Datei zum Lesen.',
   'workspace.binary': 'Kein Text — hier gibt es nichts anzuzeigen.',

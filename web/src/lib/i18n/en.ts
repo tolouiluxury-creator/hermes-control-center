@@ -131,6 +131,7 @@ export const en: Dict = {
   'workspace.created': 'Folder created',
   'workspace.saved': 'File saved',
   'workspace.up': 'Up one level',
+  'workspace.backToList': 'Back to list',
   'workspace.empty': 'This folder is empty.',
   'workspace.pickFile': 'Pick a file to read it.',
   'workspace.binary': 'Not text — nothing to show here.',
