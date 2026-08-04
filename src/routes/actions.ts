@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { UpstreamError } from '../hermes/client.js';
+import { TodosRepo } from '../store/todos.js';
 import { CACHE_KEYS, SESSIONS_CACHE_PREFIX, type ResponseCache } from './cache.js';
 
 /**
@@ -267,6 +268,8 @@ export async function registerActionRoutes(
       throw error;
     }
   };
+
+  const todos = new TodosRepo(ctx.store);
 
   /** Rejects a malformed body with the first validation message. */
   const parse = <T>(reply: FastifyReply, schema: z.ZodType<T>, body: unknown): T | undefined => {
@@ -759,6 +762,10 @@ export async function registerActionRoutes(
     if (!input) return reply;
     return guard(reply, async () => {
       const result = await ctx.dashboard.deleteSessions(input.ids, input.profile);
+      // Local todos are keyed by session id and Hermes has no notion of them, so
+      // this cleanup is ours regardless of whether the upstream delete succeeded
+      // for every id — an orphaned local todo is worse than a no-op here.
+      for (const id of input.ids) todos.deleteForSession(id);
       cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
       return result;
     });

@@ -100,4 +100,9 @@ export class TodosRepo {
     this.store.run('DELETE FROM todos WHERE id = ?', id);
     return true;
   }
+
+  deleteForSession(sessionId: string): number {
+    const result = this.store.run('DELETE FROM todos WHERE session_id = ?', sessionId);
+    return Number(result.changes);
+  }
 }

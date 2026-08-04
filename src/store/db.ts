@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync, type StatementResultingChanges } from 'node:sqlite';
 import { log } from '../log.js';
 import { LATEST_VERSION, MIGRATIONS } from './migrations.js';
 
@@ -69,8 +69,8 @@ export class Store {
     return this.db.prepare(sql).get(...(params as never[])) as T | undefined;
   }
 
-  run(sql: string, ...params: unknown[]): void {
-    this.db.prepare(sql).run(...(params as never[]));
+  run(sql: string, ...params: unknown[]): StatementResultingChanges {
+    return this.db.prepare(sql).run(...(params as never[]));
   }
 
   transaction<T>(work: () => T): T {

@@ -50,4 +50,14 @@ describe('TodosRepo', () => {
     expect(repo.delete(todo.id)).toBe(false);
     expect(repo.listForSession('session-a')).toEqual([]);
   });
+
+  it('deletes only the todos for the given session', () => {
+    repo.create('session-a', { text: 'a1' });
+    repo.create('session-a', { text: 'a2' });
+    repo.create('session-b', { text: 'b1' });
+
+    expect(repo.deleteForSession('session-a')).toBe(2);
+    expect(repo.listForSession('session-a')).toEqual([]);
+    expect(repo.listForSession('session-b').map((t) => t.text)).toEqual(['b1']);
+  });
 });
