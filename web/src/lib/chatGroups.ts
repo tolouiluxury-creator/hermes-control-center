@@ -1,7 +1,12 @@
 import type { ChatSessionSummary } from './api.js';
 
 export interface ChatSessionGroup {
-  label: 'chat.groupToday' | 'chat.groupYesterday' | 'chat.groupThisWeek' | 'chat.groupOlder';
+  label:
+    | 'chat.groupPinned'
+    | 'chat.groupToday'
+    | 'chat.groupYesterday'
+    | 'chat.groupThisWeek'
+    | 'chat.groupOlder';
   sessions: ChatSessionSummary[];
 }
 
@@ -27,6 +32,7 @@ export function groupByRecency(
   const weekStart = todayStart - 7 * DAY_MS;
 
   const buckets: Record<ChatSessionGroup['label'], ChatSessionSummary[]> = {
+    'chat.groupPinned': [],
     'chat.groupToday': [],
     'chat.groupYesterday': [],
     'chat.groupThisWeek': [],
@@ -34,6 +40,10 @@ export function groupByRecency(
   };
 
   for (const session of sessions) {
+    if (session.pinned) {
+      buckets['chat.groupPinned'].push(session);
+      continue;
+    }
     const startedAt = session.startedAt;
     if (startedAt === null || startedAt < weekStart) {
       buckets['chat.groupOlder'].push(session);

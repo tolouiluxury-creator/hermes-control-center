@@ -212,6 +212,7 @@ export const en: Dict = {
   'chat.deleted': '{count} conversations deleted',
   'chat.searchConversations': 'Search conversations',
   'chat.noSearchResults': 'No matches.',
+  'chat.groupPinned': 'Pinned',
   'chat.groupToday': 'Today',
   'chat.groupYesterday': 'Yesterday',
   'chat.groupThisWeek': 'This week',

@@ -209,6 +209,7 @@ export const fa: Dict = {
   'chat.deleted': '{count} گفتگو حذف شد',
   'chat.searchConversations': 'جستجوی گفتگوها',
   'chat.noSearchResults': 'نتیجه‌ای یافت نشد.',
+  'chat.groupPinned': 'سنجاق‌شده',
   'chat.groupToday': 'امروز',
   'chat.groupYesterday': 'دیروز',
   'chat.groupThisWeek': 'این هفته',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { groupByRecency } from './chatGroups.js';
 import type { ChatSessionSummary } from './api.js';
 
-function session(id: string, startedAt: number | null): ChatSessionSummary {
+function session(id: string, startedAt: number | null, pinned = false): ChatSessionSummary {
   return {
     id,
     title: '',
@@ -11,7 +11,7 @@ function session(id: string, startedAt: number | null): ChatSessionSummary {
     messageCount: 0,
     source: '',
     model: null,
-    pinned: false,
+    pinned,
   };
 }
 
@@ -47,5 +47,16 @@ describe('groupByRecency', () => {
   it('puts a session with no startedAt into "older" rather than dropping it', () => {
     const groups = groupByRecency([session('unknown', null)], now);
     expect(groups[0]?.label).toBe('chat.groupOlder');
+  });
+
+  it('groups a pinned session ahead of the date-based buckets regardless of age', () => {
+    const sessions = [
+      session('older', now - 30 * day),
+      session('pinned-old', now - 30 * day, true),
+    ];
+    const groups = groupByRecency(sessions, now);
+    expect(groups.map((g) => g.label)).toEqual(['chat.groupPinned', 'chat.groupOlder']);
+    expect(groups[0]?.sessions.map((s) => s.id)).toEqual(['pinned-old']);
+    expect(groups[1]?.sessions.map((s) => s.id)).toEqual(['older']);
   });
 });
