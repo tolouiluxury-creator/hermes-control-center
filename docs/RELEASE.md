@@ -123,16 +123,16 @@ node dist/cli.js --set-password
 Check what it found, without starting anything:
 
 ```bash
-node dist/cli.js --doctor --profile sunrise
+node dist/cli.js --doctor --profile YOUR_PROFILE
 ```
 
 That should report the dashboard responding and the API server as an optional note. Then start it:
 
 ```bash
-node dist/cli.js --host 0.0.0.0 --port 7777 --profile sunrise --no-open
+node dist/cli.js --host 0.0.0.0 --port 7777 --profile YOUR_PROFILE --no-open
 ```
 
-**Name the profile.** Without `--profile sunrise` it reads the default profile, which is not the one
+**Name the profile.** Without `--profile` it reads the default profile, which is not the one
 your agent runs under.
 
 ### As a systemd service
@@ -149,7 +149,7 @@ Wants=network-online.target
 Type=simple
 User=root
 WorkingDirectory=/root/hermes-control-center
-ExecStart=/usr/bin/node dist/cli.js --host 127.0.0.1 --port 7777 --profile sunrise --no-open
+ExecStart=/usr/bin/node dist/cli.js --host 127.0.0.1 --port 7777 --profile YOUR_PROFILE --no-open
 Restart=on-failure
 RestartSec=5
 Environment=NODE_ENV=production

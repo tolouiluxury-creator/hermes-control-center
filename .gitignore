@@ -1,5 +1,9 @@
 node_modules/
 dist/
+
+# Internal session handoff notes — server details and third-party data, not
+# for the public repo. Stays on disk, never tracked.
+docs/HANDOFF.md
 *.tgz
 *.log
 .DS_Store
