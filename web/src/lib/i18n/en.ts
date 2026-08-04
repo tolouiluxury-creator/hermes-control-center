@@ -191,6 +191,7 @@ export const en: Dict = {
   'chat.send': 'Send',
   'chat.attachFile': 'Attach file',
   'chat.attachReadFailed': 'Could not read {name}.',
+  'chat.attachTooLarge': '{name} is larger than 10 MB.',
   'chat.messages': 'msgs',
   'chat.conversation': 'Conversation',
   'chat.overDashboard':

@@ -459,6 +459,11 @@ export function ChatsPage() {
     const staged: PendingAttachment[] = list.map((file) => ({ file, dataUrl: null }));
     setAttachments((current) => [...current, ...staged]);
     for (const item of staged) {
+      if (item.file.size > 10 * 1024 * 1024) {
+        setAttachments((current) => current.filter((entry) => entry.file !== item.file));
+        toast.push({ tone: 'error', title: t('chat.attachTooLarge', { name: item.file.name }) });
+        continue;
+      }
       try {
         const dataUrl = await readAsDataUrl(item.file);
         setAttachments((current) =>
