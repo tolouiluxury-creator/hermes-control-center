@@ -47,7 +47,7 @@ export const ChatSidebar = forwardRef<
 
   if (!open) {
     return (
-      <div className="flex w-10 shrink-0 flex-col items-center gap-2 pt-1">
+      <div className="hidden w-10 shrink-0 flex-col items-center gap-2 pt-1 lg:flex">
         <button
           type="button"
           onClick={() => setOpenPersist(true)}
