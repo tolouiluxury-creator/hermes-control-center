@@ -462,17 +462,17 @@ export function ChatsPage() {
 
   const addFiles = async (files: FileList | File[]) => {
     const list = Array.from(files);
-    const staged: PendingAttachment[] = list.map((file) => ({ file, dataUrl: null }));
+    const oversized = list.filter((file) => file.size > MAX_ATTACHMENT_MB * 1024 * 1024);
+    for (const file of oversized) {
+      toast.push({
+        tone: 'error',
+        title: t('chat.attachTooLarge', { name: file.name, maxMb: MAX_ATTACHMENT_MB }),
+      });
+    }
+    const valid = list.filter((file) => !oversized.includes(file));
+    const staged: PendingAttachment[] = valid.map((file) => ({ file, dataUrl: null }));
     setAttachments((current) => [...current, ...staged]);
     for (const item of staged) {
-      if (item.file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
-        setAttachments((current) => current.filter((entry) => entry.file !== item.file));
-        toast.push({
-          tone: 'error',
-          title: t('chat.attachTooLarge', { name: item.file.name, maxMb: MAX_ATTACHMENT_MB }),
-        });
-        continue;
-      }
       try {
         const dataUrl = await readAsDataUrl(item.file);
         setAttachments((current) =>
