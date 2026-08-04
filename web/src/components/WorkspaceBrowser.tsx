@@ -10,7 +10,6 @@ import {
   readWorkspaceFile,
   writeWorkspaceFile,
 } from '@/lib/api';
-import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
@@ -146,20 +145,13 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   });
 
   if (root.isPending) {
-    const content = <SkeletonText lines={6} />;
-    return compact ? (
-      content
-    ) : (
-      <PageShell title={t('nav.workspace')} description={t('page.workspace.desc')}>
-        {content}
-      </PageShell>
-    );
+    return <SkeletonText lines={6} />;
   }
 
   // Nothing configured means nothing shown. See the route module for why there
   // is no default: guessing which directory is safe to expose is not possible.
   if (!root.data?.configured) {
-    const content = (
+    return (
       <div className="card p-8">
         <p className="text-sm font-medium">{t('workspace.notConfigured')}</p>
         <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
@@ -169,13 +161,6 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
           {'{\n  "workspaceRoot": "/root/workspace"\n}'}
         </pre>
       </div>
-    );
-    return compact ? (
-      content
-    ) : (
-      <PageShell title={t('nav.workspace')} description={t('page.workspace.desc')}>
-        {content}
-      </PageShell>
     );
   }
 
