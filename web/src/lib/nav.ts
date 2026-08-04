@@ -2,6 +2,7 @@ import {
   BarChart3,
   BookOpen,
   Cpu,
+  HandCoins,
   Layers,
   LayoutDashboard,
   Library,
@@ -116,10 +117,15 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/einstellungen',
     icon: Settings,
   },
+  {
+    id: 'donation',
+    path: '/donation',
+    icon: HandCoins,
+  },
 ];
 
 /** Items rendered below the divider, away from the day-to-day pages. */
-export const FOOTER_NAV_IDS = new Set(['einstellungen']);
+export const FOOTER_NAV_IDS = new Set(['einstellungen', 'donation']);
 
 export const PRIMARY_NAV = NAV_ITEMS.filter((item) => !FOOTER_NAV_IDS.has(item.id));
 export const FOOTER_NAV = NAV_ITEMS.filter((item) => FOOTER_NAV_IDS.has(item.id));

@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardCopy, KeyRound, Monitor, Moon, Sun, UserRound } from 'lucide-react';
-import qrcode from 'qrcode-generator';
+import { KeyRound, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import {
   deleteEnv,
   getConfigRaw,
@@ -769,110 +768,8 @@ function SecuritySection() {
   );
 }
 
-// --- Donation -----------------------------------------------------------
-
-interface DonationAddress {
-  id: string;
-  labelKey: string;
-  networkKey: string;
-  address: string;
-}
-
-const DONATION_ADDRESSES: DonationAddress[] = [
-  {
-    id: 'evm',
-    labelKey: 'settings.donation.evm',
-    networkKey: 'settings.donation.evm.network',
-    address: '0x42669069b16353f400a2aa3462cfbcf8c789bd28',
-  },
-  {
-    id: 'sol-usdt',
-    labelKey: 'settings.donation.solUsdt',
-    networkKey: 'settings.donation.sol.network',
-    address: '52vcpNHJ8xc1KWMbc8SEKzWxi9PQd2T96p7rgFKg8vfC',
-  },
-  {
-    id: 'sol-usdc',
-    labelKey: 'settings.donation.solUsdc',
-    networkKey: 'settings.donation.sol.network',
-    address: 'F8rd52g9w5CgqcF4hJWCNBwcBvGnSG5YssnHM8ksrmZ3',
-  },
-];
-
 /**
- * Rendered once at module load, not per-render: the addresses are static, and
- * generating a QR code client-side (rather than via a third-party image API)
- * keeps these addresses from ever leaving the browser.
- */
-const DONATION_QR_SVG: Record<string, string> = Object.fromEntries(
-  DONATION_ADDRESSES.map(({ id, address }) => {
-    const qr = qrcode(0, 'M');
-    qr.addData(address);
-    qr.make();
-    return [id, qr.createSvgTag({ scalable: true })];
-  }),
-);
-
-function DonationAddressCard({ entry }: { entry: DonationAddress }) {
-  const { t } = useI18n();
-  const toast = useToast();
-
-  const copy = async (): Promise<void> => {
-    try {
-      await navigator.clipboard.writeText(entry.address);
-      toast.push({ tone: 'success', title: t('prompts.copied') });
-    } catch {
-      toast.push({
-        tone: 'error',
-        title: t('prompts.copyFailed'),
-        description: t('prompts.copyFailedDesc'),
-      });
-    }
-  };
-
-  return (
-    <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-      <div
-        className="size-36 shrink-0 self-center rounded-lg bg-white p-2 sm:self-start"
-        dangerouslySetInnerHTML={{ __html: DONATION_QR_SVG[entry.id] ?? '' }}
-      />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">{t(entry.labelKey)}</p>
-        <p className="mt-0.5 text-xs font-medium text-[var(--color-warn)]">{t(entry.networkKey)}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <code className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2.5 py-1.5 font-mono text-xs break-all">
-            {entry.address}
-          </code>
-          <button
-            type="button"
-            onClick={() => void copy()}
-            aria-label={t('settings.donation.copyAria', { label: t(entry.labelKey) })}
-            title={t('prompts.copyText')}
-            className="shrink-0 rounded-lg border border-[var(--color-hairline)] p-1.5 text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-accent)]"
-          >
-            <ClipboardCopy size={14} aria-hidden />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DonationSection() {
-  const { t } = useI18n();
-  return (
-    <Section id="donation" title={t('settings.donation')} description={t('settings.donation.desc')}>
-      <div className="space-y-3">
-        {DONATION_ADDRESSES.map((entry) => (
-          <DonationAddressCard key={entry.id} entry={entry} />
-        ))}
-      </div>
-    </Section>
-  );
-}
-
-/**
- * Eight sections on one page, and the useful ones are at the bottom: the
+ * Seven sections on one page, and the useful ones are at the bottom: the
  * toolsets alone are twenty-six rows, which put "Environment & keys" some two
  * thousand pixels down. Scrolling for it is how a user concludes a setting is
  * not there at all — so the page names its own sections and jumps to them.
@@ -887,7 +784,6 @@ function SectionIndex() {
     ['env', t('settings.env')],
     ['config', t('settings.config')],
     ['security', t('settings.security')],
-    ['donation', t('settings.donation')],
   ];
   return (
     <nav aria-label={t('settings.jumpTo')} className="mb-6 flex flex-wrap items-center gap-1.5">
@@ -917,7 +813,6 @@ export function EinstellungenPage() {
       <EnvSection />
       <ConfigSection />
       <SecuritySection />
-      <DonationSection />
     </PageShell>
   );
 }

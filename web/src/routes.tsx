@@ -12,6 +12,7 @@ import { PromptsPage } from '@/pages/PromptsPage';
 import { WissenPage } from '@/pages/WissenPage';
 import { IntegrationenPage } from '@/pages/IntegrationenPage';
 import { EinstellungenPage } from '@/pages/EinstellungenPage';
+import { DonationPage } from '@/pages/DonationPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { ChatsPage } from '@/pages/ChatsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
@@ -38,6 +39,7 @@ const PAGES: Record<string, ComponentType> = {
   analytics: AnalyticsPage,
   logs: LogsPage,
   einstellungen: EinstellungenPage,
+  donation: DonationPage,
 };
 
 /** Fallback dictionary key if a nav item ever lacks a page again. */

@@ -22,6 +22,7 @@ export const fa: Dict = {
   'nav.analytics': 'تحلیل‌ها',
   'nav.logs': 'گزارش‌ها',
   'nav.einstellungen': 'تنظیمات',
+  'nav.donation': 'حمایت مالی',
 
   // Common actions and labels
   'common.save': 'ذخیره',
@@ -178,6 +179,8 @@ export const fa: Dict = {
   'page.analytics.desc': 'میزان استفاده از ایجنت شما.',
   'page.logs.desc': 'خروجی ایجنت هرمس شما.',
   'page.einstellungen.desc': 'پیکربندی، کلیدها، ابزارها و نگهداری هرمس شما.',
+  'page.donation.desc':
+    'کاملاً اختیاری — اگر این پروژه برایتان مفید بوده، اینجا چند آدرس ارز دیجیتال برای تشکر هست.',
 
   // Chat
   'chat.newConversation': 'گفتگوی جدید',
@@ -294,16 +297,20 @@ export const fa: Dict = {
   'settings.security.desc': 'دسترسی به خود کنترل‌سنتر.',
   'settings.security.password':
     'رمز عبور کنترل‌سنتر روی سرور تنظیم می‌شود: {command}. تا زمانی که تنظیم نشود، سرور فقط به localhost متصل می‌شود.',
-  'settings.donation': 'حمایت از این پروژه',
-  'settings.donation.desc':
-    'کاملاً اختیاری — اگر دوست دارید با ارز دیجیتال تشکر کنید، آدرس‌ها اینجا هستند. پیش از ارسال حتماً شبکه را بررسی کنید: وجه ارسال‌شده در شبکه اشتباه غیرقابل بازیابی است.',
-  'settings.donation.evm': 'شبکه‌های EVM (اتریوم، BNB Chain، پالیگان، آربیتروم، …)',
-  'settings.donation.evm.network':
-    'فقط از طریق شبکه‌ای سازگار با EVM ارسال کنید — هرگز از طریق سولانا.',
-  'settings.donation.solUsdt': 'USDT',
-  'settings.donation.solUsdc': 'USDC',
-  'settings.donation.sol.network': 'فقط از طریق شبکه سولانا ارسال کنید — هرگز از طریق یک شبکه EVM.',
-  'settings.donation.copyAria': 'کپی آدرس {label}',
+
+  // Donation
+  'donation.warning':
+    'همیشه پیش از ارسال، شبکه را دوباره بررسی کنید — وجه ارسال‌شده در شبکه اشتباه غیرقابل بازیابی است.',
+  'donation.evm.title': 'شبکه‌های EVM',
+  'donation.evm.subtitle': 'اتریوم، BNB Chain، پالیگان، آربیتروم، …',
+  'donation.evm.warning': 'فقط شبکه‌های سازگار با EVM — هرگز سولانا.',
+  'donation.usdt.title': 'USDT',
+  'donation.usdt.subtitle': 'شبکه سولانا',
+  'donation.usdc.title': 'USDC',
+  'donation.usdc.subtitle': 'شبکه سولانا',
+  'donation.sol.warning': 'فقط شبکه سولانا — هرگز یک شبکه EVM.',
+  'donation.copyAria': 'کپی آدرس {label}',
+  'donation.copyButton': 'کپی آدرس',
 
   // Shared toasts and small labels
   'toast.toggleFailed': 'تغییر وضعیت ناموفق بود',
@@ -834,6 +841,8 @@ export const fa: Dict = {
   'navKeywords.analytics': 'تحلیل آمار هزینه توکن استفاده',
   'navKeywords.logs': 'گزارش خطا کنسول رویدادها خروجی',
   'navKeywords.einstellungen': 'تنظیمات پیکربندی پروفایل ظاهر رمز زبان',
+  'navKeywords.donation':
+    'اهدا کمک مالی ارز دیجیتال حمایت کیف پول آدرس کیوآر بیت‌کوین اتریوم سولانا',
 
   // Toast, placeholder and 404
   'toast.dismiss': 'بستن پیام: {title}',

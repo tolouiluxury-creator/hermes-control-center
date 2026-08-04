@@ -22,6 +22,7 @@ export const en: Dict = {
   'nav.analytics': 'Analytics',
   'nav.logs': 'Logs',
   'nav.einstellungen': 'Settings',
+  'nav.donation': 'Donate',
 
   // Common actions and labels
   'common.save': 'Save',
@@ -181,6 +182,8 @@ export const en: Dict = {
   'page.analytics.desc': 'Usage of your agent.',
   'page.logs.desc': 'Output of your Hermes agent.',
   'page.einstellungen.desc': 'Configuration, keys, tools and maintenance of your Hermes.',
+  'page.donation.desc':
+    'Completely optional — if this project has been useful to you, here are some crypto addresses to say thanks with.',
 
   // Chat
   'chat.newConversation': 'New conversation',
@@ -297,15 +300,20 @@ export const en: Dict = {
   'settings.security.desc': 'Access to the control center itself.',
   'settings.security.password':
     'The control center password is set on the server: {command}. Until one is set, the server only binds to localhost.',
-  'settings.donation': 'Support this project',
-  'settings.donation.desc':
-    'Completely optional — if you find this useful and want to say thanks with crypto, here are the addresses. Double-check the network before sending: funds sent on the wrong network cannot be recovered.',
-  'settings.donation.evm': 'EVM networks (ETH, BNB Chain, Polygon, Arbitrum, …)',
-  'settings.donation.evm.network': 'Only send on an EVM-compatible network — never Solana.',
-  'settings.donation.solUsdt': 'USDT',
-  'settings.donation.solUsdc': 'USDC',
-  'settings.donation.sol.network': 'Solana network only — never an EVM chain.',
-  'settings.donation.copyAria': 'Copy the {label} address',
+
+  // Donation
+  'donation.warning':
+    'Always double-check the network before sending — funds sent on the wrong network cannot be recovered.',
+  'donation.evm.title': 'EVM networks',
+  'donation.evm.subtitle': 'ETH, BNB Chain, Polygon, Arbitrum, …',
+  'donation.evm.warning': 'EVM-compatible networks only — never Solana.',
+  'donation.usdt.title': 'USDT',
+  'donation.usdt.subtitle': 'Solana network',
+  'donation.usdc.title': 'USDC',
+  'donation.usdc.subtitle': 'Solana network',
+  'donation.sol.warning': 'Solana network only — never an EVM chain.',
+  'donation.copyAria': 'Copy the {label} address',
+  'donation.copyButton': 'Copy address',
 
   // Shared toasts and small labels
   'toast.toggleFailed': 'Toggle failed',
@@ -836,6 +844,8 @@ export const en: Dict = {
   'navKeywords.analytics': 'statistics cost tokens usage report',
   'navKeywords.logs': 'log errors console events output',
   'navKeywords.einstellungen': 'settings configuration profile theme password language',
+  'navKeywords.donation':
+    'donation donate crypto support tip wallet address qr bitcoin ethereum solana usdt usdc',
 
   // Toast, placeholder and 404
   'toast.dismiss': 'Dismiss message: {title}',
