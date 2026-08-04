@@ -183,8 +183,8 @@ caddy validate --config /etc/caddy/Caddyfile
 systemctl reload caddy
 ```
 
-**Leave the existing `hermes.your-domain.example:8787` WebUI alone** — it is a separate service on a separate
-port, and nothing here touches it.
+**Leave any existing WebUI on the same host alone** — if Hermes' own dashboard or another service is
+already running on a different port, this is a separate hostname/service and nothing here touches it.
 
 A password is the minimum, not the whole story. For something reachable from the open internet, put
 an authenticating proxy in front as well (Cloudflare Access, Authelia, or Caddy's own
