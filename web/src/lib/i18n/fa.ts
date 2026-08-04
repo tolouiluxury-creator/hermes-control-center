@@ -197,7 +197,7 @@ export const fa: Dict = {
   'chat.openFailed': 'باز کردن ناموفق بود',
   'chat.connectFailed': 'اتصال ناموفق بود',
   'chat.thinking': 'در حال فکر کردن …',
-  'chat.newMessageJump': 'پیام جدید',
+  'chat.newMessageJump': 'پرش به انتها',
   'chat.select': 'انتخاب',
   'chat.pin': 'سنجاق کردن',
   'chat.unpin': 'برداشتن سنجاق',
