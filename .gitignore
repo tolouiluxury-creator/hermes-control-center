@@ -4,6 +4,9 @@ dist/
 # Internal session handoff notes — server details and third-party data, not
 # for the public repo. Stays on disk, never tracked.
 docs/HANDOFF.md
+
+# Local dev-tool config, not part of the published package.
+.claude/
 *.tgz
 *.log
 .DS_Store
