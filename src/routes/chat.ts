@@ -108,7 +108,11 @@ const resumeSchema = z.object({
 
 const attachSchema = z.object({
   liveId: z.string().trim().min(1),
-  dataUrl: z.string().trim().min(1),
+  dataUrl: z
+    .string()
+    .trim()
+    .min(1)
+    .refine((v) => v.startsWith('data:'), { message: 'must be a data URL' }),
   name: z.string().trim().min(1).max(255),
 });
 
