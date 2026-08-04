@@ -38,6 +38,7 @@ import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime, formatTime } from '@/lib/format';
 import { groupByRecency } from '@/lib/chatGroups';
+import { buildOutgoingText } from '@/lib/chatOutgoing';
 import { TypingDots } from '@/components/TypingDots';
 import { AttachmentChip, type PendingAttachment } from '@/components/AttachmentChip';
 
@@ -517,7 +518,7 @@ export function ChatsPage() {
         const { refText } = await attachChatFile(live, item.dataUrl as string, item.file.name);
         refs.push(refText);
       }
-      const outgoing = refs.length > 0 ? `${refs.join('\n')}\n\n${text}` : text;
+      const outgoing = buildOutgoingText(refs, text);
       setAttachments((current) => current.filter((entry) => !pending.includes(entry)));
       await sendChatPrompt(live, outgoing);
     } catch (error) {
