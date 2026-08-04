@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import {
   CheckSquare,
@@ -531,11 +532,13 @@ export function ChatsPage() {
   };
 
   const sendToTodos = (text: string) => {
-    chatSidebarRef.current?.openTodosTab();
-    // The panel only mounts its ToDos tab content once open — the ref call
-    // above triggers that synchronously in React's commit phase, so this
-    // runs after the tab (and thus the input) exists.
-    requestAnimationFrame(() => todosPanelRef.current?.prefillAndFocus(text));
+    // The panel only mounts its ToDos tab content once open. flushSync forces
+    // React to commit that state change before this function continues, so
+    // the ref below is guaranteed to exist — no rAF-timing guesswork needed.
+    flushSync(() => {
+      chatSidebarRef.current?.openTodosTab();
+    });
+    todosPanelRef.current?.prefillAndFocus(text);
   };
 
   const visibleSessions =
