@@ -48,6 +48,8 @@ interface GatewayEventData {
   payload: { text?: string } | null;
 }
 
+const MAX_ATTACHMENT_MB = 10;
+
 export function ChatsPage() {
   const toast = useToast();
   const { t, lang } = useI18n();
@@ -463,9 +465,12 @@ export function ChatsPage() {
     const staged: PendingAttachment[] = list.map((file) => ({ file, dataUrl: null }));
     setAttachments((current) => [...current, ...staged]);
     for (const item of staged) {
-      if (item.file.size > 10 * 1024 * 1024) {
+      if (item.file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
         setAttachments((current) => current.filter((entry) => entry.file !== item.file));
-        toast.push({ tone: 'error', title: t('chat.attachTooLarge', { name: item.file.name }) });
+        toast.push({
+          tone: 'error',
+          title: t('chat.attachTooLarge', { name: item.file.name, maxMb: MAX_ATTACHMENT_MB }),
+        });
         continue;
       }
       try {

@@ -189,7 +189,7 @@ export const fa: Dict = {
   'chat.send': 'ارسال',
   'chat.attachFile': 'پیوست کردن فایل',
   'chat.attachReadFailed': 'خواندن {name} ممکن نشد.',
-  'chat.attachTooLarge': '{name} بزرگ‌تر از ۱۰ مگابایت است.',
+  'chat.attachTooLarge': '{name} بزرگ‌تر از {maxMb} مگابایت است.',
   'chat.messages': 'پیام',
   'chat.conversation': 'گفتگو',
   'chat.overDashboard':
