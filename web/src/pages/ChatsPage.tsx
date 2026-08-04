@@ -484,6 +484,9 @@ export function ChatsPage() {
     const text = input.trim();
     const pending = attachments.filter((entry) => entry.dataUrl !== null);
     if ((text === '' && pending.length === 0) || streaming) return;
+    // Enter-to-send bypasses the submit button's disabled state entirely, so
+    // the still-reading guard has to live here too, not just on the button.
+    if (attachments.some((a) => a.dataUrl === null)) return;
     setInput('');
     // Sending must not cost the caret. Clicking the button moves focus there,
     // so it is handed back explicitly rather than left where the click put it.
