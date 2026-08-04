@@ -113,6 +113,7 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
                     onChange={(event) =>
                       toggleDone.mutate({ id: todo.id, done: event.target.checked })
                     }
+                    aria-label={todo.text}
                     className="mt-1 size-3.5 shrink-0"
                   />
                   <span

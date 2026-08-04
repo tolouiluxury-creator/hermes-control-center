@@ -87,9 +87,14 @@ export const ChatSidebar = forwardRef<
 
   return (
     <aside className="hidden w-72 shrink-0 flex-col rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] lg:flex">
-      <div className="flex items-center gap-1 border-b border-[var(--color-hairline)] p-2">
+      <div
+        role="tablist"
+        className="flex items-center gap-1 border-b border-[var(--color-hairline)] p-2"
+      >
         <button
           type="button"
+          role="tab"
+          aria-selected={tab === 'todos'}
           onClick={() => setTabPersist('todos')}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
             tab === 'todos'
@@ -102,6 +107,8 @@ export const ChatSidebar = forwardRef<
         </button>
         <button
           type="button"
+          role="tab"
+          aria-selected={tab === 'workspace'}
           onClick={() => setTabPersist('workspace')}
           className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
             tab === 'workspace'
