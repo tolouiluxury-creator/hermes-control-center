@@ -901,7 +901,7 @@ export function ChatsPage() {
                               onClick={() => sendToTodos(message.text)}
                               title={t('chat.addToTodos')}
                               aria-label={t('chat.addToTodos')}
-                              className="hidden lg:inline-flex mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
+                              className="hidden mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)] lg:inline-flex"
                             >
                               <ListPlus size={12} aria-hidden />
                             </button>
@@ -929,7 +929,7 @@ export function ChatsPage() {
                               onClick={() => sendToTodos(message.text)}
                               title={t('chat.addToTodos')}
                               aria-label={t('chat.addToTodos')}
-                              className="hidden lg:inline-flex mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)]"
+                              className="hidden mb-1 shrink-0 rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-accent)] lg:inline-flex"
                             >
                               <ListPlus size={12} aria-hidden />
                             </button>
