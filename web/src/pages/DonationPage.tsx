@@ -23,19 +23,13 @@ const DONATION_ADDRESSES: DonationAddress[] = [
     address: '0x42669069b16353f400a2aa3462cfbcf8c789bd28',
   },
   {
-    id: 'usdt',
-    titleKey: 'donation.usdt.title',
-    subtitleKey: 'donation.usdt.subtitle',
+    id: 'sol',
+    titleKey: 'donation.sol.title',
+    subtitleKey: 'donation.sol.subtitle',
     warningKey: 'donation.sol.warning',
     accent: 'accent',
-    address: '52vcpNHJ8xc1KWMbc8SEKzWxi9PQd2T96p7rgFKg8vfC',
-  },
-  {
-    id: 'usdc',
-    titleKey: 'donation.usdc.title',
-    subtitleKey: 'donation.usdc.subtitle',
-    warningKey: 'donation.sol.warning',
-    accent: 'accent',
+    // A Solana address isn't tied to one token — SOL and every SPL token
+    // (USDC, USDT, ...) live on the same address, so one is enough.
     address: 'F8rd52g9w5CgqcF4hJWCNBwcBvGnSG5YssnHM8ksrmZ3',
   },
 ];
@@ -132,7 +126,7 @@ export function DonationPage() {
         <p className="text-sm text-[var(--color-ink-muted)]">{t('donation.warning')}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mx-auto grid max-w-2xl gap-4 sm:grid-cols-2">
         {DONATION_ADDRESSES.map((entry) => (
           <DonationCard key={entry.id} entry={entry} />
         ))}
