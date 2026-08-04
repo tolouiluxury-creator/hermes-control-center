@@ -297,6 +297,15 @@ export const en: Dict = {
   'settings.security.desc': 'Access to the control center itself.',
   'settings.security.password':
     'The control center password is set on the server: {command}. Until one is set, the server only binds to localhost.',
+  'settings.donation': 'Support this project',
+  'settings.donation.desc':
+    'Completely optional — if you find this useful and want to say thanks with crypto, here are the addresses. Double-check the network before sending: funds sent on the wrong network cannot be recovered.',
+  'settings.donation.evm': 'EVM networks (ETH, BNB Chain, Polygon, Arbitrum, …)',
+  'settings.donation.evm.network': 'Only send on an EVM-compatible network — never Solana.',
+  'settings.donation.solUsdt': 'USDT',
+  'settings.donation.solUsdc': 'USDC',
+  'settings.donation.sol.network': 'Solana network only — never an EVM chain.',
+  'settings.donation.copyAria': 'Copy the {label} address',
 
   // Shared toasts and small labels
   'toast.toggleFailed': 'Toggle failed',

@@ -294,6 +294,16 @@ export const fa: Dict = {
   'settings.security.desc': 'دسترسی به خود کنترل‌سنتر.',
   'settings.security.password':
     'رمز عبور کنترل‌سنتر روی سرور تنظیم می‌شود: {command}. تا زمانی که تنظیم نشود، سرور فقط به localhost متصل می‌شود.',
+  'settings.donation': 'حمایت از این پروژه',
+  'settings.donation.desc':
+    'کاملاً اختیاری — اگر دوست دارید با ارز دیجیتال تشکر کنید، آدرس‌ها اینجا هستند. پیش از ارسال حتماً شبکه را بررسی کنید: وجه ارسال‌شده در شبکه اشتباه غیرقابل بازیابی است.',
+  'settings.donation.evm': 'شبکه‌های EVM (اتریوم، BNB Chain، پالیگان، آربیتروم، …)',
+  'settings.donation.evm.network':
+    'فقط از طریق شبکه‌ای سازگار با EVM ارسال کنید — هرگز از طریق سولانا.',
+  'settings.donation.solUsdt': 'USDT',
+  'settings.donation.solUsdc': 'USDC',
+  'settings.donation.sol.network': 'فقط از طریق شبکه سولانا ارسال کنید — هرگز از طریق یک شبکه EVM.',
+  'settings.donation.copyAria': 'کپی آدرس {label}',
 
   // Shared toasts and small labels
   'toast.toggleFailed': 'تغییر وضعیت ناموفق بود',
