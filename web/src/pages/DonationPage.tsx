@@ -9,7 +9,7 @@ interface DonationAddress {
   titleKey: string;
   subtitleKey: string;
   warningKey: string;
-  accent: 'agent' | 'accent';
+  accent: 'agent' | 'accent' | 'info';
   address: string;
 }
 
@@ -31,6 +31,14 @@ const DONATION_ADDRESSES: DonationAddress[] = [
     // A Solana address isn't tied to one token — SOL and every SPL token
     // (USDC, USDT, ...) live on the same address, so one is enough.
     address: 'F8rd52g9w5CgqcF4hJWCNBwcBvGnSG5YssnHM8ksrmZ3',
+  },
+  {
+    id: 'ton',
+    titleKey: 'donation.ton.title',
+    subtitleKey: 'donation.ton.subtitle',
+    warningKey: 'donation.ton.warning',
+    accent: 'info',
+    address: 'UQBYlDRt8xLsx-1Rl7xE-Em7mojH3TlA5HeOa7jZPG5AV-pT',
   },
 ];
 
@@ -61,6 +69,11 @@ const ACCENT_CLASSES: Record<
     ring: 'border-[var(--color-accent)]/30',
     badge: 'bg-[var(--color-accent-soft)] text-[var(--color-accent)]',
     text: 'text-[var(--color-accent)]',
+  },
+  info: {
+    ring: 'border-[var(--color-info)]/30',
+    badge: 'bg-[var(--color-info)]/15 text-[var(--color-info)]',
+    text: 'text-[var(--color-info)]',
   },
 };
 
@@ -126,7 +139,7 @@ export function DonationPage() {
         <p className="text-sm text-[var(--color-ink-muted)]">{t('donation.warning')}</p>
       </div>
 
-      <div className="mx-auto grid max-w-2xl gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {DONATION_ADDRESSES.map((entry) => (
           <DonationCard key={entry.id} entry={entry} />
         ))}

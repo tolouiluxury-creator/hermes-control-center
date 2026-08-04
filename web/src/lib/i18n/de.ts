@@ -312,6 +312,9 @@ export const de: Dict = {
   'donation.sol.title': 'Solana',
   'donation.sol.subtitle': 'SOL, USDC, USDT, …',
   'donation.sol.warning': 'Nur das Solana-Netzwerk — niemals eine EVM-Chain.',
+  'donation.ton.title': 'TON',
+  'donation.ton.subtitle': 'The Open Network',
+  'donation.ton.warning': 'Nur das TON-Netzwerk — niemals EVM oder Solana.',
   'donation.copyAria': '{label}-Adresse kopieren',
   'donation.copyButton': 'Adresse kopieren',
 

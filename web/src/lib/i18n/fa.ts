@@ -307,6 +307,9 @@ export const fa: Dict = {
   'donation.sol.title': 'سولانا',
   'donation.sol.subtitle': 'SOL، USDC، USDT، …',
   'donation.sol.warning': 'فقط شبکه سولانا — هرگز یک شبکه EVM.',
+  'donation.ton.title': 'TON',
+  'donation.ton.subtitle': 'The Open Network',
+  'donation.ton.warning': 'فقط شبکه TON — هرگز EVM یا سولانا.',
   'donation.copyAria': 'کپی آدرس {label}',
   'donation.copyButton': 'کپی آدرس',
 

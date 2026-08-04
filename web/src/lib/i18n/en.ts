@@ -310,6 +310,9 @@ export const en: Dict = {
   'donation.sol.title': 'Solana',
   'donation.sol.subtitle': 'SOL, USDC, USDT, …',
   'donation.sol.warning': 'Solana network only — never an EVM chain.',
+  'donation.ton.title': 'TON',
+  'donation.ton.subtitle': 'The Open Network',
+  'donation.ton.warning': 'TON network only — never EVM or Solana.',
   'donation.copyAria': 'Copy the {label} address',
   'donation.copyButton': 'Copy address',
 
