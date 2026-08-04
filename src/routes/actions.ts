@@ -760,12 +760,12 @@ export async function registerActionRoutes(
   app.post('/api/hermes/sessions/delete', async (request, reply) => {
     const input = parse(reply, sessionIdsSchema, request.body);
     if (!input) return reply;
+    // Local todos are keyed by session id and Hermes has no notion of them, so
+    // this cleanup always runs, independent of whether the upstream delete
+    // succeeds — an orphaned local todo is worse than a no-op here.
+    for (const id of input.ids) todos.deleteForSession(id);
     return guard(reply, async () => {
       const result = await ctx.dashboard.deleteSessions(input.ids, input.profile);
-      // Local todos are keyed by session id and Hermes has no notion of them, so
-      // this cleanup is ours regardless of whether the upstream delete succeeded
-      // for every id — an orphaned local todo is worse than a no-op here.
-      for (const id of input.ids) todos.deleteForSession(id);
       cache.invalidatePrefix(SESSIONS_CACHE_PREFIX);
       return result;
     });
