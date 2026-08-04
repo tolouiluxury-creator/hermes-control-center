@@ -1,6 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { AuthService } from '../auth/service.js';
-import { buildClearedSessionCookie, buildSessionCookie } from '../auth/session.js';
+import {
+  buildClearedSessionCookie,
+  buildSessionCookie,
+  generateSessionSecret,
+} from '../auth/session.js';
+import { hashPassword, validatePasswordStrength } from '../auth/password.js';
+import { loadControlCenterConfig, updateControlCenterConfig } from '../config.js';
 import { log } from '../log.js';
 
 /** Paths reachable without a session; everything else under /api is gated. */
@@ -76,6 +82,70 @@ export async function registerAuthRoutes(app: FastifyInstance, auth: AuthService
       }),
     );
     log.info(`Login succeeded from ${clientKey(request)}`);
+    return { ok: true };
+  });
+
+  app.post('/api/auth/change-password', async (request, reply) => {
+    if (!auth.required) {
+      return reply.code(400).send({
+        error: 'not_configured',
+        message:
+          'No password is configured yet — set one with hermes-control-center --set-password.',
+      });
+    }
+
+    const body = request.body as { currentPassword?: unknown; newPassword?: unknown } | undefined;
+    const currentPassword = typeof body?.currentPassword === 'string' ? body.currentPassword : '';
+    const newPassword = typeof body?.newPassword === 'string' ? body.newPassword : '';
+
+    if (currentPassword === '' || newPassword === '') {
+      return reply.code(400).send({
+        error: 'missing_fields',
+        message: 'Both the current and the new password are required.',
+      });
+    }
+
+    // Reuses the login throttle, so this endpoint cannot be used to brute-force
+    // the current password either.
+    const outcome = auth.login(currentPassword, clientKey(request));
+    if (!outcome.ok) {
+      if (outcome.reason === 'throttled') {
+        const seconds = Math.ceil(outcome.retryAfterMs / 1000);
+        log.warn(`Password-change throttled for ${clientKey(request)} (${seconds}s)`);
+        return reply
+          .code(429)
+          .header('retry-after', String(seconds))
+          .send({
+            error: 'throttled',
+            message: `Too many attempts. Try again in ${seconds} seconds.`,
+            retryAfterMs: outcome.retryAfterMs,
+          });
+      }
+
+      log.warn(`Password change rejected (wrong current password) from ${clientKey(request)}`);
+      return reply
+        .code(401)
+        .send({ error: 'wrong_password', message: 'Current password is wrong.' });
+    }
+
+    const problem = validatePasswordStrength(newPassword);
+    if (problem) {
+      return reply.code(400).send({ error: 'weak_password', message: problem });
+    }
+
+    const passwordHash = hashPassword(newPassword);
+    // Keep the existing session secret — a password change should not silently
+    // log out other devices, matching `--set-password`'s own behaviour.
+    const existing = loadControlCenterConfig().config.auth;
+    updateControlCenterConfig({
+      auth: { passwordHash, sessionSecret: existing?.sessionSecret ?? generateSessionSecret() },
+    });
+    // Applies to the already-running process too — otherwise only the old
+    // password would work until the next restart, even though the new hash is
+    // already on disk.
+    auth.updatePasswordHash(passwordHash);
+
+    log.info(`Password changed from ${clientKey(request)}`);
     return { ok: true };
   });
 

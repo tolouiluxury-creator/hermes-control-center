@@ -302,6 +302,13 @@ export const de: Dict = {
   'settings.security.desc': 'Zugang zum Control Center selbst.',
   'settings.security.password':
     'Das Passwort für das Control Center wird auf dem Server gesetzt: {command}. Solange keins gesetzt ist, bindet der Server nur an localhost.',
+  'settings.security.changePassword': 'Passwort ändern',
+  'settings.security.currentPassword': 'Aktuelles Passwort',
+  'settings.security.newPassword': 'Neues Passwort',
+  'settings.security.confirmPassword': 'Neues Passwort bestätigen',
+  'settings.security.tooShort': 'Mindestens 8 Zeichen.',
+  'settings.security.mismatch': 'Die Passwörter stimmen nicht überein.',
+  'settings.security.changedToast': 'Passwort geändert',
 
   // Donation
   'donation.warning':

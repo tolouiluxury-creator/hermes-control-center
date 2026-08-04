@@ -25,11 +25,22 @@ export interface LoginOutcome {
 export class AuthService {
   private readonly throttle = new LoginThrottle();
 
-  constructor(private readonly config: AuthConfig | null) {}
+  constructor(private config: AuthConfig | null) {}
 
   /** True when a password is configured, i.e. requests must be authenticated. */
   get required(): boolean {
     return this.config !== null;
+  }
+
+  /**
+   * Applies a new password hash to the live service, so a change made through
+   * the web UI takes effect immediately. Without this the process would keep
+   * accepting only the old password until restarted, even though the new hash
+   * is already on disk.
+   */
+  updatePasswordHash(passwordHash: string): void {
+    if (!this.config) throw new Error('Cannot change a password before one is configured.');
+    this.config = { ...this.config, passwordHash };
   }
 
   get sessionTtlMs(): number {

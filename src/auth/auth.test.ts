@@ -232,6 +232,30 @@ describe('AuthService', () => {
     expect(outcome.reason).toBe('throttled');
     expect(outcome.retryAfterMs).toBeGreaterThan(0);
   });
+
+  it('accepts a new password immediately after updatePasswordHash, with no restart', () => {
+    const service = new AuthService(config);
+    expect(service.login('a-good-password', 'ip').ok).toBe(true);
+
+    service.updatePasswordHash(hashPassword('a-different-password', FAST));
+
+    expect(service.login('a-good-password', 'ip').ok).toBe(false);
+    expect(service.login('a-different-password', 'ip').ok).toBe(true);
+  });
+
+  it('keeps an existing session valid across a password change', () => {
+    const service = new AuthService(config);
+    const token = service.issueToken();
+
+    service.updatePasswordHash(hashPassword('a-different-password', FAST));
+
+    expect(service.isAuthenticated(`${SESSION_COOKIE}=${token}`)).toBe(true);
+  });
+
+  it('refuses to update a password hash before one is configured', () => {
+    const service = new AuthService(null);
+    expect(() => service.updatePasswordHash('x')).toThrow(/before one is configured/);
+  });
 });
 
 describe('assertBindIsSafe', () => {

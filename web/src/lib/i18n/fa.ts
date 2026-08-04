@@ -297,6 +297,13 @@ export const fa: Dict = {
   'settings.security.desc': 'دسترسی به خود کنترل‌سنتر.',
   'settings.security.password':
     'رمز عبور کنترل‌سنتر روی سرور تنظیم می‌شود: {command}. تا زمانی که تنظیم نشود، سرور فقط به localhost متصل می‌شود.',
+  'settings.security.changePassword': 'تغییر رمز عبور',
+  'settings.security.currentPassword': 'رمز عبور فعلی',
+  'settings.security.newPassword': 'رمز عبور جدید',
+  'settings.security.confirmPassword': 'تکرار رمز عبور جدید',
+  'settings.security.tooShort': 'حداقل ۸ کاراکتر لازم است.',
+  'settings.security.mismatch': 'رمزهای عبور یکسان نیستند.',
+  'settings.security.changedToast': 'رمز عبور تغییر کرد',
 
   // Donation
   'donation.warning':

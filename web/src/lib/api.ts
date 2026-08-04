@@ -91,6 +91,16 @@ export const login = (password: string): Promise<{ ok: boolean }> =>
     body: JSON.stringify({ password }),
   });
 
+export const changePassword = (
+  currentPassword: string,
+  newPassword: string,
+): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/auth/change-password', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
 export const logout = (): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/auth/logout', { method: 'POST' });
 

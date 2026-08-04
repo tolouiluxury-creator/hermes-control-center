@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { KeyRound, Monitor, Moon, Sun, UserRound } from 'lucide-react';
 import {
+  changePassword,
   deleteEnv,
+  getAuthStatus,
   getConfigRaw,
   getCurator,
   getEnv,
@@ -749,9 +751,109 @@ function ConfigSection() {
 
 // --- Security ---------------------------------------------------------------
 
+const PASSWORD_FIELD_CLASS =
+  'w-full rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-1.5 text-sm outline-none focus-visible:border-[var(--color-accent)]';
+
+function ChangePasswordForm() {
+  const { t } = useI18n();
+  const toast = useToast();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const change = useMutation({
+    mutationFn: () => changePassword(currentPassword, newPassword),
+    onSuccess: () => {
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      toast.push({ tone: 'success', title: t('settings.security.changedToast') });
+    },
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: t('toast.saveFailed'), description: e.message }),
+  });
+
+  // Mirrors the server's own rule (validatePasswordStrength) so a doomed
+  // submission is caught before the round trip, not after.
+  const tooShort = newPassword !== '' && newPassword.length < 8;
+  const mismatch = confirmPassword !== '' && newPassword !== confirmPassword;
+  const canSubmit =
+    currentPassword !== '' &&
+    newPassword !== '' &&
+    newPassword.length >= 8 &&
+    newPassword === confirmPassword &&
+    !change.isPending;
+
+  return (
+    <form
+      className="card mt-3 max-w-sm space-y-3 p-4"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (canSubmit) change.mutate();
+      }}
+    >
+      <div>
+        <label className="mb-1 block text-xs text-[var(--color-ink-muted)]">
+          {t('settings.security.currentPassword')}
+        </label>
+        <input
+          type="password"
+          value={currentPassword}
+          onChange={(event) => setCurrentPassword(event.target.value)}
+          autoComplete="current-password"
+          className={PASSWORD_FIELD_CLASS}
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-[var(--color-ink-muted)]">
+          {t('settings.security.newPassword')}
+        </label>
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(event) => setNewPassword(event.target.value)}
+          autoComplete="new-password"
+          className={PASSWORD_FIELD_CLASS}
+        />
+        {tooShort && (
+          <p className="mt-1 text-xs text-[var(--color-danger)]">
+            {t('settings.security.tooShort')}
+          </p>
+        )}
+      </div>
+      <div>
+        <label className="mb-1 block text-xs text-[var(--color-ink-muted)]">
+          {t('settings.security.confirmPassword')}
+        </label>
+        <input
+          type="password"
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          autoComplete="new-password"
+          className={PASSWORD_FIELD_CLASS}
+        />
+        {mismatch && (
+          <p className="mt-1 text-xs text-[var(--color-danger)]">
+            {t('settings.security.mismatch')}
+          </p>
+        )}
+      </div>
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        className="rounded-lg bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs text-[var(--color-accent)] disabled:opacity-40"
+      >
+        {change.isPending ? t('common.saving') : t('settings.security.changePassword')}
+      </button>
+    </form>
+  );
+}
+
 function SecuritySection() {
   const { t } = useI18n();
   const [before, after] = t('settings.security.password').split('{command}');
+  const auth = useQuery({ queryKey: queryKeys.auth, queryFn: getAuthStatus, staleTime: 30_000 });
+
   return (
     <Section id="security" title={t('settings.security')} description={t('settings.security.desc')}>
       <div className="card flex items-start gap-3 p-4">
@@ -764,6 +866,9 @@ function SecuritySection() {
           {after}
         </p>
       </div>
+      {/* Changing a password that does not exist yet cannot succeed — the CLI
+          note above is the only path until one has been set at least once. */}
+      {auth.data?.required && <ChangePasswordForm />}
     </Section>
   );
 }
