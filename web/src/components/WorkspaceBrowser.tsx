@@ -351,7 +351,13 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
         )}
 
         {(!compact || openFile !== null) && (
-          <div className={compact ? 'flex min-h-0 flex-1 flex-col p-2' : 'card min-h-[20rem] p-4'}>
+          <div
+            className={
+              compact
+                ? 'flex min-h-0 flex-1 flex-col overflow-y-auto p-2'
+                : 'card min-h-[20rem] p-4'
+            }
+          >
             {compact && openFile !== null && (
               <button
                 type="button"
@@ -414,7 +420,7 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
                   <textarea
                     value={editing}
                     onChange={(event) => setEditing(event.target.value)}
-                    rows={22}
+                    rows={compact ? 12 : 22}
                     spellCheck={false}
                     className="w-full resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
                   />
