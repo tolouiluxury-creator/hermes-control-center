@@ -179,6 +179,7 @@ export function ChatsPage() {
     setConnectionError(null);
     setMessages([]);
     setStartedWithModel(null);
+    setNearBottom(true);
     inputRef.current?.focus();
   }, []);
 
@@ -193,6 +194,7 @@ export function ChatsPage() {
       setConnectionError(null);
       setMessages([]);
       setStartedWithModel(null);
+      setNearBottom(true);
       try {
         // Reopening attaches a fresh live session to the same row. Keeping its
         // id is what makes sending — and the streamed answer — work at all.
@@ -1023,7 +1025,8 @@ export function ChatsPage() {
                   disabled={
                     connecting ||
                     streaming ||
-                    (input.trim() === '' && attachments.every((a) => a.dataUrl === null))
+                    (input.trim() === '' && attachments.every((a) => a.dataUrl === null)) ||
+                    attachments.some((a) => a.dataUrl === null)
                   }
                   className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
                 >
