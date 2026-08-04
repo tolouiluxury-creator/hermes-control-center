@@ -87,38 +87,41 @@ export const ChatSidebar = forwardRef<
 
   return (
     <aside className="hidden w-72 shrink-0 flex-col rounded-2xl border border-[var(--color-hairline)] bg-[var(--color-base)] lg:flex">
-      <div
-        role="tablist"
-        className="flex items-center gap-1 border-b border-[var(--color-hairline)] p-2"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'todos'}
-          onClick={() => setTabPersist('todos')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
-            tab === 'todos'
-              ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-          }`}
-        >
-          <ListTodo size={13} aria-hidden />
-          {t('chatSidebar.todos')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'workspace'}
-          onClick={() => setTabPersist('workspace')}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
-            tab === 'workspace'
-              ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-          }`}
-        >
-          <FolderOpen size={13} aria-hidden />
-          {t('chatSidebar.workspace')}
-        </button>
+      <div className="flex items-center gap-1 border-b border-[var(--color-hairline)] p-2">
+        <div role="tablist" className="flex flex-1 items-center gap-1">
+          <button
+            type="button"
+            role="tab"
+            id="chatSidebar-tab-todos"
+            aria-selected={tab === 'todos'}
+            aria-controls="chatSidebar-panel"
+            onClick={() => setTabPersist('todos')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+              tab === 'todos'
+                ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <ListTodo size={13} aria-hidden />
+            {t('chatSidebar.todos')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="chatSidebar-tab-workspace"
+            aria-selected={tab === 'workspace'}
+            aria-controls="chatSidebar-panel"
+            onClick={() => setTabPersist('workspace')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+              tab === 'workspace'
+                ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+            }`}
+          >
+            <FolderOpen size={13} aria-hidden />
+            {t('chatSidebar.workspace')}
+          </button>
+        </div>
         <button
           type="button"
           onClick={() => setOpenPersist(false)}
@@ -129,7 +132,12 @@ export const ChatSidebar = forwardRef<
           <ChevronRight size={14} aria-hidden />
         </button>
       </div>
-      <div className="min-h-0 flex-1">
+      <div
+        role="tabpanel"
+        id="chatSidebar-panel"
+        aria-labelledby={tab === 'todos' ? 'chatSidebar-tab-todos' : 'chatSidebar-tab-workspace'}
+        className="min-h-0 flex-1"
+      >
         {tab === 'todos' ? (
           <TodosPanel ref={todosPanelRef} sessionId={sessionId} />
         ) : (
