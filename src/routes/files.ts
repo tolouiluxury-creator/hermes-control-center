@@ -7,7 +7,6 @@ import {
   displayPath,
   OutsideWorkspaceError,
   resolveInsideRoot,
-  type WorkspaceRoot,
 } from './workspaceRoot.js';
 
 /**
@@ -26,6 +25,7 @@ import {
 
 const pathSchema = z.object({ path: z.string().max(4096).optional() });
 const mkdirSchema = z.object({ path: z.string().min(1).max(4096) });
+const setRootSchema = z.object({ path: z.string().min(1).max(4096) });
 /** 8 MiB is Hermes' own ceiling (`_FS_TEXT_WRITE_MAX_BYTES`); it answers 413 above it. */
 const writeSchema = z.object({
   path: z.string().min(1).max(4096),
@@ -58,16 +58,18 @@ function looksBinary(text: string): boolean {
 }
 
 export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext): Promise<void> {
-  const configured = ctx.options.workspaceRoot?.trim();
-  const workspace: WorkspaceRoot | null = configured ? detectWorkspaceRoot(configured) : null;
-
   /**
    * Resolve the request's path, or answer for it.
    *
    * Returns null when it has already sent a reply — either because no root is
    * configured, or because the path pointed outside it.
+   *
+   * Reads the root fresh from `ctx` on every call rather than capturing it once
+   * at startup, so setting it through the web UI opens the area immediately —
+   * see `PUT /api/workspace/root` below.
    */
   const inside = (reply: FastifyReply, requested?: string | null): string | null => {
+    const workspace = ctx.getWorkspaceRoot();
     if (!workspace) {
       void reply.code(409).send({
         error: 'workspace_not_configured',
@@ -101,22 +103,40 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
   };
 
   /** What the page needs before it can render anything: is there a root at all? */
-  app.get('/api/workspace/root', async () => ({
-    configured: workspace !== null,
-    root: workspace?.root ?? null,
-  }));
+  app.get('/api/workspace/root', async () => {
+    const workspace = ctx.getWorkspaceRoot();
+    return { configured: workspace !== null, root: workspace?.root ?? null };
+  });
+
+  /*
+   * Sets the root through the web UI instead of hand-editing the config file —
+   * takes effect immediately (see AppContext.setWorkspaceRoot) and creates the
+   * folder if it does not exist yet (Hermes' own mkdir is idempotent, so
+   * pointing at an existing folder is just as fine as a brand new one).
+   */
+  app.put('/api/workspace/root', async (request, reply) => {
+    const body = setRootSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    const detected = detectWorkspaceRoot(body.data.path);
+    return guard(reply, async () => {
+      await ctx.dashboard.createDirectory(detected.root);
+      ctx.setWorkspaceRoot(detected);
+      return { configured: true, root: detected.root };
+    });
+  });
 
   app.get('/api/workspace/list', async (request, reply) => {
     const query = pathSchema.safeParse(request.query ?? {});
     const target = inside(reply, query.success ? query.data.path : undefined);
     if (target === null) return reply;
+    const workspace = ctx.getWorkspaceRoot()!;
     return guard(reply, async () => {
       const listing = await ctx.dashboard.listFiles(target);
       return {
         path: target,
         // The root reads as "/" so nobody has to think about where it sits.
-        display: displayPath(workspace!, target),
-        atRoot: target === workspace!.root,
+        display: displayPath(workspace, target),
+        atRoot: target === workspace.root,
         entries: listing.entries,
         /** Null means Hermes confines nothing and only this control center does. */
         hermesLockedRoot: listing.hermesLockedRoot,
@@ -173,7 +193,7 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
     const target = inside(reply, body.data.path);
     if (target === null) return reply;
     // Deleting the root would empty the workspace in one click.
-    if (workspace && target === workspace.root) {
+    if (target === ctx.getWorkspaceRoot()?.root) {
       return reply
         .code(400)
         .send({ error: 'cannot_delete_root', message: 'The workspace root cannot be deleted.' });

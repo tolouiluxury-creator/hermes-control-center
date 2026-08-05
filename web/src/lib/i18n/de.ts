@@ -116,7 +116,12 @@ export const de: Dict = {
     'Dateien auf dem Hermes-Rechner, innerhalb des Ordners, den du freigegeben hast.',
   'workspace.notConfigured': 'Es ist kein Workspace-Ordner gesetzt.',
   'workspace.notConfiguredWhy':
-    'Die Datei-API von Hermes ist im Auslieferungszustand auf keinen Ordner begrenzt — sie listet und löscht überall, wo der Agent hinkommt. Deshalb bleibt dieser Bereich zu, bis du den einen Ordner nennst, den er benutzen darf. Trag ihn in die Konfiguration ein und starte neu:',
+    'Die Datei-API von Hermes ist im Auslieferungszustand auf keinen Ordner begrenzt — sie listet und löscht überall, wo der Agent hinkommt. Deshalb bleibt dieser Bereich zu, bis du den einen Ordner nennst, den er benutzen darf.',
+  'workspace.rootLabel': 'Zu erlaubender Ordner',
+  'workspace.rootPlaceholder': 'z. B. /home/du/workspace oder C:\\Users\\du\\workspace',
+  'workspace.rootSave': 'Ordner setzen',
+  'workspace.rootSet': 'Workspace-Ordner gesetzt',
+  'workspace.rootHint': 'Wird angelegt, falls er noch nicht existiert. Wirkt sofort.',
   'workspace.weConfine':
     'Hermes selbst begrenzt das hier nicht. Die Grenze zieht das Control Center, Pfade darüber hinaus werden abgelehnt.',
   'workspace.rootTitle': 'Der Ordner, auf den dieser Bereich begrenzt ist',

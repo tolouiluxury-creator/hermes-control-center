@@ -114,7 +114,12 @@ export const en: Dict = {
   'page.workspace.desc': 'Files on the Hermes host, inside the folder you allowed.',
   'workspace.notConfigured': 'No workspace folder is set.',
   'workspace.notConfiguredWhy':
-    'Hermes’ file API is not limited to any folder on a stock install — it will list and delete anywhere the agent can reach. So this area stays closed until you name the one folder it may use. Add it to the config file and restart:',
+    'Hermes’ file API is not limited to any folder on a stock install — it will list and delete anywhere the agent can reach. So this area stays closed until you name the one folder it may use.',
+  'workspace.rootLabel': 'Folder to allow',
+  'workspace.rootPlaceholder': 'e.g. /home/you/workspace or C:\\Users\\you\\workspace',
+  'workspace.rootSave': 'Set folder',
+  'workspace.rootSet': 'Workspace folder set',
+  'workspace.rootHint': 'Created if it does not exist yet. Takes effect immediately.',
   'workspace.weConfine':
     'Hermes itself is not limiting this. The boundary is enforced by the control center, and paths outside it are refused.',
   'workspace.rootTitle': 'The folder this area is confined to',

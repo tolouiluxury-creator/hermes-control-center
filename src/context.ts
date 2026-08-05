@@ -1,5 +1,5 @@
 import type { CliOptions } from './options.js';
-import { loadControlCenterConfig } from './config.js';
+import { loadControlCenterConfig, updateControlCenterConfig } from './config.js';
 import { AuthService } from './auth/service.js';
 import { DashboardSessionToken } from './hermes/sessionToken.js';
 import { controlCenterDatabasePath } from './paths.js';
@@ -17,6 +17,7 @@ import {
   detectWorkspaceRoot,
   OutsideWorkspaceError,
   resolveInsideRoot,
+  type WorkspaceRoot,
 } from './routes/workspaceRoot.js';
 import { log } from './log.js';
 
@@ -47,6 +48,16 @@ export interface AppContext {
    * area exists to enforce.
    */
   resolveWorkspacePath(path: string): string | null;
+  /** Null when no root is configured. */
+  getWorkspaceRoot(): WorkspaceRoot | null;
+  /**
+   * Applies a new root to the live server and persists it to the config file,
+   * so setting it through the web UI takes effect immediately — the same
+   * pattern as {@link AuthService.updatePasswordHash}. Without this, a
+   * freshly-set root would need a process restart before the workspace area
+   * actually opened.
+   */
+  setWorkspaceRoot(root: WorkspaceRoot): void;
   close(): void;
 }
 
@@ -110,7 +121,7 @@ export function createContext(
 
   /** Null when no root is configured, which closes the workspace area entirely. */
   const configuredRoot = resolved.workspaceRoot?.trim();
-  const workspaceRoot = configuredRoot ? detectWorkspaceRoot(configuredRoot) : null;
+  let workspaceRoot = configuredRoot ? detectWorkspaceRoot(configuredRoot) : null;
 
   const fetchStatus = async (): Promise<StatusSnapshot> => {
     // Collapse concurrent callers onto one upstream round trip.
@@ -159,6 +170,15 @@ export function createContext(
         if (error instanceof OutsideWorkspaceError) return null;
         throw error;
       }
+    },
+
+    getWorkspaceRoot() {
+      return workspaceRoot;
+    },
+
+    setWorkspaceRoot(root) {
+      workspaceRoot = root;
+      updateControlCenterConfig({ workspaceRoot: root.root });
     },
 
     close() {

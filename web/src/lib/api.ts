@@ -405,6 +405,10 @@ export interface WorkspaceFile {
 export const getWorkspaceRoot = (): Promise<WorkspaceRootInfo> =>
   apiRequest<WorkspaceRootInfo>('/workspace/root');
 
+/** Sets the workspace root through the UI — applies immediately, no restart. */
+export const setWorkspaceRoot = (path: string): Promise<WorkspaceRootInfo> =>
+  apiRequest<WorkspaceRootInfo>('/workspace/root', { method: 'PUT', ...jsonBody({ path }) });
+
 export const listWorkspace = (path?: string): Promise<WorkspaceListing> =>
   apiRequest<WorkspaceListing>(
     path ? `/workspace/list?path=${encodeURIComponent(path)}` : '/workspace/list',

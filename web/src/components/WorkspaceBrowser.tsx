@@ -8,6 +8,7 @@ import {
   listWorkspace,
   queryKeys,
   readWorkspaceFile,
+  setWorkspaceRoot,
   writeWorkspaceFile,
 } from '@/lib/api';
 import { SkeletonText } from '@/components/Skeleton';
@@ -48,8 +49,19 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   const [confirmDelete, setConfirmDelete] = useState<{ path: string; directory: boolean } | null>(
     null,
   );
+  const [rootDraft, setRootDraft] = useState('');
 
   const root = useQuery({ queryKey: queryKeys.workspaceRoot, queryFn: getWorkspaceRoot });
+
+  const setRoot = useMutation({
+    mutationFn: (value: string) => setWorkspaceRoot(value),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['workspace'] });
+      toast.push({ tone: 'success', title: t('workspace.rootSet') });
+    },
+    onError: (error: Error) =>
+      toast.push({ tone: 'error', title: t('workspace.failed'), description: error.message }),
+  });
 
   const listing = useQuery({
     queryKey: queryKeys.workspaceList(path ?? ''),
@@ -149,7 +161,8 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   }
 
   // Nothing configured means nothing shown. See the route module for why there
-  // is no default: guessing which directory is safe to expose is not possible.
+  // is no default: guessing which directory is safe to expose is not possible
+  // server-side, so the person using this page names it instead.
   if (!root.data?.configured) {
     return (
       <div className="card p-8">
@@ -157,9 +170,32 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
         <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
           {t('workspace.notConfiguredWhy')}
         </p>
-        <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-3 font-mono text-xs">
-          {'{\n  "workspaceRoot": "/root/workspace"\n}'}
-        </pre>
+        <form
+          className="mt-4 flex flex-wrap items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const value = rootDraft.trim();
+            if (value === '' || setRoot.isPending) return;
+            setRoot.mutate(value);
+          }}
+        >
+          <input
+            value={rootDraft}
+            onChange={(event) => setRootDraft(event.target.value)}
+            placeholder={t('workspace.rootPlaceholder')}
+            aria-label={t('workspace.rootLabel')}
+            autoFocus
+            className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+          />
+          <button
+            type="submit"
+            disabled={rootDraft.trim() === '' || setRoot.isPending}
+            className="shrink-0 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-[var(--color-accent)] disabled:opacity-40"
+          >
+            {t('workspace.rootSave')}
+          </button>
+        </form>
+        <p className="mt-2 text-xs text-[var(--color-ink-faint)]">{t('workspace.rootHint')}</p>
       </div>
     );
   }
