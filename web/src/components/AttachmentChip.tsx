@@ -34,3 +34,27 @@ export function AttachmentChip({
     </span>
   );
 }
+
+/**
+ * A file reference inside an already-sent message: just the name, never the
+ * full path, with a thumbnail when a preview is available (only for images
+ * attached during the current session — reopened history has no bytes to
+ * show a thumbnail from, so it falls back to the plain chip).
+ */
+export function SentAttachment({ name, previewUrl }: { name: string; previewUrl?: string }) {
+  if (previewUrl) {
+    return (
+      <img
+        src={previewUrl}
+        alt={name}
+        className="max-h-40 max-w-[12rem] rounded-lg border border-[var(--color-hairline)] object-cover"
+      />
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1 text-xs text-[var(--color-ink-muted)]">
+      <Paperclip size={11} className="shrink-0" aria-hidden />
+      <span className="max-w-[10rem] truncate">{name}</span>
+    </span>
+  );
+}

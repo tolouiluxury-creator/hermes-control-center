@@ -39,8 +39,13 @@ import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime, formatTime } from '@/lib/format';
 import { groupByRecency } from '@/lib/chatGroups';
 import { buildOutgoingText } from '@/lib/chatOutgoing';
+import { isImageFileName, parseAttachmentRefs } from '@/lib/chatAttachmentRefs';
 import { TypingDots } from '@/components/TypingDots';
-import { AttachmentChip, type PendingAttachment } from '@/components/AttachmentChip';
+import {
+  AttachmentChip,
+  SentAttachment,
+  type PendingAttachment,
+} from '@/components/AttachmentChip';
 
 interface GatewayEventData {
   type: string;
@@ -75,6 +80,12 @@ export function ChatsPage() {
   const [streaming, setStreaming] = useState(false);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  /**
+   * Image data URLs for attachments sent this session, keyed by their ref
+   * line — the only source for a thumbnail, since the bytes never touch the
+   * server's chat history. Reopened conversations show the plain file chip.
+   */
+  const [attachmentPreviews, setAttachmentPreviews] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   /** Selection mode for the conversation list: pick several, then delete them. */
   const [selecting, setSelecting] = useState(false);
@@ -528,6 +539,14 @@ export function ChatsPage() {
       }
       const outgoing = buildOutgoingText(refs, text);
       setAttachments((current) => current.filter((entry) => !pending.includes(entry)));
+      setAttachmentPreviews((current) => {
+        const next = { ...current };
+        pending.forEach((item, i) => {
+          const ref = refs[i];
+          if (ref && item.dataUrl && isImageFileName(item.file.name)) next[ref] = item.dataUrl;
+        });
+        return next;
+      });
       // Echoed only now, with the attachment refs folded in — echoing the raw
       // typed text earlier meant an image sent without a caption showed an
       // empty bubble (falsy text fell through to the assistant's TypingDots).
@@ -903,6 +922,7 @@ export function ChatsPage() {
                   messages.map((message, index) => {
                     const isUser = message.role === 'user';
                     const time = formatTime(message.timestamp);
+                    const { refs: attachmentRefs, body } = parseAttachmentRefs(message.text);
                     return (
                       <div
                         key={index}
@@ -927,11 +947,22 @@ export function ChatsPage() {
                                 : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)] text-[var(--color-ink)]'
                             }`}
                           >
-                            {message.text ? (
+                            {attachmentRefs.length > 0 && (
+                              <div className="mb-1.5 flex flex-wrap gap-1.5">
+                                {attachmentRefs.map((ref) => (
+                                  <SentAttachment
+                                    key={ref.raw}
+                                    name={ref.name}
+                                    previewUrl={attachmentPreviews[ref.raw]}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {body || attachmentRefs.length > 0 ? (
                               isUser ? (
-                                message.text
+                                body
                               ) : (
-                                <ChatMarkdown text={message.text} />
+                                <ChatMarkdown text={body} />
                               )
                             ) : (
                               <TypingDots />
