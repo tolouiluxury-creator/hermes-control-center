@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { FOOTER_NAV, PRIMARY_NAV, type NavItem } from '@/lib/nav';
 import { formatDuration } from '@/lib/format';
 import { useStatus } from '@/lib/useStatus';
+import { getAuthStatus, logout, queryKeys } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 interface SidebarProps {
@@ -127,6 +129,35 @@ function SystemInfo({ collapsed }: { collapsed: boolean }) {
   );
 }
 
+/** Only shown once a password is actually set — otherwise there is no session to end. */
+function LogoutButton({ collapsed }: { collapsed: boolean }) {
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
+  const auth = useQuery({ queryKey: queryKeys.auth, queryFn: getAuthStatus, staleTime: 30_000 });
+
+  if (auth.data?.required !== true) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await logout();
+        // The gate in App.tsx reads this same query — invalidating it is what
+        // flips the app back to the login screen, no reload needed.
+        await queryClient.invalidateQueries({ queryKey: queryKeys.auth });
+      }}
+      title={collapsed ? t('palette.signOut') : undefined}
+      className={`flex items-center gap-2 border-t border-[var(--color-hairline)] px-4 py-3 text-xs text-[var(--color-ink-faint)] transition-colors hover:text-[var(--color-danger)] ${
+        collapsed ? 'justify-center px-0' : ''
+      }`}
+    >
+      <LogOut size={15} aria-hidden />
+      {!collapsed && <span>{t('palette.signOut')}</span>}
+      {collapsed && <span className="sr-only">{t('palette.signOut')}</span>}
+    </button>
+  );
+}
+
 export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarProps) {
   const { t } = useI18n();
 
@@ -179,6 +210,8 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
       </nav>
 
       <SystemInfo collapsed={collapsed} />
+
+      <LogoutButton collapsed={collapsed} />
 
       <button
         type="button"
