@@ -28,9 +28,9 @@ const DONATION_ADDRESSES: DonationAddress[] = [
     subtitleKey: 'donation.sol.subtitle',
     warningKey: 'donation.sol.warning',
     accent: 'accent',
-    // A Solana address isn't tied to one token — SOL and every SPL token
-    // (USDC, USDT, ...) live on the same address, so one is enough.
-    address: 'F8rd52g9w5CgqcF4hJWCNBwcBvGnSG5YssnHM8ksrmZ3',
+    // Restricted to USDC/USDT only — do not send SOL or other SPL tokens to
+    // this address (see donation.sol.warning).
+    address: 'Bh6seZkPc1JraxXo7V4Bi4mdBkwV3bDji5uvAuEkdzHu',
   },
   {
     id: 'ton',
@@ -38,7 +38,8 @@ const DONATION_ADDRESSES: DonationAddress[] = [
     subtitleKey: 'donation.ton.subtitle',
     warningKey: 'donation.ton.warning',
     accent: 'info',
-    address: 'UQBYlDRt8xLsx-1Rl7xE-Em7mojH3TlA5HeOa7jZPG5AV-pT',
+    // Restricted to USDT only — do not send TON itself (see donation.ton.warning).
+    address: 'UQD637kxj-IA7c9OzaeH_Ag4OwIiDeDDgSiz94daJ8Z6VeJZ',
   },
 ];
 
