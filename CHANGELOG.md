@@ -32,6 +32,11 @@ fixtures.
   (otherwise a "jump to latest" pill appears).
 - **Model and profile switchable per conversation**, including mid-conversation model switches with
   Hermes's own expensive-model confirmation, without ever mutating the profile's persisted default.
+- **Token usage for the open conversation**, shown compactly in the chat toolbar with an
+  input/output/cache breakdown on hover.
+- **A real cancel for a running turn**, wired to Hermes's own `session.interrupt` rather than just
+  dropping the connection — some turns run several tool calls and model requests back to back and
+  can legitimately take minutes.
 - **A dedicated Profiles page:** create (optionally cloned from an existing profile, with or without
   its conversations/memory/skills), rename, describe, edit `SOUL.md`, set the sticky profile, delete
   — with deletion blocked for the default profile, the profile this instance runs as, and any profile
@@ -59,7 +64,8 @@ fixtures.
   derived from real metrics (no model involved).
 - **Three interface languages — English, German and Persian**, switchable per device, with
   right-to-left layout for Persian. English is the default; over 800 keys translated in lockstep
-  across all three dictionaries.
+  across all three dictionaries. A quick switch sits in the topbar next to the live-connection
+  indicator and theme toggle, next to the full picker in Settings.
 - **Password protection.** Salted scrypt hashing, stateless HMAC-signed session cookies, per-client
   exponential login throttling, and one request guard covering every API route including the SSE
   stream. The server refuses to bind beyond loopback until a password is set.
@@ -87,6 +93,10 @@ These are the details that took the most care, and the ones most likely to be wr
 - The Hermes dashboard guards nearly its whole API with a session token embedded in the HTML it
   serves. Without it, everything except `/api/status` answers 401. The control center bootstraps that
   token the same way the browser does, and refreshes it when the dashboard restarts.
+- Session writes (pin, delete) are scoped by profile through the request body — Hermes reads it
+  there and nowhere else for these two endpoints, unlike every read, which also accepts it on the
+  query string. Both fall back to this instance's own launch profile when the caller sends none,
+  rather than to whatever Hermes itself would infer.
 - Hermes reports session timestamps in seconds. They are converted, with a plausibility check so
   millisecond timestamps are not scaled twice.
 - Analytics distinguishes billed cost from estimated cost, because most providers only estimate.
