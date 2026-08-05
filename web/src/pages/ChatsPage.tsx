@@ -496,8 +496,8 @@ export function ChatsPage() {
     // Sending must not cost the caret. Clicking the button moves focus there,
     // so it is handed back explicitly rather than left where the click put it.
     inputRef.current?.focus();
-    setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setStreaming(true);
+    let pushed = false;
     try {
       // The conversation starts here, not when the page opened — that is what
       // keeps unused sessions from piling up on the agent.
@@ -528,10 +528,19 @@ export function ChatsPage() {
       }
       const outgoing = buildOutgoingText(refs, text);
       setAttachments((current) => current.filter((entry) => !pending.includes(entry)));
+      // Echoed only now, with the attachment refs folded in — echoing the raw
+      // typed text earlier meant an image sent without a caption showed an
+      // empty bubble (falsy text fell through to the assistant's TypingDots).
+      setMessages((current) => [
+        ...current,
+        { role: 'user', text: outgoing },
+        { role: 'assistant', text: '' },
+      ]);
+      pushed = true;
       await sendChatPrompt(live, outgoing);
     } catch (error) {
       setStreaming(false);
-      setMessages((current) => current.slice(0, -1));
+      if (pushed) setMessages((current) => current.slice(0, -1));
       toast.push({
         tone: 'error',
         title: t('chat.sendFailed'),
