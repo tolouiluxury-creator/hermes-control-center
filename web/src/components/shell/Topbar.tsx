@@ -1,9 +1,10 @@
-import { Menu, Monitor, Moon, Search, Sun, Wifi, WifiOff } from 'lucide-react';
+import { Languages, Menu, Monitor, Moon, Search, Sun, Wifi, WifiOff } from 'lucide-react';
 import { useLocation } from 'react-router';
 import { navItemByPath } from '@/lib/nav';
 import { useTheme, type ThemePreference } from '@/lib/theme';
-import { useI18n } from '@/lib/i18n';
+import { LANGUAGES, useI18n, type Lang } from '@/lib/i18n';
 import { useStatus } from '@/lib/useStatus';
+import { ChipMenu } from '@/components/ChipMenu';
 import type { StreamState } from '@/lib/stream';
 
 const THEME_LABEL_KEY: Record<ThemePreference, string> = {
@@ -45,6 +46,22 @@ function ConnectionPill({ streamState }: { streamState: StreamState }) {
       {live ? <Wifi size={13} aria-hidden /> : <WifiOff size={13} aria-hidden />}
       {label}
     </span>
+  );
+}
+
+/** Quick language switch — the only other way there was Settings, several clicks away. */
+function LanguagePicker() {
+  const { t, lang, setLang } = useI18n();
+  const current = LANGUAGES.find((entry) => entry.id === lang);
+  return (
+    <ChipMenu
+      icon={<Languages size={13} />}
+      label={lang.toUpperCase()}
+      title={t('shell.language', { lang: current?.endonym ?? lang })}
+      options={LANGUAGES.map((entry) => ({ value: entry.id, label: entry.endonym }))}
+      value={lang}
+      onChange={(value) => setLang(value as Lang)}
+    />
   );
 }
 
@@ -96,6 +113,8 @@ export function Topbar({
       </button>
 
       <ConnectionPill streamState={streamState} />
+
+      <LanguagePicker />
 
       <button
         type="button"

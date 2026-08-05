@@ -824,6 +824,7 @@ export const en: Dict = {
   'shell.shortcutHint': 'Ctrl K',
   'shell.theme': 'Appearance: {theme}',
   'shell.themeToggleAria': 'Appearance: {theme}. Activate to switch.',
+  'shell.language': 'Language: {lang}',
   'shell.home': 'Hermes Control Center — to the dashboard',
   'shell.collapseSidebar': 'Collapse sidebar',
   'shell.expandSidebar': 'Expand sidebar',

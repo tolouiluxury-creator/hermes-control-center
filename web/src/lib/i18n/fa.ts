@@ -821,6 +821,7 @@ export const fa: Dict = {
   'shell.shortcutHint': 'Ctrl K',
   'shell.theme': 'ظاهر: {theme}',
   'shell.themeToggleAria': 'ظاهر: {theme}. برای تغییر فعال کنید.',
+  'shell.language': 'زبان: {lang}',
   'shell.home': 'کنترل‌سنتر هرمس — به داشبورد',
   'shell.collapseSidebar': 'جمع کردن نوار کناری',
   'shell.expandSidebar': 'باز کردن نوار کناری',
