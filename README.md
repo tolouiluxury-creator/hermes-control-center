@@ -39,7 +39,9 @@ browser.
   sessions, insights, knowledge. Drag them, resize them, or move them with the keyboard; the layout
   is saved.
 - **Chat with your agent**, over the dashboard your Hermes is already running. No API server, no
-  gateway restart, and the bot stays online while you use it.
+  gateway restart, and the bot stays online while you use it. Token usage for the open conversation
+  is one glance away, and a real cancel — wired to Hermes's own turn-interrupt, not just a dropped
+  connection — stops a turn that is taking too long.
 - **Management pages** for skills (searchable across a hundred or more), MCP servers, models with
   per-provider authentication state, scheduled tasks, knowledge and memory providers, API and
   messaging integrations, logs with level filters and a follow toggle, and analytics broken down by
@@ -57,8 +59,8 @@ browser.
   configuration, each shown with the numbers that triggered it. It found a gateway restart loop on
   the first server it ran against.
 - **A command palette** (`Ctrl`/`Cmd` + `K`) that reaches every page, with fuzzy matching.
-- **English, German and Persian**, switchable in Settings, per device. Persian sets the whole
-  interface right-to-left. English is the default.
+- **English, German and Persian**, switchable per device from a quick switch in the topbar or the
+  full picker in Settings. Persian sets the whole interface right-to-left. English is the default.
 - **Light and dark themes**, keyboard shortcuts, and a layout that works on a phone.
 
 ## Requirements
@@ -200,13 +202,8 @@ Architecture, the widget catalogue and the full Hermes endpoint map are document
 [`docs/`](./docs). Publishing and server deployment are in
 [`docs/RELEASE.md`](./docs/RELEASE.md).
 
-### Known advisory noise
-
-`npm audit` reports six high-severity entries. All of them trace to one `brace-expansion` advisory
-reached through `minimatch` in ESLint's glob handling. ESLint is a lint-time dev dependency and is
-not part of the published package: `npm audit --omit=dev` reports zero vulnerabilities, and the
-published tarball contains no ESLint code.
-
+`npm audit` reports zero vulnerabilities. A `fast-uri` advisory (reached through Fastify's JSON
+serialization) needed an `overrides` entry pinning it to a patched version; nothing else did.
 
 ## License
 

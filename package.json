@@ -65,6 +65,9 @@
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
+  "overrides": {
+    "fast-uri": "^4.1.2"
+  },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "@types/node": "^26.1.1",
