@@ -420,6 +420,13 @@ export const browseWorkspaceFolders = (path?: string): Promise<WorkspaceBrowseLi
     path ? `/workspace/browse?path=${encodeURIComponent(path)}` : '/workspace/browse',
   );
 
+/** "New folder" inside the picker — `name` only, joined onto `parent` on the server. */
+export const createBrowseFolder = (parent: string, name: string): Promise<{ path: string }> =>
+  apiRequest<{ path: string }>('/workspace/browse', {
+    method: 'POST',
+    ...jsonBody({ parent, name }),
+  });
+
 export const listWorkspace = (path?: string): Promise<WorkspaceListing> =>
   apiRequest<WorkspaceListing>(
     path ? `/workspace/list?path=${encodeURIComponent(path)}` : '/workspace/list',

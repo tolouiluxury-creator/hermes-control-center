@@ -5,6 +5,7 @@ import { UpstreamError } from '../hermes/client.js';
 import {
   detectWorkspaceRoot,
   displayPath,
+  joinChildPath,
   OutsideWorkspaceError,
   resolveInsideRoot,
 } from './workspaceRoot.js';
@@ -26,6 +27,16 @@ import {
 const pathSchema = z.object({ path: z.string().max(4096).optional() });
 const mkdirSchema = z.object({ path: z.string().min(1).max(4096) });
 const setRootSchema = z.object({ path: z.string().min(1).max(4096) });
+/** A name, not a path — the same rule the confined "New folder" form uses. */
+const browseMkdirSchema = z.object({
+  parent: z.string().min(1).max(4096),
+  name: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[^/\\]+$/, 'name must not contain a separator')
+    .refine((name) => name !== '.' && name !== '..', 'name must not be "." or ".."'),
+});
 /** 8 MiB is Hermes' own ceiling (`_FS_TEXT_WRITE_MAX_BYTES`); it answers 413 above it. */
 const writeSchema = z.object({
   path: z.string().min(1).max(4096),
@@ -146,6 +157,17 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
           .filter((entry) => entry.isDirectory)
           .map((entry) => ({ name: entry.name, path: entry.path })),
       };
+    });
+  });
+
+  /** New-folder button inside the picker — same unconfined reach as the GET above. */
+  app.post('/api/workspace/browse', async (request, reply) => {
+    const body = browseMkdirSchema.safeParse(request.body);
+    if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
+    const target = joinChildPath(body.data.parent, body.data.name);
+    return guard(reply, async () => {
+      await ctx.dashboard.createDirectory(target);
+      return { path: target };
     });
   });
 

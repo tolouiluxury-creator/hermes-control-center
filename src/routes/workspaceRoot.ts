@@ -42,6 +42,13 @@ function normalize(value: string, windows: boolean): string {
   return stripped === '' ? resolved : stripped;
 }
 
+/** Joins a plain name onto a parent path, in whichever flavour the parent is. */
+export function joinChildPath(parent: string, name: string): string {
+  const { windows } = detectWorkspaceRoot(parent);
+  const engine = windows ? win32Path : posixPath;
+  return engine.join(parent, name);
+}
+
 export class OutsideWorkspaceError extends Error {
   constructor(readonly attempted: string) {
     super('Path is outside the workspace root.');

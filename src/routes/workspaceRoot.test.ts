@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   detectWorkspaceRoot,
   displayPath,
+  joinChildPath,
   OutsideWorkspaceError,
   resolveInsideRoot,
 } from './workspaceRoot.js';
@@ -77,6 +78,16 @@ describe('detectWorkspaceRoot', () => {
 
   it('reads a POSIX root as POSIX', () => {
     expect(detectWorkspaceRoot('/srv/data').windows).toBe(false);
+  });
+});
+
+describe('joinChildPath', () => {
+  it('joins a name onto a POSIX parent', () => {
+    expect(joinChildPath('/home/me', 'projects')).toBe('/home/me/projects');
+  });
+
+  it('joins a name onto a Windows parent, detected from the parent itself', () => {
+    expect(joinChildPath('C:\\Users\\me', 'workspace')).toBe('C:\\Users\\me\\workspace');
   });
 });
 
