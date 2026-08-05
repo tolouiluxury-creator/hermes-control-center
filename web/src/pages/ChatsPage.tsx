@@ -923,6 +923,7 @@ export function ChatsPage() {
                   onLiveModelPick={(pick) => void applyLiveModel(pick)}
                   streaming={streaming}
                   switching={switchingModel}
+                  tokens={openSession?.tokens ?? null}
                   cwd={cwd}
                   onCwd={setCwd}
                 />

@@ -12,6 +12,7 @@ function session(id: string, startedAt: number | null, pinned = false): ChatSess
     source: '',
     model: null,
     pinned,
+    tokens: null,
   };
 }
 

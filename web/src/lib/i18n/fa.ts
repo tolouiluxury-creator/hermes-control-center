@@ -252,6 +252,8 @@ export const fa: Dict = {
   'chat.toolbar.profileRunning': 'نمایه‌ای که داشبورد با آن اجرا می‌شود',
   'chat.toolbar.profileSticky': 'پیش‌فرض برای فرمان‌های تازهٔ ترمینال',
   'chat.toolbar.profileSingle': 'تنها یک نمایه نصب شده است',
+  'chat.toolbar.tokensTitle': 'میزان مصرف توکن این گفتگو',
+  'chat.toolbar.tokensBreakdown': 'ورودی {input} · خروجی {output} · کش‌شده {cached}',
 
   // Settings
   'settings.appearance': 'ظاهر',

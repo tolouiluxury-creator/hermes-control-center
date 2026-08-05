@@ -255,6 +255,8 @@ export const en: Dict = {
   'chat.toolbar.profileRunning': 'What the dashboard runs as',
   'chat.toolbar.profileSticky': 'Default for new terminal commands',
   'chat.toolbar.profileSingle': 'Only one profile installed',
+  'chat.toolbar.tokensTitle': 'Token usage this conversation',
+  'chat.toolbar.tokensBreakdown': 'Input {input} · Output {output} · Cached {cached}',
 
   // Settings
   'settings.appearance': 'Appearance',

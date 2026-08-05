@@ -556,6 +556,13 @@ export interface ChatSessionSummary {
   model: string | null;
   /** Hermes' keep flag: a pinned conversation is exempt from auto-archive. */
   pinned: boolean;
+  /** Same lookup-window caveat as `model`; null when the row wasn't found. */
+  tokens: {
+    inputTokens: number | null;
+    outputTokens: number | null;
+    cacheReadTokens: number | null;
+    cacheWriteTokens: number | null;
+  } | null;
 }
 
 /**

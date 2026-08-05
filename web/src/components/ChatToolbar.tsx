@@ -1,8 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
-import { Cpu, FolderClosed, UserRound } from 'lucide-react';
+import { Cpu, FolderClosed, Gauge, UserRound } from 'lucide-react';
 import { getModelOptions, getProfiles, listWorkspace, queryKeys } from '@/lib/api';
+import { formatCompact } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { ChipMenu, type ChipMenuOption } from './ChipMenu';
+
+export interface TokenUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+}
 
 export interface ModelPick {
   provider: string;
@@ -34,6 +42,8 @@ interface ChatToolbarProps {
    */
   cwd: string | null;
   onCwd: (cwd: string | null) => void;
+  /** Read back from the open conversation's stored row; null before it has one. */
+  tokens?: TokenUsage | null;
 }
 
 export function ChatToolbar({
@@ -48,8 +58,9 @@ export function ChatToolbar({
   switching,
   cwd,
   onCwd,
+  tokens,
 }: ChatToolbarProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
 
   const models = useQuery({
     queryKey: queryKeys.models,
@@ -158,6 +169,13 @@ export function ChatToolbar({
       : // The folder name alone; the full path is the menu's hint.
         (cwd.split('/').pop() ?? cwd);
 
+  // Null means the stored row hasn't been found yet (a brand-new conversation,
+  // still outside the model-lookup window) — nothing to show, not zero usage.
+  const totalTokens =
+    tokens && (tokens.inputTokens !== null || tokens.outputTokens !== null)
+      ? (tokens.inputTokens ?? 0) + (tokens.outputTokens ?? 0)
+      : null;
+
   return (
     <div className="ms-auto flex shrink-0 items-center gap-1.5">
       <ChipMenu
@@ -180,6 +198,28 @@ export function ChatToolbar({
               : t('chat.toolbar.modelUnavailable')
         }
       />
+      {/*
+       * Read-only: there is nothing to pick, only to report. Reuses ChipMenu's
+       * chrome (icon + pill + hover tooltip) rather than a one-off element, so
+       * it reads as part of the same toolbar instead of a bolted-on stat.
+       * Hidden until the open conversation's stored row has usage to show.
+       */}
+      {conversationOpen && totalTokens !== null && (
+        <ChipMenu
+          icon={<Gauge size={12} />}
+          label={formatCompact(totalTokens, lang)}
+          title={t('chat.toolbar.tokensTitle')}
+          options={[]}
+          value=""
+          onChange={() => {}}
+          disabled
+          disabledHint={t('chat.toolbar.tokensBreakdown', {
+            input: formatCompact(tokens?.inputTokens ?? 0, lang),
+            output: formatCompact(tokens?.outputTokens ?? 0, lang),
+            cached: formatCompact(tokens?.cacheReadTokens ?? 0, lang),
+          })}
+        />
+      )}
       {/*
        * Hidden when no workspace root is configured: the area is closed then, and
        * an empty chip would only raise a question the page cannot answer here.

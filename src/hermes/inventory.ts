@@ -838,6 +838,10 @@ export const sessionsSchema = z.looseObject({
         chat_type: z.string().nullish(),
         title: z.string().nullish(),
         pinned: z.union([z.boolean(), numeric]).nullish(),
+        input_tokens: numeric,
+        output_tokens: numeric,
+        cache_read_tokens: numeric,
+        cache_write_tokens: numeric,
       }),
     )
     .nullish(),
@@ -867,6 +871,11 @@ export interface SessionSummary {
   startedAt: number | null;
   messages: number | null;
   endReason: string | null;
+  /** Usage for this conversation so far; null fields mean Hermes reported none. */
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
 }
 
 /**
@@ -905,6 +914,10 @@ export function normalizeSessions(raw: z.infer<typeof sessionsSchema>): {
       startedAt: toEpochMs(session.started_at),
       messages: toNumber(session.message_count),
       endReason: session.end_reason ?? null,
+      inputTokens: toNumber(session.input_tokens),
+      outputTokens: toNumber(session.output_tokens),
+      cacheReadTokens: toNumber(session.cache_read_tokens),
+      cacheWriteTokens: toNumber(session.cache_write_tokens),
     })),
   };
 }

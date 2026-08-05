@@ -257,6 +257,8 @@ export const de: Dict = {
   'chat.toolbar.profileRunning': 'Womit das Dashboard läuft',
   'chat.toolbar.profileSticky': 'Standard für neue Terminal-Befehle',
   'chat.toolbar.profileSingle': 'Nur ein Profil installiert',
+  'chat.toolbar.tokensTitle': 'Tokenverbrauch dieser Unterhaltung',
+  'chat.toolbar.tokensBreakdown': 'Eingabe {input} · Ausgabe {output} · Cache {cached}',
 
   // Settings
   'settings.appearance': 'Erscheinungsbild',

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context.js';
 import { GatewayError } from '../hermes/gateway.js';
-import { toEpochMs } from '../hermes/inventory.js';
+import { toEpochMs, type SessionSummary } from '../hermes/inventory.js';
 import { log } from '../log.js';
 import { SESSIONS_CACHE_PREFIX, sessionsCacheKey, type ResponseCache } from './cache.js';
 
@@ -121,6 +121,14 @@ const attachSchema = z.object({
   name: z.string().trim().min(1).max(255),
 });
 
+/** Usage for a stored conversation; null fields mean Hermes reported none. */
+interface TokenUsage {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+}
+
 interface ChatSession {
   id: string;
   title: string;
@@ -131,6 +139,8 @@ interface ChatSession {
   /** From the stored row; null when the conversation is outside the lookup window. */
   model: string | null;
   pinned: boolean;
+  /** Same lookup-window caveat as `model`; null when the row wasn't found. */
+  tokens: TokenUsage | null;
 }
 
 /** Reduces a gateway session.list result to the list the sidebar renders. */
@@ -138,6 +148,7 @@ function normalizeSessions(
   result: unknown,
   models: Map<string, string | null>,
   pins: Set<string>,
+  tokens: Map<string, TokenUsage>,
 ): ChatSession[] {
   const raw = result as { sessions?: unknown } | null;
   const list = Array.isArray(raw?.sessions) ? raw.sessions : [];
@@ -153,6 +164,7 @@ function normalizeSessions(
       source: typeof s.source === 'string' ? s.source : '',
       model: models.get(id) ?? null,
       pinned: pins.has(id),
+      tokens: tokens.get(id) ?? null,
     };
   });
 }
@@ -175,14 +187,23 @@ export async function registerChatRoutes(
           .get(sessionsCacheKey(MODEL_LOOKUP_LIMIT, profile), () =>
             ctx.dashboard.sessions(MODEL_LOOKUP_LIMIT, profile),
           )
-          .catch(() => ({
-            sessions: [] as { id: string; model: string | null; pinned: boolean }[],
-          })),
+          .catch(() => ({ sessions: [] as SessionSummary[] })),
       ]);
       const models = new Map(stored.sessions.map((s) => [s.id, s.model]));
       const pins = new Set(stored.sessions.filter((s) => s.pinned).map((s) => s.id));
+      const tokens = new Map(
+        stored.sessions.map((s) => [
+          s.id,
+          {
+            inputTokens: s.inputTokens,
+            outputTokens: s.outputTokens,
+            cacheReadTokens: s.cacheReadTokens,
+            cacheWriteTokens: s.cacheWriteTokens,
+          },
+        ]),
+      );
       return {
-        sessions: normalizeSessions(result, models, pins)
+        sessions: normalizeSessions(result, models, pins, tokens)
           .filter((s) => s.id !== '')
           // Pinned first; within each group the gateway's own recency order is
           // kept, so nothing else about the list shifts.
