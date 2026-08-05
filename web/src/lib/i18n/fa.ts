@@ -179,6 +179,7 @@ export const fa: Dict = {
   'telegram.setup.expiredToast': 'راه‌اندازی منقضی شد — دوباره امتحان کن',
   'telegram.setup.readyToast': 'ربات وصل شد: {bot}',
   'telegram.setup.readyBot': 'انجام شد',
+  'telegram.setup.autoAnother': 'راه‌اندازی ربات دیگر',
   'telegram.gatewayUp': 'دروازه در حال اجرا',
   'telegram.gateway': 'دروازه',
   'telegram.gatewayYes': 'در حال اجرا',

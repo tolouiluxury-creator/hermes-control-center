@@ -183,6 +183,7 @@ export const de: Dict = {
   'telegram.setup.expiredToast': 'Einrichtung abgelaufen — bitte erneut versuchen',
   'telegram.setup.readyToast': 'Bot verbunden: {bot}',
   'telegram.setup.readyBot': 'fertig',
+  'telegram.setup.autoAnother': 'Anderen Bot einrichten',
   'telegram.gatewayUp': 'Gateway läuft',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'läuft',

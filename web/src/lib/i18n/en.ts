@@ -181,6 +181,7 @@ export const en: Dict = {
   'telegram.setup.expiredToast': 'Setup expired — try again',
   'telegram.setup.readyToast': 'Bot connected: {bot}',
   'telegram.setup.readyBot': 'done',
+  'telegram.setup.autoAnother': 'Set up a different bot',
   'telegram.gatewayUp': 'gateway running',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'running',

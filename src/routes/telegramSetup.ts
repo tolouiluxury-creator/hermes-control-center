@@ -8,6 +8,7 @@ import {
   TelegramOnboardingError,
 } from '../hermes/telegramOnboarding.js';
 import { CACHE_KEYS, type ResponseCache } from './cache.js';
+import { log } from '../log.js';
 
 /**
  * The "automatic" half of Telegram setup: a thin proxy in front of Hermes'
@@ -68,6 +69,7 @@ export async function registerTelegramSetupRoutes(
     if (!parsed.success) return reply.code(400).send({ error: 'invalid_request' });
     return guard(reply, async () => {
       const pairing = await createTelegramOnboardingPairing();
+      log.debug(`telegram setup: pairing ${pairing.pairingId} created`);
       pairings.set(pairing.pairingId, {
         pollToken: pairing.pollToken,
         profile: parsed.data.profile ?? null,
@@ -85,11 +87,20 @@ export async function registerTelegramSetupRoutes(
     sweep();
     const { id } = request.params as { id: string };
     const stored = pairings.get(id);
-    if (!stored) return { status: 'expired' as const };
+    if (!stored) {
+      log.debug(`telegram setup: poll for ${id} — not in map (expired or lost to a restart)`);
+      return { status: 'expired' as const };
+    }
     return guard(reply, async () => {
       const result = await pollTelegramOnboarding(id, stored.pollToken);
-      if (!result) return { status: 'pending' as const };
+      if (!result) {
+        log.debug(`telegram setup: poll for ${id} — still pending`);
+        return { status: 'pending' as const };
+      }
 
+      log.debug(
+        `telegram setup: poll for ${id} — ready, bot=${result.botUsername ?? '?'} owner=${result.ownerUserId ?? '?'}`,
+      );
       pairings.delete(id);
       const profile = stored.profile ?? undefined;
       await ctx.dashboard.setEnv('TELEGRAM_BOT_TOKEN', result.token, profile);

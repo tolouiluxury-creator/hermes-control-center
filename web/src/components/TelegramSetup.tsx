@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import qrcode from 'qrcode-generator';
-import { ExternalLink, KeyRound, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, ExternalLink, KeyRound, Loader2, Sparkles } from 'lucide-react';
 import {
   cancelTelegramSetup,
   getTelegramSetupStatus,
@@ -164,7 +164,19 @@ function AutoSetup({ profile }: { profile: string | null }) {
   const [pairingId, setPairingId] = useState<string | null>(null);
   const [deepLink, setDeepLink] = useState<string | null>(null);
   const [qrSvg, setQrSvg] = useState<string | null>(null);
+  // Set once a pairing completes; shown in place of the "create a bot" button
+  // until the user asks to set up another one. Without this the card just
+  // reverted straight back to its starting state on success — correct
+  // underneath (the connection card above already reflected it), but from
+  // here it looked like nothing had happened.
+  const [connected, setConnected] = useState<{ botUsername: string | null } | null>(null);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Mirrors pairingId for the unmount cleanup below, which must not itself
+  // depend on pairingId — see that effect's comment for why.
+  const pairingIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    pairingIdRef.current = pairingId;
+  }, [pairingId]);
 
   const stopPolling = () => {
     if (pollTimer.current !== null) clearInterval(pollTimer.current);
@@ -173,12 +185,20 @@ function AutoSetup({ profile }: { profile: string | null }) {
 
   // Give up the pairing server-side too if the user navigates away mid-flow,
   // rather than leaving it to expire on its own after fifteen minutes.
+  //
+  // Deliberately mount-only (`[]`): keying this on `pairingId` seemed natural
+  // at first, since the cleanup reads it — but a dependency array re-runs the
+  // *previous* render's cleanup on every change, including the very state
+  // update that starts the poll interval below. That cleanup's stopPolling()
+  // then cleared the interval moments after it started, silently, every
+  // time — the bot got created in Telegram but nothing here ever polled
+  // again to notice.
   useEffect(
     () => () => {
       stopPolling();
-      if (pairingId) void cancelTelegramSetup(pairingId).catch(() => {});
+      if (pairingIdRef.current) void cancelTelegramSetup(pairingIdRef.current).catch(() => {});
     },
-    [pairingId],
+    [],
   );
 
   const start = useMutation({
@@ -204,6 +224,7 @@ function AutoSetup({ profile }: { profile: string | null }) {
               return;
             }
             reset();
+            setConnected({ botUsername: status.botUsername });
             await Promise.all([
               queryClient.invalidateQueries({ queryKey: queryKeys.messagingFor(profile) }),
               queryClient.invalidateQueries({ queryKey: queryKeys.envFor(profile) }),
@@ -240,6 +261,26 @@ function AutoSetup({ profile }: { profile: string | null }) {
     if (pairingId) void cancelTelegramSetup(pairingId).catch(() => {});
     reset();
   };
+
+  if (!pairingId && connected) {
+    return (
+      <div className="mt-4 flex items-center gap-2 text-sm">
+        <CheckCircle2 size={16} className="shrink-0 text-[var(--color-ok)]" aria-hidden />
+        <span>
+          {t('telegram.setup.readyToast', {
+            bot: connected.botUsername ? `@${connected.botUsername}` : t('telegram.setup.readyBot'),
+          })}
+        </span>
+        <button
+          type="button"
+          onClick={() => setConnected(null)}
+          className="ms-1 rounded-lg px-2 py-1 text-xs text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+        >
+          {t('telegram.setup.autoAnother')}
+        </button>
+      </div>
+    );
+  }
 
   if (!pairingId) {
     return (
