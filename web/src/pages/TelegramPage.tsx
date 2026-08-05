@@ -12,6 +12,7 @@ import {
 } from '@/lib/api';
 import type { MessagingPlatform, SessionSummary } from '@/lib/hermesTypes';
 import { ChatMarkdown } from '@/components/ChatMarkdown';
+import { TelegramSetup } from '@/components/TelegramSetup';
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
@@ -195,6 +196,10 @@ export function TelegramPage() {
             onCancelDisable={() => setConfirmDisable(false)}
             onTest={() => test.mutate()}
           />
+
+          <div className="mt-4">
+            <TelegramSetup profile={profile} />
+          </div>
 
           <section className="mt-4 grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_1fr]">
             <div className="card flex max-h-[70dvh] min-h-0 min-w-0 flex-col overflow-y-auto p-3 lg:max-h-none">
