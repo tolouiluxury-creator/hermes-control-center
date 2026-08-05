@@ -59,6 +59,14 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
   const setRoot = useMutation({
     mutationFn: (value: string) => setWorkspaceRoot(value),
     onSuccess: async () => {
+      // Changing the root mid-browse would otherwise leave stale state around:
+      // a sub-path or open file from the *old* root, now pointed at the new
+      // one — at best a wrong listing, at worst a save landing somewhere the
+      // person never chose.
+      setPath(undefined);
+      showFile(null);
+      setConfirmDelete(null);
+      setRootDraft('');
       await queryClient.invalidateQueries({ queryKey: ['workspace'] });
       toast.push({ tone: 'success', title: t('workspace.rootSet') });
     },
@@ -233,7 +241,24 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
         >
           {root.data.root}
         </span>
+        <button
+          type="button"
+          onClick={() => setBrowsingRoot(true)}
+          className="shrink-0 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >
+          {t('workspace.rootChange')}
+        </button>
       </div>
+
+      {browsingRoot && (
+        <FolderPicker
+          onClose={() => setBrowsingRoot(false)}
+          onSelect={(picked) => {
+            setBrowsingRoot(false);
+            setRoot.mutate(picked);
+          }}
+        />
+      )}
 
       {/* Worth stating plainly: Hermes is not the thing keeping this in bounds. */}
       {listing.data && listing.data.hermesLockedRoot === null && (

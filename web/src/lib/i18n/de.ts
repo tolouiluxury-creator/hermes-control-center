@@ -121,6 +121,7 @@ export const de: Dict = {
   'workspace.rootPlaceholder': 'z. B. /home/du/workspace oder C:\\Users\\du\\workspace',
   'workspace.rootSave': 'Ordner setzen',
   'workspace.rootSet': 'Workspace-Ordner gesetzt',
+  'workspace.rootChange': 'Ändern…',
   'workspace.rootHint': 'Wird angelegt, falls er noch nicht existiert. Wirkt sofort.',
   'workspace.browse': 'Durchsuchen…',
   'workspace.browseTitle': 'Ordner auswählen',

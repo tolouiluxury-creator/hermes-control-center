@@ -118,6 +118,7 @@ export const fa: Dict = {
   'workspace.rootPlaceholder': 'مثلاً /home/you/workspace یا C:\\Users\\you\\workspace',
   'workspace.rootSave': 'تنظیم پوشه',
   'workspace.rootSet': 'پوشهٔ کاری تنظیم شد',
+  'workspace.rootChange': 'تغییر…',
   'workspace.rootHint': 'اگر وجود نداشته باشد ساخته می‌شود. بلافاصله اعمال می‌شود.',
   'workspace.browse': 'مرور…',
   'workspace.browseTitle': 'انتخاب پوشه',

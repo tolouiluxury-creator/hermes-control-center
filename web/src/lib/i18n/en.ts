@@ -119,6 +119,7 @@ export const en: Dict = {
   'workspace.rootPlaceholder': 'e.g. /home/you/workspace or C:\\Users\\you\\workspace',
   'workspace.rootSave': 'Set folder',
   'workspace.rootSet': 'Workspace folder set',
+  'workspace.rootChange': 'Change…',
   'workspace.rootHint': 'Created if it does not exist yet. Takes effect immediately.',
   'workspace.browse': 'Browse…',
   'workspace.browseTitle': 'Choose a folder',
