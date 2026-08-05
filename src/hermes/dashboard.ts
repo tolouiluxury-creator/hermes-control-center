@@ -98,6 +98,18 @@ import {
 const actionResultSchema = z.looseObject({ ok: z.boolean().nullish() });
 export type ActionResult = z.infer<typeof actionResultSchema>;
 
+/**
+ * Hermes canonicalizes the path before creating it — resolving `~`, symlinks
+ * and (on Windows) drive-letter casing — so the string it echoes back can
+ * differ from the one it was asked for. Callers that need to browse into what
+ * they just created must use this, not their own request path.
+ */
+const createDirectoryResultSchema = z.looseObject({
+  ok: z.boolean().nullish(),
+  path: z.string().nullish(),
+});
+export type CreateDirectoryResult = z.infer<typeof createDirectoryResultSchema>;
+
 /** Test endpoints (MCP, messaging) return a verdict with a human message. */
 const testResultSchema = z.looseObject({
   ok: z.boolean().nullish(),
@@ -612,8 +624,8 @@ export class DashboardClient {
     });
   }
 
-  createDirectory(path: string, options?: RequestOptions): Promise<ActionResult> {
-    return this.client.json(actionResultSchema, '/api/files/mkdir', {
+  createDirectory(path: string, options?: RequestOptions): Promise<CreateDirectoryResult> {
+    return this.client.json(createDirectoryResultSchema, '/api/files/mkdir', {
       ...options,
       method: 'POST',
       body: { path },

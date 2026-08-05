@@ -128,9 +128,12 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
   app.put('/api/workspace/root', async (request, reply) => {
     const body = setRootSchema.safeParse(request.body);
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
-    const detected = detectWorkspaceRoot(body.data.path);
     return guard(reply, async () => {
-      await ctx.dashboard.createDirectory(detected.root);
+      const result = await ctx.dashboard.createDirectory(body.data.path);
+      // Hermes' own echo, not our guess — it canonicalizes (~, symlinks,
+      // Windows drive-letter casing), so a follow-up list against our guess
+      // could 404 on a path that technically exists under a different string.
+      const detected = detectWorkspaceRoot(result.path ?? body.data.path);
       ctx.setWorkspaceRoot(detected);
       return { configured: true, root: detected.root };
     });
@@ -166,8 +169,10 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
     if (!body.success) return reply.code(400).send({ error: 'invalid_request' });
     const target = joinChildPath(body.data.parent, body.data.name);
     return guard(reply, async () => {
-      await ctx.dashboard.createDirectory(target);
-      return { path: target };
+      const result = await ctx.dashboard.createDirectory(target);
+      // Same reasoning as the root route above: echo what Hermes actually
+      // made, so navigating straight into it doesn't 404 on a string mismatch.
+      return { path: result.path ?? target };
     });
   });
 
