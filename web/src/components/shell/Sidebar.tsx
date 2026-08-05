@@ -2,8 +2,6 @@ import { NavLink } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { FOOTER_NAV, PRIMARY_NAV, type NavItem } from '@/lib/nav';
-import { formatDuration } from '@/lib/format';
-import { useStatus } from '@/lib/useStatus';
 import { getAuthStatus, logout, queryKeys } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
@@ -66,66 +64,6 @@ function NavRow({
         )}
       </NavLink>
     </li>
-  );
-}
-
-/** Version, profile and uptime — the three facts worth a permanent corner. */
-function SystemInfo({ collapsed }: { collapsed: boolean }) {
-  const { t } = useI18n();
-  const { data: snapshot } = useStatus();
-  const agent = snapshot?.agent;
-  const healthy = snapshot?.dashboard.reachable ?? false;
-  const connection = healthy ? t('shell.connected') : t('shell.disconnected');
-
-  if (collapsed) {
-    return (
-      <div className="flex justify-center py-3">
-        <span
-          className={`size-2 rounded-full ${healthy ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-danger)]'}`}
-          title={connection}
-          aria-label={connection}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="card mx-2 mb-2 p-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-[var(--color-ink-muted)]">
-          {t('shell.system')}
-        </span>
-        <span
-          className={`size-2 rounded-full ${healthy ? 'bg-[var(--color-ok)]' : 'bg-[var(--color-danger)]'}`}
-          aria-hidden
-        />
-      </div>
-      <dl className="mt-2 space-y-1 text-xs">
-        <div className="flex justify-between gap-2">
-          <dt className="text-[var(--color-ink-faint)]">Hermes</dt>
-          <dd className="font-mono">{agent?.version ?? '—'}</dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-[var(--color-ink-faint)]">{t('shell.profile')}</dt>
-          {/*
-           * Hermes 0.19 reports every known profile in `agent.profiles`
-           * instead of which one is current (`agent.profile` is always
-           * null) — falling back to `profiles[0]` would show whichever
-           * profile happens to sort first, not the one this deployment
-           * actually runs as. `connection.profile` is ground truth: it is
-           * what this process was started with (`--profile`), the same
-           * value every request is scoped to.
-           */}
-          <dd className="truncate font-mono">
-            {snapshot?.connection.profile ?? agent?.profile ?? agent?.profiles[0] ?? '—'}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-2">
-          <dt className="text-[var(--color-ink-faint)]">{t('agentWidget.uptime')}</dt>
-          <dd className="font-mono">{formatDuration(snapshot?.host?.uptimeSeconds)}</dd>
-        </div>
-      </dl>
-    </div>
   );
 }
 
@@ -208,8 +146,6 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
           ))}
         </ul>
       </nav>
-
-      <SystemInfo collapsed={collapsed} />
 
       <LogoutButton collapsed={collapsed} />
 
