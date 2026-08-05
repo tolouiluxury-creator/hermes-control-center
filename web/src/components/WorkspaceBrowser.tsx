@@ -13,9 +13,11 @@ import {
 } from '@/lib/api';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
+import { FolderPicker } from '@/components/FolderPicker';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
+import { parentOf } from '@/lib/paths';
 
 /**
  * Files on the Hermes host, confined to one configured directory.
@@ -50,6 +52,7 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
     null,
   );
   const [rootDraft, setRootDraft] = useState('');
+  const [browsingRoot, setBrowsingRoot] = useState(false);
 
   const root = useQuery({ queryKey: queryKeys.workspaceRoot, queryFn: getWorkspaceRoot });
 
@@ -188,6 +191,13 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
             className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
           />
           <button
+            type="button"
+            onClick={() => setBrowsingRoot(true)}
+            className="shrink-0 rounded-lg border border-[var(--color-hairline)] px-3 py-2 text-xs text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            {t('workspace.browse')}
+          </button>
+          <button
             type="submit"
             disabled={rootDraft.trim() === '' || setRoot.isPending}
             className="shrink-0 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-xs text-[var(--color-accent)] disabled:opacity-40"
@@ -196,6 +206,15 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
           </button>
         </form>
         <p className="mt-2 text-xs text-[var(--color-ink-faint)]">{t('workspace.rootHint')}</p>
+        {browsingRoot && (
+          <FolderPicker
+            onClose={() => setBrowsingRoot(false)}
+            onSelect={(picked) => {
+              setRootDraft(picked);
+              setBrowsingRoot(false);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -480,10 +499,4 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
       </div>
     </div>
   );
-}
-
-/** Parent of an absolute path, in whichever separator the host reports. */
-function parentOf(absolute: string): string {
-  const cut = Math.max(absolute.lastIndexOf('/'), absolute.lastIndexOf('\\'));
-  return cut <= 0 ? absolute : absolute.slice(0, cut);
 }

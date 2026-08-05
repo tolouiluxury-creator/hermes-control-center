@@ -120,6 +120,10 @@ export const en: Dict = {
   'workspace.rootSave': 'Set folder',
   'workspace.rootSet': 'Workspace folder set',
   'workspace.rootHint': 'Created if it does not exist yet. Takes effect immediately.',
+  'workspace.browse': 'Browse…',
+  'workspace.browseTitle': 'Choose a folder',
+  'workspace.browseSelect': 'Select this folder',
+  'workspace.browseEmpty': 'No subfolders here.',
   'workspace.weConfine':
     'Hermes itself is not limiting this. The boundary is enforced by the control center, and paths outside it are refused.',
   'workspace.rootTitle': 'The folder this area is confined to',

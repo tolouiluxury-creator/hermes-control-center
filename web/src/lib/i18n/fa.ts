@@ -119,6 +119,10 @@ export const fa: Dict = {
   'workspace.rootSave': 'تنظیم پوشه',
   'workspace.rootSet': 'پوشهٔ کاری تنظیم شد',
   'workspace.rootHint': 'اگر وجود نداشته باشد ساخته می‌شود. بلافاصله اعمال می‌شود.',
+  'workspace.browse': 'مرور…',
+  'workspace.browseTitle': 'انتخاب پوشه',
+  'workspace.browseSelect': 'انتخاب این پوشه',
+  'workspace.browseEmpty': 'زیرپوشه‌ای اینجا نیست.',
   'workspace.weConfine':
     'خود هرمس این را محدود نمی‌کند. مرز را کنترل‌سنتر می‌کشد و مسیرهای بیرون از آن رد می‌شوند.',
   'workspace.rootTitle': 'پوشه‌ای که این بخش به آن محدود است',

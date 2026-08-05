@@ -122,6 +122,10 @@ export const de: Dict = {
   'workspace.rootSave': 'Ordner setzen',
   'workspace.rootSet': 'Workspace-Ordner gesetzt',
   'workspace.rootHint': 'Wird angelegt, falls er noch nicht existiert. Wirkt sofort.',
+  'workspace.browse': 'Durchsuchen…',
+  'workspace.browseTitle': 'Ordner auswählen',
+  'workspace.browseSelect': 'Diesen Ordner wählen',
+  'workspace.browseEmpty': 'Keine Unterordner hier.',
   'workspace.weConfine':
     'Hermes selbst begrenzt das hier nicht. Die Grenze zieht das Control Center, Pfade darüber hinaus werden abgelehnt.',
   'workspace.rootTitle': 'Der Ordner, auf den dieser Bereich begrenzt ist',

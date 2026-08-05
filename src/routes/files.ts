@@ -125,6 +125,30 @@ export async function registerFileRoutes(app: FastifyInstance, ctx: AppContext):
     });
   });
 
+  /*
+   * Powers the folder-picker dialog used to choose the root above — the one
+   * place in this file that talks to Hermes' file listing unconfined. That is
+   * deliberate: picking the root has to be able to see folders outside any
+   * root, since there is not one yet. Directory names only, no file entries,
+   * no content, no delete — and anyone who can reach this already has strictly
+   * stronger reach elsewhere in the app (raw config edits, env vars, a gateway
+   * restart), so this is not a new capability, only a friendlier way to use
+   * one that already existed.
+   */
+  app.get('/api/workspace/browse', async (request, reply) => {
+    const query = pathSchema.safeParse(request.query ?? {});
+    const requested = query.success ? query.data.path : undefined;
+    return guard(reply, async () => {
+      const listing = await ctx.dashboard.listFiles(requested ?? '');
+      return {
+        path: listing.path,
+        folders: listing.entries
+          .filter((entry) => entry.isDirectory)
+          .map((entry) => ({ name: entry.name, path: entry.path })),
+      };
+    });
+  });
+
   app.get('/api/workspace/list', async (request, reply) => {
     const query = pathSchema.safeParse(request.query ?? {});
     const target = inside(reply, query.success ? query.data.path : undefined);

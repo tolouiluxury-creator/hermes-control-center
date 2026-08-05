@@ -409,6 +409,17 @@ export const getWorkspaceRoot = (): Promise<WorkspaceRootInfo> =>
 export const setWorkspaceRoot = (path: string): Promise<WorkspaceRootInfo> =>
   apiRequest<WorkspaceRootInfo>('/workspace/root', { method: 'PUT', ...jsonBody({ path }) });
 
+export interface WorkspaceBrowseListing {
+  path: string;
+  folders: { name: string; path: string }[];
+}
+
+/** Unconfined directory listing for the folder-picker dialog — see the route's docstring. */
+export const browseWorkspaceFolders = (path?: string): Promise<WorkspaceBrowseListing> =>
+  apiRequest<WorkspaceBrowseListing>(
+    path ? `/workspace/browse?path=${encodeURIComponent(path)}` : '/workspace/browse',
+  );
+
 export const listWorkspace = (path?: string): Promise<WorkspaceListing> =>
   apiRequest<WorkspaceListing>(
     path ? `/workspace/list?path=${encodeURIComponent(path)}` : '/workspace/list',
