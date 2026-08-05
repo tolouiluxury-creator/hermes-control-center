@@ -186,7 +186,7 @@ export function FolderPicker({
           </form>
         )}
 
-        <div className="min-h-[16rem] flex-1 overflow-y-auto p-2">
+        <div className="max-h-[min(24rem,50vh)] min-h-[12rem] overflow-y-auto p-2">
           {listing.isPending ? (
             <SkeletonText lines={6} />
           ) : listing.error ? (
