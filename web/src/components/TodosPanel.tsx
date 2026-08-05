@@ -17,7 +17,7 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
     const toast = useToast();
     const queryClient = useQueryClient();
     const [draft, setDraft] = useState('');
-    const inputRef = useRef<HTMLInputElement | null>(null);
+    const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
     useImperativeHandle(ref, () => ({
       prefillAndFocus: (text: string) => {
@@ -69,30 +69,40 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
     }
 
     const list = todos.data?.todos ?? [];
+    const submitDraft = () => {
+      const text = draft.trim();
+      if (text === '' || add.isPending) return;
+      add.mutate(text);
+    };
 
     return (
       <div className="flex h-full flex-col p-3">
         <form
-          className="flex items-center gap-1.5"
+          className="flex items-start gap-1.5"
           onSubmit={(event) => {
             event.preventDefault();
-            const text = draft.trim();
-            if (text === '' || add.isPending) return;
-            add.mutate(text);
+            submitDraft();
           }}
         >
-          <input
+          <textarea
             ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitDraft();
+              }
+            }}
+            rows={1}
             placeholder={t('todos.quickAddPlaceholder')}
-            className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 text-xs outline-none focus-visible:border-[var(--color-accent)]"
+            className="min-h-[1.9rem] min-w-0 flex-1 resize-y rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 text-xs outline-none focus-visible:border-[var(--color-accent)]"
           />
           <button
             type="submit"
             disabled={draft.trim() === '' || add.isPending}
             aria-label={t('todos.add')}
-            className="shrink-0 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 p-1.5 text-[var(--color-accent)] disabled:opacity-40"
+            className="mt-0.5 shrink-0 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 p-1.5 text-[var(--color-accent)] disabled:opacity-40"
           >
             <Plus size={13} aria-hidden />
           </button>
@@ -104,9 +114,9 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
           ) : list.length === 0 ? (
             <p className="px-1 text-xs text-[var(--color-ink-faint)]">{t('todos.empty')}</p>
           ) : (
-            <ul className="space-y-1">
+            <ul className="min-w-0 space-y-2">
               {list.map((todo) => (
-                <li key={todo.id} className="group flex items-start gap-1.5">
+                <li key={todo.id} className="flex min-w-0 items-start gap-1.5">
                   <input
                     type="checkbox"
                     checked={todo.done}
@@ -117,7 +127,7 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
                     className="mt-1 size-3.5 shrink-0"
                   />
                   <span
-                    className={`min-w-0 flex-1 text-xs ${
+                    className={`min-w-0 flex-1 text-xs break-words whitespace-pre-wrap ${
                       todo.done
                         ? 'text-[var(--color-ink-faint)] line-through'
                         : 'text-[var(--color-ink)]'
@@ -125,28 +135,32 @@ export const TodosPanel = forwardRef<TodosPanelHandle, { sessionId: string | nul
                   >
                     {todo.text}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => togglePinned.mutate({ id: todo.id, pinned: !todo.pinned })}
-                    title={todo.pinned ? t('todos.unpin') : t('todos.pin')}
-                    aria-label={todo.pinned ? t('todos.unpin') : t('todos.pin')}
-                    className={`shrink-0 rounded p-0.5 ${
-                      todo.pinned
-                        ? 'text-[var(--color-accent)]'
-                        : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 hover:text-[var(--color-ink)]'
-                    }`}
-                  >
-                    <Pin size={11} aria-hidden fill={todo.pinned ? 'currentColor' : 'none'} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => remove.mutate(todo.id)}
-                    title={t('common.delete')}
-                    aria-label={`${t('common.delete')} ${todo.text}`}
-                    className="shrink-0 rounded p-0.5 text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 hover:text-[var(--color-danger)]"
-                  >
-                    <Trash2 size={11} aria-hidden />
-                  </button>
+                  {/* Always visible, not hover-only — a long, wrapped todo has no
+                      "row" left to hover for a hidden action to appear in. */}
+                  <div className="flex shrink-0 gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => togglePinned.mutate({ id: todo.id, pinned: !todo.pinned })}
+                      title={todo.pinned ? t('todos.unpin') : t('todos.pin')}
+                      aria-label={todo.pinned ? t('todos.unpin') : t('todos.pin')}
+                      className={`shrink-0 rounded p-0.5 ${
+                        todo.pinned
+                          ? 'text-[var(--color-accent)]'
+                          : 'text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]'
+                      }`}
+                    >
+                      <Pin size={11} aria-hidden fill={todo.pinned ? 'currentColor' : 'none'} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => remove.mutate(todo.id)}
+                      title={t('common.delete')}
+                      aria-label={`${t('common.delete')} ${todo.text}`}
+                      className="shrink-0 rounded p-0.5 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
+                    >
+                      <Trash2 size={11} aria-hidden />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

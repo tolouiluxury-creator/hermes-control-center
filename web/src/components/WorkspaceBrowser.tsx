@@ -197,7 +197,11 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
       </div>
 
       {creating && (
-        <div className="card mb-3 flex flex-wrap items-center gap-2 p-3">
+        <div
+          className={`card mb-3 flex gap-2 p-3 ${
+            compact ? 'flex-col items-stretch' : 'flex-wrap items-center'
+          }`}
+        >
           {/* Folder or file: Hermes' write-text creates as well as overwrites. */}
           <div
             className="flex shrink-0 gap-1"
@@ -226,23 +230,31 @@ export function WorkspaceBrowser({ compact = false }: { compact?: boolean }) {
             onChange={(event) => setNewName(event.target.value)}
             placeholder={t(createKind === 'folder' ? 'workspace.folderName' : 'workspace.fileName')}
             autoFocus
-            className="min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)]"
+            className={`rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 py-1.5 font-mono text-xs outline-none focus-visible:border-[var(--color-accent)] ${
+              compact ? 'w-full' : 'min-w-0 flex-1'
+            }`}
           />
-          <button
-            type="button"
-            disabled={!canCreate}
-            onClick={() => create.mutate()}
-            className="rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40"
-          >
-            {t('workspace.create')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setCreating(false)}
-            className="rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)]"
-          >
-            {t('common.cancel')}
-          </button>
+          {/* `contents` in the wide layout keeps these as direct flex items of
+              the row above, same as before; the compact layout needs its own
+              row instead — cramming radios + name + two buttons into a 288px
+              sidebar on one flex-wrap line looked exactly as messy as it sounds. */}
+          <div className={compact ? 'flex gap-2' : 'contents'}>
+            <button
+              type="button"
+              disabled={!canCreate}
+              onClick={() => create.mutate()}
+              className={`rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2.5 py-1 text-xs text-[var(--color-accent)] disabled:opacity-40 ${compact ? 'flex-1' : ''}`}
+            >
+              {t('workspace.create')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setCreating(false)}
+              className={`rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] ${compact ? 'flex-1' : ''}`}
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
           {nameError && (
             <p className="w-full text-xs text-[var(--color-danger)]" role="alert">
               {nameError}
