@@ -1,4 +1,4 @@
-import { describeError } from '../log.js';
+import { describeError, log } from '../log.js';
 import type { TokenProvider } from './sessionToken.js';
 
 /**
@@ -152,6 +152,9 @@ export class GatewayClient {
           sessionId: typeof params.session_id === 'string' ? params.session_id : null,
           payload: (params.payload as Record<string, unknown> | undefined) ?? null,
         };
+        log.debug(
+          `gateway event: type=${event.type} session=${event.sessionId ?? '-'} listeners=${this.listeners.size}`,
+        );
         for (const listener of this.listeners) listener(event);
         continue;
       }
@@ -159,14 +162,19 @@ export class GatewayClient {
       const id = message.id;
       if (id !== undefined && id !== null) {
         const pending = this.pending.get(String(id));
-        if (!pending) continue;
+        if (!pending) {
+          log.debug(`gateway reply for unknown/expired request id=${String(id)}`);
+          continue;
+        }
         this.pending.delete(String(id));
         clearTimeout(pending.timer);
         if (message.error !== undefined && message.error !== null) {
           const detail =
             typeof message.error === 'string' ? message.error : JSON.stringify(message.error);
+          log.debug(`gateway request id=${String(id)} errored: ${detail}`);
           pending.reject(new GatewayError(detail));
         } else {
+          log.debug(`gateway request id=${String(id)} resolved`);
           pending.resolve(message.result ?? {});
         }
       }
@@ -195,9 +203,11 @@ export class GatewayClient {
         : { ...params, profile: this.defaultProfile };
 
     const id = `cc-${this.nextId++}`;
+    log.debug(`gateway request id=${id} method=${method}`);
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);
+        log.debug(`gateway request id=${id} method=${method} timed out after 30s`);
         reject(new GatewayError(`Gateway did not answer "${method}" within 30 s.`));
       }, REQUEST_TIMEOUT_MS);
 

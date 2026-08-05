@@ -98,6 +98,13 @@ export class HermesClient {
     return Boolean(this.config.apiKey);
   }
 
+  /** The profile this client was launched with, e.g. as a body fallback for
+   * writes that Hermes scopes by profile but won't infer from the query
+   * string (see {@link DashboardClient.setSessionPinned}). */
+  get profile(): string | null {
+    return this.config.profile ?? null;
+  }
+
   buildUrl(path: string, query?: RequestOptions['query']): string {
     const url = new URL(path, this.config.baseUrl);
     if (this.config.profile) url.searchParams.set('profile', this.config.profile);

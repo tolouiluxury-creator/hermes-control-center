@@ -259,7 +259,16 @@ export class DashboardClient {
       this.client.json(profilesSchema, '/api/profiles', options),
       this.client.json(activeProfileSchema, '/api/profiles/active', options),
     ]);
-    return normalizeProfiles(list, active);
+    const overview = normalizeProfiles(list, active);
+    // Hermes' own "current" describes its dashboard process's own operating
+    // profile — but this app always launches with an explicit --profile and
+    // forces every unscoped call to it (HermesClient.profile, the same value
+    // GatewayClient's defaultProfile uses), rather than ever falling through
+    // to whatever Hermes itself would pick. Trusting Hermes' "current" here
+    // showed the wrong profile as the toolbar's "inherit" choice, and made
+    // the *other* installed profile's conversations unreachable — picking it
+    // sent no profile at all, which still landed on this one.
+    return this.client.profile ? { ...overview, current: this.client.profile } : overview;
   }
 
   memory(options?: RequestOptions): Promise<MemorySummary> {
@@ -857,13 +866,18 @@ export class DashboardClient {
     profile?: string | null,
     options?: RequestOptions,
   ): Promise<BulkDeleteResult> {
+    // Hermes reads this endpoint's profile only from the body, never the
+    // query string, so a caller that means "the profile we're running as"
+    // has to say so explicitly — falling back to the launch profile is what
+    // the query-string default (client.ts) does for every other endpoint.
+    const effectiveProfile = profile ?? this.client.profile;
     return this.client.json(bulkDeleteResultSchema, '/api/sessions/bulk-delete', {
       ...options,
       method: 'POST',
       // The profile rides in the body here, not the query: the ids and the
       // database they live in have to travel together or the batch hits the
       // wrong state.db and reports zero deletions.
-      body: { ids, ...(profile ? { profile } : {}) },
+      body: { ids, ...(effectiveProfile ? { profile: effectiveProfile } : {}) },
     });
   }
 
@@ -984,10 +998,14 @@ export class DashboardClient {
     profile?: string | null,
     options?: RequestOptions,
   ): Promise<ActionResult> {
+    // Same story as deleteSessions above: this endpoint 404s ("Session not
+    // found") without an explicit body profile, even though the query
+    // string already carries the launch profile.
+    const effectiveProfile = profile ?? this.client.profile;
     return this.client.json(actionResultSchema, `/api/sessions/${encodeURIComponent(sessionId)}`, {
       ...options,
       method: 'PATCH',
-      body: { pinned, ...(profile ? { profile } : {}) },
+      body: { pinned, ...(effectiveProfile ? { profile: effectiveProfile } : {}) },
     });
   }
 

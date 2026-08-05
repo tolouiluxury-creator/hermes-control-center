@@ -778,6 +778,10 @@ export const setSessionPinned = (
 export const sendChatPrompt = (sessionId: string, text: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>('/chat/prompt', { method: 'POST', ...jsonBody({ sessionId, text }) });
 
+/** Stops a live turn server-side — the real cancel, not just dropping the connection. */
+export const interruptChatSession = (sessionId: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>('/chat/interrupt', { method: 'POST', ...jsonBody({ sessionId }) });
+
 export const attachChatFile = (
   liveId: string,
   dataUrl: string,

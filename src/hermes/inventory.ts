@@ -415,7 +415,15 @@ export interface ProfileOverview {
    * process". Shown for orientation, never used to decide where a chat runs.
    */
   active: string | null;
-  /** The profile the running dashboard — and therefore an unscoped chat — uses. */
+  /**
+   * The profile an unscoped chat here actually runs on.
+   *
+   * Raw from Hermes this is its own dashboard process's operating profile,
+   * which is not necessarily what this control center was launched with —
+   * {@link DashboardClient.profiles} overrides it with our own configured
+   * default when there is one, since that is what every unscoped request
+   * (chat, sessions list, pin, delete, …) is actually forced to.
+   */
   current: string | null;
 }
 

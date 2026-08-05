@@ -62,6 +62,10 @@ const promptSchema = z.object({
   text: z.string().trim().min(1).max(100_000),
 });
 
+const interruptSchema = z.object({
+  sessionId: z.string().trim().min(1),
+});
+
 const modelSwitchSchema = z.object({
   /** The live id — `config.set` looks the session up without resolving. */
   sessionId: z.string().trim().min(1),
@@ -313,6 +317,27 @@ export async function registerChatRoutes(
   });
 
   /**
+   * Stop a live turn.
+   *
+   * Without this, the only way to unstick a long-running turn was killing the
+   * dashboard process — which does not cancel it. Hermes' own recovery treats
+   * a dropped connection as an interruption and auto-continues the same turn
+   * on the next attach, so the "hang" just came back. `session.interrupt` is
+   * the real cancel: it stops the turn server-side instead of merely hiding it
+   * from this connection.
+   */
+  app.post('/api/chat/interrupt', async (request, reply) => {
+    const parsed = interruptSchema.safeParse(request.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'invalid_request' });
+    try {
+      await ctx.gateway.request('session.interrupt', { session_id: parsed.data.sessionId });
+      return { ok: true };
+    } catch (error) {
+      return reply.code(503).send({ error: 'gateway_error', message: describeGatewayError(error) });
+    }
+  });
+
+  /**
    * Repoint a live conversation at another model.
    *
    * `config.set` parses `value` the way the `/model` command line is parsed, so
@@ -410,7 +435,12 @@ export async function registerChatRoutes(
     reply.raw.write(': connected\n\n');
 
     const unsubscribe = ctx.gateway.onEvent((event) => {
-      if (reply.raw.writableEnded) return;
+      if (reply.raw.writableEnded) {
+        log.debug(
+          `SSE dropped ${event.type} for ${event.sessionId ?? '-'}: response already ended`,
+        );
+        return;
+      }
       reply.raw.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
     });
 

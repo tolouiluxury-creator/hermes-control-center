@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import {
   CheckSquare,
+  CircleStop,
   ListPlus,
   MessagesSquare,
   Paperclip,
@@ -20,6 +21,7 @@ import {
   deleteChatSessions,
   getChatHistory,
   getChatSessions,
+  interruptChatSession,
   resumeChatSession,
   sendChatPrompt,
   setSessionPinned,
@@ -195,12 +197,28 @@ export function ChatsPage() {
     setMessages([]);
     setStartedWithModel(null);
     setNearBottom(true);
+    // Leaving mid-stream orphans the old completion event: forSession() correctly
+    // drops it (its sessionId no longer matches liveRef), but nothing else would
+    // ever clear this flag, permanently disabling the send button on every
+    // conversation opened afterwards.
+    setStreaming(false);
+    // A pending "confirm expensive model" prompt belongs to the conversation
+    // that's being left; confirming it here would apply to the new one instead.
+    setConfirmModel(null);
     inputRef.current?.focus();
   }, []);
 
   /** Reopen a previous conversation: bring it live, then load its history. */
   const openExisting = useCallback(
     async (id: string) => {
+      // Already open. Re-resuming would mint a fresh live id and orphan an
+      // in-flight generation: its events keep arriving tagged with the old
+      // one, forSession() correctly stops matching them against the new
+      // liveRef, and the conversation looks frozen forever — including its
+      // eventual message.complete, so the send button never comes back
+      // either. A stuck/errored open already has its own retry path
+      // (startNew, next to the error message), so this is safe to skip.
+      if (sessionRef.current === id) return;
       sessionRef.current = id;
       liveRef.current = null;
       setSessionId(id);
@@ -210,6 +228,10 @@ export function ChatsPage() {
       setMessages([]);
       setStartedWithModel(null);
       setNearBottom(true);
+      // Same reasoning as startNew(): switching away from a still-streaming
+      // conversation must not leave the send button disabled forever.
+      setStreaming(false);
+      setConfirmModel(null);
       try {
         // Reopening attaches a fresh live session to the same row. Keeping its
         // id is what makes sending — and the streamed answer — work at all.
@@ -564,6 +586,28 @@ export function ChatsPage() {
         tone: 'error',
         title: t('chat.sendFailed'),
         description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  };
+
+  /**
+   * Stop a running turn.
+   *
+   * Unsticks the UI immediately and unconditionally — the interrupt call is
+   * best-effort. Even if it fails or the reply never arrives, the turn is
+   * already off screen, and forSession() will drop any of its late events
+   * against whatever liveRef points to next.
+   */
+  const cancelStreaming = () => {
+    const live = liveRef.current;
+    setStreaming(false);
+    setMessages((current) => {
+      const last = current[current.length - 1];
+      return last && last.role === 'assistant' && last.text === '' ? current.slice(0, -1) : current;
+    });
+    if (live) {
+      void interruptChatSession(live).catch(() => {
+        // Nothing left to reconcile here — see the comment above.
       });
     }
   };
@@ -1072,19 +1116,33 @@ export function ChatsPage() {
                   disabled={connecting}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
-                <button
-                  type="submit"
-                  disabled={
-                    connecting ||
-                    streaming ||
-                    (input.trim() === '' && attachments.every((a) => a.dataUrl === null)) ||
-                    attachments.some((a) => a.dataUrl === null)
-                  }
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
-                >
-                  <Send size={15} aria-hidden />
-                  {t('chat.send')}
-                </button>
+                {streaming ? (
+                  // Some turns run several tool calls and model requests back
+                  // to back and can legitimately take minutes — this is the
+                  // way out rather than waiting it out (or, previously, the
+                  // only recourse being a server restart).
+                  <button
+                    type="button"
+                    onClick={cancelStreaming}
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 text-sm font-medium text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/20"
+                  >
+                    <CircleStop size={15} aria-hidden />
+                    {t('common.cancel')}
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={
+                      connecting ||
+                      (input.trim() === '' && attachments.every((a) => a.dataUrl === null)) ||
+                      attachments.some((a) => a.dataUrl === null)
+                    }
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+                  >
+                    <Send size={15} aria-hidden />
+                    {t('chat.send')}
+                  </button>
+                )}
               </form>
             </>
           )}
