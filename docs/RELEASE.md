@@ -52,8 +52,8 @@ git push -u origin main
 Tag the release and push the tag:
 
 ```bash
-git tag -a v0.1.0 -m "v0.1.0 — first release"
-git push origin v0.1.0
+git tag -a v0.1.0-beta.1 -m "v0.1.0-beta.1 — first release, beta"
+git push origin v0.1.0-beta.1
 ```
 
 The CI workflow in `.github/workflows/ci.yml` runs on push, so it starts checking with the first
@@ -65,10 +65,12 @@ the moment the repo goes public — nothing to change in the README.
 
 ### Optional: the GitHub release entry
 
-The tag alone is enough. To add release notes, copy the `[0.1.0]` section out of
+The tag alone is enough. To add release notes, copy the `[0.1.0-beta.1]` section out of
 [`CHANGELOG.md`](../CHANGELOG.md) into a new release at
-<https://github.com/tolouiluxury-creator/hermes-control-center/releases/new>, choosing the `v0.1.0`
-tag you just pushed.
+<https://github.com/tolouiluxury-creator/hermes-control-center/releases/new>, choosing the
+`v0.1.0-beta.1` tag you just pushed. **Tick "Set as a pre-release"** — that's what keeps it out of
+the repo's "Latest release" badge and off anyone's automatic-update radar until you promote a
+non-beta tag later.
 
 ### Optional: publish to npm
 
@@ -76,9 +78,11 @@ Only if you want `npx hermes-control-center` to work for other people. The packa
 unclaimed as of writing; check first, because the README promises that command.
 
 ```bash
-npm whoami            # confirm you are logged in
-npm publish --dry-run # lists exactly what would be uploaded
-npm publish
+npm whoami                       # confirm you are logged in
+npm publish --dry-run            # lists exactly what would be uploaded
+npm publish --tag beta           # keeps it off the `latest` dist-tag, so plain `npx
+                                  # hermes-control-center` still resolves to nothing
+                                  # until you promote a non-beta release
 ```
 
 The tarball is ~0.26 MB and contains `dist/`, `README.md`, `CHANGELOG.md` and `LICENSE` — no source,

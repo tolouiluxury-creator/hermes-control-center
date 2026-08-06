@@ -4,10 +4,10 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
-## [0.1.0] — 2026-08-05
+## [0.1.0-beta.1] — 2026-08-06
 
-First release. Everything below has been verified against a live Hermes Agent 0.19.0, not against
-fixtures.
+First release, published as a beta. Everything below has been verified against a live Hermes Agent
+0.19.0, not against fixtures.
 
 ### Added
 

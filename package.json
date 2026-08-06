@@ -1,6 +1,6 @@
 {
   "name": "hermes-control-center",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "Dashboard-first web control center for Hermes Agent - live widgets, metrics, chat, workflows and full agent management in your browser.",
   "keywords": [
     "hermes",
