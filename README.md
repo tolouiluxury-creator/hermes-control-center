@@ -3,6 +3,7 @@
 [![CI](https://github.com/tolouiluxury-creator/hermes-control-center/actions/workflows/ci.yml/badge.svg)](https://github.com/tolouiluxury-creator/hermes-control-center/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-%E2%89%A522.5-brightgreen.svg)](https://nodejs.org)
+[![Telegram](https://img.shields.io/badge/Telegram-Update%20News-26A5E4?logo=telegram&logoColor=white)](https://t.me/hermescontrolcenter)
 
 A dashboard-first web cockpit for [Hermes Agent](https://github.com/NousResearch/hermes-agent).
 
