@@ -88,7 +88,10 @@
 
     --color-ink: #0f172a;
     --color-ink-muted: #475569;
-    --color-ink-faint: #64748b;
+    /* Darker than the slate-500 this started as — #64748b measured a bare
+       4.8:1 against white, which read as too faint at the small sizes this
+       token is used at (timestamps, meta lines). This clears 6:1. */
+    --color-ink-faint: #5b6b82;
 
     --color-accent: #0d9488;
     --color-accent-strong: #0f766e;
