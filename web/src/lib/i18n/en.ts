@@ -228,6 +228,7 @@ export const en: Dict = {
   'chat.select': 'Select',
   'chat.pin': 'Pin',
   'chat.unpin': 'Unpin',
+  'chat.telegramAlwaysPinned': 'Telegram conversations are always pinned first',
   'chat.pinFailed': 'Could not change the pin',
   'chat.selectAll': 'Select all',
   'chat.selectNone': 'Select none',

@@ -230,6 +230,7 @@ export const de: Dict = {
   'chat.select': 'Auswählen',
   'chat.pin': 'Anheften',
   'chat.unpin': 'Nicht mehr anheften',
+  'chat.telegramAlwaysPinned': 'Telegram-Unterhaltungen sind immer zuerst angeheftet',
   'chat.pinFailed': 'Anheften konnte nicht geändert werden',
   'chat.selectAll': 'Alle auswählen',
   'chat.selectNone': 'Auswahl aufheben',

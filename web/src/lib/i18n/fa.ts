@@ -225,6 +225,7 @@ export const fa: Dict = {
   'chat.select': 'انتخاب',
   'chat.pin': 'سنجاق کردن',
   'chat.unpin': 'برداشتن سنجاق',
+  'chat.telegramAlwaysPinned': 'گفتگوهای تلگرام همیشه اول سنجاق می‌شوند',
   'chat.pinFailed': 'سنجاق تغییر نکرد',
   'chat.selectAll': 'انتخاب همه',
   'chat.selectNone': 'لغو انتخاب',

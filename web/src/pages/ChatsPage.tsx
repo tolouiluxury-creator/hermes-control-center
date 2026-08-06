@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import {
@@ -764,133 +764,163 @@ export function ChatsPage() {
                       {t(group.label)}
                     </p>
                     <ul className="space-y-1">
-                      {group.sessions.map((session) => {
+                      {group.sessions.map((session, index) => {
                         const active = session.id === sessionId;
                         const label = session.title || session.preview || t('chat.conversation');
                         const picked = selected.has(session.id);
+                        // Divider between the auto-pinned Telegram conversations and
+                        // whatever the user pinned by hand, both inside the same
+                        // "Pinned" group — see chatGroups.ts pinnedTelegramCount.
+                        const showDividerBefore =
+                          !!group.pinnedTelegramCount &&
+                          index === group.pinnedTelegramCount &&
+                          index < group.sessions.length;
                         return (
-                          <li key={session.id}>
-                            {/* `group` so the row's own hover reveals its buttons. */}
-                            <div className="group flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  selecting
-                                    ? toggleSelected(session.id)
-                                    : void openExisting(session.id)
-                                }
-                                aria-pressed={selecting ? picked : undefined}
-                                // `min-w-0 flex-1`, not `w-full`: a flex item defaults
-                                // to min-width:auto and so refuses to shrink below its
-                                // content. With a long preview the button claimed the
-                                // whole row and pushed the pin and trash out of sight.
-                                className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
-                                  active && !selecting
-                                    ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
-                                    : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
-                                }`}
-                              >
-                                {selecting &&
-                                  (picked ? (
-                                    <CheckSquare
-                                      size={13}
-                                      className="mt-0.5 shrink-0 text-[var(--color-accent)]"
-                                      aria-hidden
-                                    />
-                                  ) : (
-                                    <Square
-                                      size={13}
-                                      className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
-                                      aria-hidden
-                                    />
-                                  ))}
-                                <span className="min-w-0 flex-1">
-                                  <p className="truncate text-xs font-medium">{label}</p>
-                                  <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                                    {session.source === 'telegram' && (
-                                      <span className="inline-flex items-center gap-1 font-medium text-[var(--color-ok)]">
-                                        <Send size={9} aria-hidden />
-                                        {t('chat.telegramBadge')}
-                                      </span>
-                                    )}
-                                    {session.messageCount > 0 && (
-                                      <span>
-                                        {session.source === 'telegram' && '· '}
-                                        {session.messageCount} {t('chat.messages')}
-                                      </span>
-                                    )}
-                                    {session.startedAt && (
-                                      <span>· {formatRelativeTime(session.startedAt, lang)}</span>
-                                    )}
-                                  </p>
-                                </span>
-                              </button>
+                          <Fragment key={session.id}>
+                            {showDividerBefore && (
+                              <li
+                                aria-hidden
+                                className="my-1.5 border-t border-[var(--color-hairline)]"
+                              />
+                            )}
+                            <li>
+                              {/* `group` so the row's own hover reveals its buttons. */}
+                              <div className="group flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    selecting
+                                      ? toggleSelected(session.id)
+                                      : void openExisting(session.id)
+                                  }
+                                  aria-pressed={selecting ? picked : undefined}
+                                  // `min-w-0 flex-1`, not `w-full`: a flex item defaults
+                                  // to min-width:auto and so refuses to shrink below its
+                                  // content. With a long preview the button claimed the
+                                  // whole row and pushed the pin and trash out of sight.
+                                  className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
+                                    active && !selecting
+                                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
+                                      : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
+                                  }`}
+                                >
+                                  {selecting &&
+                                    (picked ? (
+                                      <CheckSquare
+                                        size={13}
+                                        className="mt-0.5 shrink-0 text-[var(--color-accent)]"
+                                        aria-hidden
+                                      />
+                                    ) : (
+                                      <Square
+                                        size={13}
+                                        className="mt-0.5 shrink-0 text-[var(--color-ink-faint)]"
+                                        aria-hidden
+                                      />
+                                    ))}
+                                  <span className="min-w-0 flex-1">
+                                    <p className="truncate text-xs font-medium">{label}</p>
+                                    <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                                      {session.source === 'telegram' && (
+                                        <span className="inline-flex items-center gap-1 font-medium text-[var(--color-ok)]">
+                                          <Send size={9} aria-hidden />
+                                          {t('chat.telegramBadge')}
+                                        </span>
+                                      )}
+                                      {session.messageCount > 0 && (
+                                        <span>
+                                          {session.source === 'telegram' && '· '}
+                                          {session.messageCount} {t('chat.messages')}
+                                        </span>
+                                      )}
+                                      {session.startedAt && (
+                                        <span>· {formatRelativeTime(session.startedAt, lang)}</span>
+                                      )}
+                                    </p>
+                                  </span>
+                                </button>
 
-                              {/* Pin and delete stay reachable without entering
+                                {/* Pin and delete stay reachable without entering
                                   selection mode, which is what the list needed most.
                                   Side by side and vertically centred: stacked, they
                                   stretched every row and read as status rather than
                                   as buttons. They stay faint until the row is hovered
                                   so the list itself keeps the eye. */}
-                              {!selecting && (
-                                <span className="flex shrink-0 items-center gap-0.5 self-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => void togglePin(session)}
-                                    disabled={pinning === session.id}
-                                    title={session.pinned ? t('chat.unpin') : t('chat.pin')}
-                                    aria-label={session.pinned ? t('chat.unpin') : t('chat.pin')}
-                                    aria-pressed={session.pinned}
-                                    className={`rounded-md p-1 transition-colors disabled:opacity-40 ${
-                                      session.pinned
-                                        ? // A pinned row keeps its marker visible; the
-                                          // filled pin says "pinned", the tooltip says undo.
-                                          'text-[var(--color-accent)]'
-                                        : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-ink)]'
-                                    }`}
-                                  >
-                                    <Pin
-                                      size={12}
-                                      aria-hidden
-                                      fill={session.pinned ? 'currentColor' : 'none'}
-                                    />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setConfirmOne(session.id)}
-                                    title={t('common.delete')}
-                                    aria-label={`${t('common.delete')} ${label}`}
-                                    className="rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-colors group-hover:opacity-100 hover:text-[var(--color-danger)] focus-visible:opacity-100"
-                                  >
-                                    <Trash2 size={12} aria-hidden />
-                                  </button>
-                                </span>
-                              )}
-                            </div>
-
-                            {confirmOne === session.id && (
-                              <ConfirmInline
-                                tone="danger"
-                                message={
-                                  <>
-                                    {t('chat.deleteOneConfirm', { name: label })}
-                                    {session.source === 'telegram' && (
-                                      <>
-                                        {' '}
-                                        <strong className="text-[var(--color-warn)]">
-                                          {t('chat.deleteTelegramNote')}
-                                        </strong>
-                                      </>
+                                {!selecting && (
+                                  <span className="flex shrink-0 items-center gap-0.5 self-center">
+                                    {session.source === 'telegram' ? (
+                                      // Telegram conversations are pinned by source, not by
+                                      // the `pinned` flag — nothing to toggle, so the button
+                                      // is a disabled, always-visible "why it's pinned" marker.
+                                      <span
+                                        title={t('chat.telegramAlwaysPinned')}
+                                        aria-label={t('chat.telegramAlwaysPinned')}
+                                        className="cursor-default rounded-md p-1 text-[var(--color-accent)]"
+                                      >
+                                        <Pin size={12} aria-hidden fill="currentColor" />
+                                      </span>
+                                    ) : (
+                                      <button
+                                        type="button"
+                                        onClick={() => void togglePin(session)}
+                                        disabled={pinning === session.id}
+                                        title={session.pinned ? t('chat.unpin') : t('chat.pin')}
+                                        aria-label={
+                                          session.pinned ? t('chat.unpin') : t('chat.pin')
+                                        }
+                                        aria-pressed={session.pinned}
+                                        className={`rounded-md p-1 transition-colors disabled:opacity-40 ${
+                                          session.pinned
+                                            ? // A pinned row keeps its marker visible; the
+                                              // filled pin says "pinned", the tooltip says undo.
+                                              'text-[var(--color-accent)]'
+                                            : 'text-[var(--color-ink-faint)] opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[var(--color-ink)]'
+                                        }`}
+                                      >
+                                        <Pin
+                                          size={12}
+                                          aria-hidden
+                                          fill={session.pinned ? 'currentColor' : 'none'}
+                                        />
+                                      </button>
                                     )}
-                                  </>
-                                }
-                                confirmLabel={t('common.delete')}
-                                pending={deleting}
-                                onConfirm={() => void removeOne(session.id)}
-                                onCancel={() => setConfirmOne(null)}
-                              />
-                            )}
-                          </li>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmOne(session.id)}
+                                      title={t('common.delete')}
+                                      aria-label={`${t('common.delete')} ${label}`}
+                                      className="rounded-md p-1 text-[var(--color-ink-faint)] opacity-0 transition-colors group-hover:opacity-100 hover:text-[var(--color-danger)] focus-visible:opacity-100"
+                                    >
+                                      <Trash2 size={12} aria-hidden />
+                                    </button>
+                                  </span>
+                                )}
+                              </div>
+
+                              {confirmOne === session.id && (
+                                <ConfirmInline
+                                  tone="danger"
+                                  message={
+                                    <>
+                                      {t('chat.deleteOneConfirm', { name: label })}
+                                      {session.source === 'telegram' && (
+                                        <>
+                                          {' '}
+                                          <strong className="text-[var(--color-warn)]">
+                                            {t('chat.deleteTelegramNote')}
+                                          </strong>
+                                        </>
+                                      )}
+                                    </>
+                                  }
+                                  confirmLabel={t('common.delete')}
+                                  pending={deleting}
+                                  onConfirm={() => void removeOne(session.id)}
+                                  onCancel={() => setConfirmOne(null)}
+                                />
+                              )}
+                            </li>
+                          </Fragment>
                         );
                       })}
                     </ul>

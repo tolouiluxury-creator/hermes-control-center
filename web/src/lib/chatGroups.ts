@@ -8,6 +8,13 @@ export interface ChatSessionGroup {
     | 'chat.groupThisWeek'
     | 'chat.groupOlder';
   sessions: ChatSessionSummary[];
+  /**
+   * Pinned group only: `sessions[0..pinnedTelegramCount)` are Telegram
+   * conversations. They're auto-pinned (regardless of `session.pinned`) and
+   * always sort first, ahead of the user's own manually pinned sessions —
+   * the UI draws a divider between the two using this count.
+   */
+  pinnedTelegramCount?: number;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -38,8 +45,16 @@ export function groupByRecency(
     'chat.groupThisWeek': [],
     'chat.groupOlder': [],
   };
+  // Telegram conversations are pinned by default, ahead of anything the user
+  // pinned by hand — kept in their own array so they can be spliced in front
+  // regardless of arrival order.
+  const pinnedTelegram: ChatSessionSummary[] = [];
 
   for (const session of sessions) {
+    if (session.source === 'telegram') {
+      pinnedTelegram.push(session);
+      continue;
+    }
     if (session.pinned) {
       buckets['chat.groupPinned'].push(session);
       continue;
@@ -56,7 +71,13 @@ export function groupByRecency(
     }
   }
 
+  buckets['chat.groupPinned'] = [...pinnedTelegram, ...buckets['chat.groupPinned']];
+
   return (Object.keys(buckets) as ChatSessionGroup['label'][])
-    .map((label) => ({ label, sessions: buckets[label] }))
+    .map((label) => ({
+      label,
+      sessions: buckets[label],
+      ...(label === 'chat.groupPinned' ? { pinnedTelegramCount: pinnedTelegram.length } : {}),
+    }))
     .filter((group) => group.sessions.length > 0);
 }

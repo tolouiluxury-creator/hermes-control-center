@@ -2,14 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { groupByRecency } from './chatGroups.js';
 import type { ChatSessionSummary } from './api.js';
 
-function session(id: string, startedAt: number | null, pinned = false): ChatSessionSummary {
+function session(
+  id: string,
+  startedAt: number | null,
+  pinned = false,
+  source = '',
+): ChatSessionSummary {
   return {
     id,
     title: '',
     preview: '',
     startedAt,
     messageCount: 0,
-    source: '',
+    source,
     model: null,
     pinned,
     tokens: null,
@@ -59,5 +64,31 @@ describe('groupByRecency', () => {
     expect(groups.map((g) => g.label)).toEqual(['chat.groupPinned', 'chat.groupOlder']);
     expect(groups[0]?.sessions.map((s) => s.id)).toEqual(['pinned-old']);
     expect(groups[1]?.sessions.map((s) => s.id)).toEqual(['older']);
+  });
+
+  it('pins a Telegram session by default, even without the pinned flag', () => {
+    const sessions = [
+      session('older', now - 30 * day),
+      session('tg', now - 30 * day, false, 'telegram'),
+    ];
+    const groups = groupByRecency(sessions, now);
+    expect(groups.map((g) => g.label)).toEqual(['chat.groupPinned', 'chat.groupOlder']);
+    expect(groups[0]?.sessions.map((s) => s.id)).toEqual(['tg']);
+  });
+
+  it('puts Telegram sessions ahead of manually pinned ones, and reports the split', () => {
+    const sessions = [
+      session('manual-pin', now, true),
+      session('tg-1', now, false, 'telegram'),
+      session('tg-2', now - day, false, 'telegram'),
+    ];
+    const groups = groupByRecency(sessions, now);
+    expect(groups[0]?.sessions.map((s) => s.id)).toEqual(['tg-1', 'tg-2', 'manual-pin']);
+    expect(groups[0]?.pinnedTelegramCount).toBe(2);
+  });
+
+  it('omits pinnedTelegramCount from groups other than Pinned', () => {
+    const groups = groupByRecency([session('today', now)], now);
+    expect(groups[0]?.pinnedTelegramCount).toBeUndefined();
   });
 });
