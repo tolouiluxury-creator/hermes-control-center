@@ -29,8 +29,9 @@ browser.
 
 | | |
 | --- | --- |
-| ![Chat](docs/screenshots/chat.jpg) | ![Skills](docs/screenshots/skills.jpg) |
-| ![MCP servers](docs/screenshots/mcp.jpg) | ![Models](docs/screenshots/models.jpg) |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Skills](docs/screenshots/skills.png) |
+| ![Knowledge (RAG)](docs/screenshots/knowledge.png) | ![Workflows](docs/screenshots/workflows.png) |
+| ![Prompt Library](docs/screenshots/prompts.png) | |
 
 ## What you get
 
