@@ -143,6 +143,19 @@ body,
   height: 100%;
 }
 
+/*
+ * Font-size preference. Every measurement in the app is rem-based, so this
+ * single override scales the whole UI; icon sizes are px props and stay put,
+ * which is the same trade every OS-level "text size" setting makes.
+ */
+html[data-font-size='small'] {
+  font-size: 14px;
+}
+
+html[data-font-size='large'] {
+  font-size: 18px;
+}
+
 body {
   margin: 0;
   background-color: var(--color-base);

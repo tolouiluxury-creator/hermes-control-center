@@ -4,11 +4,14 @@ import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-qu
 import App from '@/App';
 import { ApiError, queryKeys } from '@/lib/api';
 import { initTheme } from '@/lib/theme';
+import { initFontSize } from '@/lib/fontSize';
 import { initLang } from '@/lib/i18n';
 import '@/styles/app.css';
 
-// Before the first render, so no frame flashes in the wrong theme or direction.
+// Before the first render, so no frame flashes in the wrong theme, size or
+// direction.
 initTheme();
+initFontSize();
 initLang();
 
 /**

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Monitor, Moon, Sun, UserRound } from 'lucide-react';
+import { KeyRound, Monitor, Moon, Sun, Type, UserRound } from 'lucide-react';
 import {
   changePassword,
   deleteEnv,
@@ -23,6 +23,7 @@ import { ConfirmInline } from '@/components/ConfirmInline';
 import { ChipMenu, type ChipMenuOption } from '@/components/ChipMenu';
 import { useToast } from '@/components/Toast';
 import { useTheme, type ThemePreference } from '@/lib/theme';
+import { useFontSize, type FontSizePreference } from '@/lib/fontSize';
 import { useI18n, LANGUAGES } from '@/lib/i18n';
 import { formatRelativeTime } from '@/lib/format';
 import type { EnvVar, Toolset } from '@/lib/hermesTypes';
@@ -64,6 +65,19 @@ const THEME_LABEL_KEY: Record<ThemePreference, string> = {
   system: 'settings.theme.system',
 };
 
+/** Icon grows with the option so the row previews the effect, not just names it. */
+const FONT_SIZE_OPTIONS: { id: FontSizePreference; size: number }[] = [
+  { id: 'small', size: 12 },
+  { id: 'default', size: 14 },
+  { id: 'large', size: 17 },
+];
+
+const FONT_SIZE_LABEL_KEY: Record<FontSizePreference, string> = {
+  small: 'settings.fontSize.small',
+  default: 'settings.fontSize.default',
+  large: 'settings.fontSize.large',
+};
+
 function LanguageSection() {
   const { t, lang, setLang } = useI18n();
   return (
@@ -94,6 +108,7 @@ function LanguageSection() {
 function AppearanceSection() {
   const { t } = useI18n();
   const { preference, setPreference } = useTheme();
+  const { preference: fontSize, setPreference: setFontSize } = useFontSize();
   return (
     <Section
       id="appearance"
@@ -116,6 +131,31 @@ function AppearanceSection() {
             >
               <Icon size={14} aria-hidden />
               {t(THEME_LABEL_KEY[id])}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-4 mb-2 text-xs font-medium text-[var(--color-ink-muted)]">
+        {t('settings.fontSize')}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {FONT_SIZE_OPTIONS.map(({ id, size }) => {
+          const active = fontSize === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFontSize(id)}
+              aria-pressed={active}
+              className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                active
+                  ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                  : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+              }`}
+            >
+              <Type size={size} aria-hidden />
+              {t(FONT_SIZE_LABEL_KEY[id])}
             </button>
           );
         })}
