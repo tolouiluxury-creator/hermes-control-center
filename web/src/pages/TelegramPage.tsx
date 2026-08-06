@@ -198,7 +198,7 @@ export function TelegramPage() {
           />
 
           <div className="mt-4">
-            <TelegramSetup profile={profile} />
+            <TelegramSetup profile={profile} configured={telegram?.configured ?? false} />
           </div>
 
           <section className="mt-4 grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[18rem_1fr]">

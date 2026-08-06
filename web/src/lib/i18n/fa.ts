@@ -26,6 +26,7 @@ export const fa: Dict = {
 
   // Common actions and labels
   'common.save': 'ذخیره',
+  'common.change': 'تغییر',
   'common.saving': 'در حال ذخیره …',
   'common.cancel': 'انصراف',
   'common.delete': 'حذف',
@@ -169,6 +170,7 @@ export const fa: Dict = {
   'telegram.setup.userIdLabel': 'شناسه کاربری تلگرام تو',
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'ذخیره شد',
+  'telegram.setup.configuredNote': 'توکن ربات و شناسه کاربری تنظیم شده‌اند.',
   'telegram.gatewayUp': 'دروازه در حال اجرا',
   'telegram.gateway': 'دروازه',
   'telegram.gatewayYes': 'در حال اجرا',

@@ -26,6 +26,7 @@ export const de: Dict = {
 
   // Common actions and labels
   'common.save': 'Speichern',
+  'common.change': 'Ändern',
   'common.saving': 'Speichere …',
   'common.cancel': 'Abbrechen',
   'common.delete': 'Löschen',
@@ -173,6 +174,7 @@ export const de: Dict = {
   'telegram.setup.userIdLabel': 'Deine Telegram-User-ID',
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'Gespeichert',
+  'telegram.setup.configuredNote': 'Bot-Token und User-ID sind gesetzt.',
   'telegram.gatewayUp': 'Gateway läuft',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'läuft',
