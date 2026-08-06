@@ -54,7 +54,17 @@ export function McpPage() {
 
   const test = useMutation({
     mutationFn: (name: string) => testMcpServer(name),
-    onSuccess: (result, name) =>
+    onSuccess: (result, name) => {
+      // Hermes' server list never carries a connection state (`status` is
+      // absent, `tools` stays null even right after a successful test) — the
+      // only signal ever comes from this one-shot test call. Without patching
+      // the cache here, the dot would stay amber forever no matter how many
+      // successful tests run, because there is nothing upstream to refetch.
+      queryClient.setQueryData<McpServerSummary[]>(queryKeys.mcp, (current) =>
+        current?.map((server) =>
+          server.name === name ? { ...server, status: result.ok ? 'connected' : 'error' } : server,
+        ),
+      );
       toast.push({
         tone: result.ok ? 'success' : 'warning',
         title: t('mcp.test', { name }),
@@ -62,7 +72,8 @@ export function McpPage() {
           result.message ??
           result.state ??
           (result.ok ? t('label.reachable') : t('label.unreachable')),
-      }),
+      });
+    },
     onError: (e: Error) =>
       toast.push({ tone: 'error', title: t('toast.testFailed'), description: e.message }),
   });
