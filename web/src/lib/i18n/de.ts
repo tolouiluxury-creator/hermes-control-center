@@ -237,6 +237,8 @@ export const de: Dict = {
   'chat.selectedCount': '{count} ausgewählt',
   'chat.deleteConfirm': '{count} Unterhaltungen löschen? Das lässt sich nicht rückgängig machen.',
   'chat.deleted': '{count} Unterhaltungen gelöscht',
+  'chat.telegramBadge': 'Telegram',
+  'chat.deleteTelegramNote': 'Das löscht die Unterhaltung auch aus dem Telegram-Bereich.',
   'chat.searchConversations': 'Unterhaltungen durchsuchen',
   'chat.noSearchResults': 'Keine Treffer.',
   'chat.groupPinned': 'Angepinnt',

@@ -232,6 +232,8 @@ export const fa: Dict = {
   'chat.selectedCount': '{count} انتخاب‌شده',
   'chat.deleteConfirm': '{count} گفتگو حذف شود؟ این کار قابل بازگشت نیست.',
   'chat.deleted': '{count} گفتگو حذف شد',
+  'chat.telegramBadge': 'تلگرام',
+  'chat.deleteTelegramNote': 'این کار گفتگو را از بخش تلگرام هم حذف می‌کند.',
   'chat.searchConversations': 'جستجوی گفتگوها',
   'chat.noSearchResults': 'نتیجه‌ای یافت نشد.',
   'chat.groupPinned': 'سنجاق‌شده',

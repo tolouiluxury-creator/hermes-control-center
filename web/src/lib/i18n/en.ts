@@ -235,6 +235,8 @@ export const en: Dict = {
   'chat.selectedCount': '{count} selected',
   'chat.deleteConfirm': 'Delete {count} conversations? This cannot be undone.',
   'chat.deleted': '{count} conversations deleted',
+  'chat.telegramBadge': 'Telegram',
+  'chat.deleteTelegramNote': 'This also deletes the conversation from the Telegram area.',
   'chat.searchConversations': 'Search conversations',
   'chat.noSearchResults': 'No matches.',
   'chat.groupPinned': 'Pinned',

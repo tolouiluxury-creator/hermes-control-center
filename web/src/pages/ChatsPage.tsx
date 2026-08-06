@@ -630,6 +630,9 @@ export function ChatsPage() {
           return haystack.includes(listSearch.trim().toLowerCase());
         });
   const groups = groupByRecency(visibleSessions);
+  const selectedHasTelegram = sessions.some(
+    (session) => selected.has(session.id) && session.source === 'telegram',
+  );
 
   const allSelected =
     visibleSessions.length > 0 && visibleSessions.every((session) => selected.has(session.id));
@@ -726,7 +729,19 @@ export function ChatsPage() {
           {confirmDelete && (
             <ConfirmInline
               tone="danger"
-              message={t('chat.deleteConfirm', { count: selected.size })}
+              message={
+                <>
+                  {t('chat.deleteConfirm', { count: selected.size })}
+                  {selectedHasTelegram && (
+                    <>
+                      {' '}
+                      <strong className="text-[var(--color-warn)]">
+                        {t('chat.deleteTelegramNote')}
+                      </strong>
+                    </>
+                  )}
+                </>
+              }
               confirmLabel={t('common.delete')}
               pending={deleting}
               onConfirm={() => void removeSelected()}
@@ -792,8 +807,15 @@ export function ChatsPage() {
                                 <span className="min-w-0 flex-1">
                                   <p className="truncate text-xs font-medium">{label}</p>
                                   <p className="mt-0.5 flex items-center gap-1.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                                    {session.source === 'telegram' && (
+                                      <span className="inline-flex items-center gap-1 font-medium text-[var(--color-ok)]">
+                                        <Send size={9} aria-hidden />
+                                        {t('chat.telegramBadge')}
+                                      </span>
+                                    )}
                                     {session.messageCount > 0 && (
                                       <span>
+                                        {session.source === 'telegram' && '· '}
                                         {session.messageCount} {t('chat.messages')}
                                       </span>
                                     )}
@@ -849,7 +871,19 @@ export function ChatsPage() {
                             {confirmOne === session.id && (
                               <ConfirmInline
                                 tone="danger"
-                                message={t('chat.deleteOneConfirm', { name: label })}
+                                message={
+                                  <>
+                                    {t('chat.deleteOneConfirm', { name: label })}
+                                    {session.source === 'telegram' && (
+                                      <>
+                                        {' '}
+                                        <strong className="text-[var(--color-warn)]">
+                                          {t('chat.deleteTelegramNote')}
+                                        </strong>
+                                      </>
+                                    )}
+                                  </>
+                                }
                                 confirmLabel={t('common.delete')}
                                 pending={deleting}
                                 onConfirm={() => void removeOne(session.id)}
@@ -905,6 +939,12 @@ export function ChatsPage() {
                 <span className="truncate text-sm font-medium">
                   {openSession?.title || t('chat.newConversation')}
                 </span>
+                {openSession?.source === 'telegram' && (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--color-ok)]/15 px-2 py-0.5 text-[0.65rem] font-medium text-[var(--color-ok)]">
+                    <Send size={10} aria-hidden />
+                    {t('chat.telegramBadge')}
+                  </span>
+                )}
                 {streaming && (
                   <span
                     className="shrink-0 animate-pulse text-xs text-[var(--color-ink-faint)]"
