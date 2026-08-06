@@ -17,19 +17,25 @@ export function MissionStatusWidget() {
 
   if (!snapshot) return null;
 
+  // The API server is an optional second surface most installs never turn
+  // on — nothing here needs it. Listing it as a red, "unreachable" upstream
+  // when it was simply never enabled reads as a fault that isn't one, so it
+  // only appears once it is actually running.
   const upstreams = [
     {
       name: t('missionWidget.dashboard'),
       ok: snapshot.dashboard.reachable,
       detail: formatLatency(snapshot.dashboard.latencyMs),
     },
-    {
-      name: t('missionWidget.apiServer'),
-      ok: snapshot.apiServer.reachable,
-      detail: snapshot.apiServer.reachable
-        ? formatLatency(snapshot.apiServer.latencyMs)
-        : t('missionWidget.notRunning'),
-    },
+    ...(snapshot.apiServer.reachable
+      ? [
+          {
+            name: t('missionWidget.apiServer'),
+            ok: true,
+            detail: formatLatency(snapshot.apiServer.latencyMs),
+          },
+        ]
+      : []),
   ];
 
   return (

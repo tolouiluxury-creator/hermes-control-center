@@ -782,7 +782,6 @@ export const fa: Dict = {
   'agentWidget.system': 'سیستم',
   'missionWidget.dashboard': 'داشبورد',
   'missionWidget.apiServer': 'سرور API',
-  'missionWidget.notRunning': 'فعال نیست',
   'modelWidget.via': 'از طریق {name}',
   'modelWidget.contextWindow': 'پنجره زمینه',
   'modelWidget.tokens': '{count} توکن',

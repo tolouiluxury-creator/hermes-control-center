@@ -793,7 +793,6 @@ export const de: Dict = {
   'agentWidget.system': 'System',
   'missionWidget.dashboard': 'Dashboard',
   'missionWidget.apiServer': 'API-Server',
-  'missionWidget.notRunning': 'nicht aktiv',
   'modelWidget.via': 'über {name}',
   'modelWidget.contextWindow': 'Kontextfenster',
   'modelWidget.tokens': '{count} Token',
