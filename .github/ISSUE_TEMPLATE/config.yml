@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/tolouiluxury-creator/hermes-control-center/discussions
+    about: Ask a question or start a discussion instead of opening an issue — it doesn't need to sit in the bug tracker, and others can chime in too.

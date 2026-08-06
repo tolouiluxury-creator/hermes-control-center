@@ -1,0 +1,47 @@
+name: Installation Problem
+description: "npx hermes-control-center, or a manual setup, isn't working."
+title: "[Install] "
+labels: ["installation"]
+body:
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version`. The Control Center needs >= 22.5.0.
+      placeholder: v22.5.0
+    validations:
+      required: true
+  - type: input
+    id: hermes-version
+    attributes:
+      label: Hermes Agent version
+      description: Output of `hermes --version`.
+      placeholder: 0.19.0
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: What command did you run?
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Full output or error message
+      description: Pasted as-is is fine — no need to fence it yourself.
+      render: shell
+    validations:
+      required: true

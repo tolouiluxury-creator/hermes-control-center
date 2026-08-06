@@ -1,0 +1,78 @@
+name: Bug Report
+description: Something isn't working the way it should.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The more of the fields below you can fill in, the faster this can get fixed.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Name and version.
+      placeholder: Chrome 128
+    validations:
+      required: true
+  - type: input
+    id: hermes-version
+    attributes:
+      label: Hermes Agent version
+      description: Output of `hermes --version`.
+      placeholder: 0.19.0
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version`.
+      placeholder: v22.5.0
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do?
+      description: Steps to reproduce, as exactly as you can.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag and drop an image here, if you have one.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Relevant lines from the browser console, or the gateway/dashboard log. Pasted as-is is fine — no need to fence it yourself.
+      render: shell
