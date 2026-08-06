@@ -7,7 +7,6 @@ import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerInventoryRoutes } from './routes/inventory.js';
 import { registerActionRoutes } from './routes/actions.js';
-import { registerTelegramSetupRoutes } from './routes/telegramSetup.js';
 import { ResponseCache, CACHE_TTL_MS } from './routes/cache.js';
 import { registerWorkspaceRoutes } from './routes/workspace.js';
 import { registerFileRoutes } from './routes/files.js';
@@ -87,7 +86,6 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerDashboardRoutes(app, ctx);
   await registerInventoryRoutes(app, ctx, cache);
   await registerActionRoutes(app, ctx, cache);
-  await registerTelegramSetupRoutes(app, ctx, cache);
   await registerWorkspaceRoutes(app, ctx);
   await registerFileRoutes(app, ctx);
   await registerChatRoutes(app, ctx, cache);

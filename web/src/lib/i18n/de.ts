@@ -166,8 +166,6 @@ export const de: Dict = {
   'telegram.envNote':
     'Diese liegen in der .env des Profils. Bot-Token und deine User-ID lassen sich oben in der Einrichtungs-Karte setzen; diese Liste meldet nur, ob ein Wert da ist — nie, welcher.',
   'telegram.setup.title': 'Bot einrichten',
-  'telegram.setup.auto': 'Automatisch',
-  'telegram.setup.manual': 'Manuell',
   'telegram.setup.manualHint':
     'Schreib @BotFather in Telegram, sende /newbot, und füge den Token hier unten ein. Deine eigene User-ID bekommst du von @userinfobot.',
   'telegram.setup.tokenLabel': 'Bot-Token',
@@ -175,15 +173,6 @@ export const de: Dict = {
   'telegram.setup.userIdLabel': 'Deine Telegram-User-ID',
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'Gespeichert',
-  'telegram.setup.autoHint':
-    'Erstellt einen dir gehörenden Bot über Hermes’ eigene Telegram-Einrichtung — kein Kopieren bei BotFather. Öffnet Telegram zur Bestätigung; Token und User-ID kommen automatisch zurück.',
-  'telegram.setup.autoStart': 'Bot automatisch erstellen',
-  'telegram.setup.waiting': 'Warte auf Bestätigung in Telegram …',
-  'telegram.setup.openInTelegram': 'In Telegram öffnen',
-  'telegram.setup.expiredToast': 'Einrichtung abgelaufen — bitte erneut versuchen',
-  'telegram.setup.readyToast': 'Bot verbunden: {bot}',
-  'telegram.setup.readyBot': 'fertig',
-  'telegram.setup.autoAnother': 'Anderen Bot einrichten',
   'telegram.gatewayUp': 'Gateway läuft',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'läuft',

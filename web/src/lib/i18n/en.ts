@@ -164,8 +164,6 @@ export const en: Dict = {
   'telegram.envNote':
     'These live in the profile’s .env. The bot token and your user id can be set from the setup card above; this list reports whether a value is present, never what it is.',
   'telegram.setup.title': 'Set up your bot',
-  'telegram.setup.auto': 'Automatic',
-  'telegram.setup.manual': 'Manual',
   'telegram.setup.manualHint':
     'Message @BotFather in Telegram, send /newbot, and paste the token it gives you below. Get your own user id from @userinfobot.',
   'telegram.setup.tokenLabel': 'Bot token',
@@ -173,15 +171,6 @@ export const en: Dict = {
   'telegram.setup.userIdLabel': 'Your Telegram user id',
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'Saved',
-  'telegram.setup.autoHint':
-    'Creates a bot you own via Hermes’ own Telegram onboarding — no BotFather copy-pasting. Opens Telegram to confirm; the token and your user id come back automatically.',
-  'telegram.setup.autoStart': 'Create a bot automatically',
-  'telegram.setup.waiting': 'Waiting for confirmation in Telegram …',
-  'telegram.setup.openInTelegram': 'Open in Telegram',
-  'telegram.setup.expiredToast': 'Setup expired — try again',
-  'telegram.setup.readyToast': 'Bot connected: {bot}',
-  'telegram.setup.readyBot': 'done',
-  'telegram.setup.autoAnother': 'Set up a different bot',
   'telegram.gatewayUp': 'gateway running',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'running',

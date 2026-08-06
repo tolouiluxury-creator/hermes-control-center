@@ -247,32 +247,6 @@ export const deleteEnv = (key: string, profile?: string | null): Promise<ActionR
     ...jsonBody({ key, ...(profile ? { profile } : {}) }),
   });
 
-export interface TelegramSetupPairing {
-  pairingId: string;
-  deepLink: string;
-  qrPayload: string;
-}
-
-export type TelegramSetupStatus =
-  | { status: 'pending' }
-  | { status: 'expired' }
-  | { status: 'ready'; botUsername: string | null; ownerUserId: string | null };
-
-/** Starts the "automatic" Telegram bot setup — see docs on the route itself. */
-export const startTelegramSetup = (profile?: string | null): Promise<TelegramSetupPairing> =>
-  apiRequest<TelegramSetupPairing>('/hermes/telegram/setup/start', {
-    method: 'POST',
-    ...jsonBody({ ...(profile ? { profile } : {}) }),
-  });
-
-export const getTelegramSetupStatus = (pairingId: string): Promise<TelegramSetupStatus> =>
-  apiRequest<TelegramSetupStatus>(`/hermes/telegram/setup/${encodeURIComponent(pairingId)}`);
-
-export const cancelTelegramSetup = (pairingId: string): Promise<{ ok: boolean }> =>
-  apiRequest<{ ok: boolean }>(`/hermes/telegram/setup/${encodeURIComponent(pairingId)}`, {
-    method: 'DELETE',
-  });
-
 export const setCuratorPaused = (paused: boolean): Promise<ActionResult> =>
   apiRequest<ActionResult>('/hermes/curator/paused', { method: 'PUT', ...jsonBody({ paused }) });
 
