@@ -25,6 +25,8 @@ browser.
 > data, verified against a live Hermes 0.19.0. Nothing here fakes data: a panel with no real source
 > shows an explicit empty state instead of a plausible-looking number.
 
+![Hermes Control Center](docs/screenshots/banner.png)
+
 ## Screenshots
 
 | | |
