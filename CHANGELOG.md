@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
+## [0.1.0-beta.2] — 2026-08-07
+
+### Added
+
+- **A gateway restart control on the Telegram setup card.** A bot token or allowed-users change only
+  takes effect once the gateway process restarts — it reads those values once, at its own startup —
+  and that step was easy to miss. The card now says so plainly, always, and offers a "Restart
+  gateway" button (with a confirmation, since it briefly takes every messaging platform on the
+  profile offline, not just Telegram) alongside a manual `hermes gateway restart` as before.
+
 ## [0.1.0-beta.1] — 2026-08-06
 
 First release, published as a beta. Everything below has been verified against a live Hermes Agent
