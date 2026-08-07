@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, KeyRound } from 'lucide-react';
-import { queryKeys, setEnv } from '@/lib/api';
+import { CheckCircle2, KeyRound, RotateCw } from 'lucide-react';
+import { queryKeys, restartGateway, setEnv } from '@/lib/api';
+import { ConfirmInline } from '@/components/ConfirmInline';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 
@@ -41,6 +42,11 @@ export function TelegramSetup({
     ]);
   };
 
+  // Set once a save just went through, so the restart hint below can point at
+  // the change that actually needs it instead of nagging unconditionally.
+  const [justSaved, setJustSaved] = useState(false);
+  const [confirmRestart, setConfirmRestart] = useState(false);
+
   const save = useMutation({
     mutationFn: async () => {
       const trimmedToken = token.trim();
@@ -54,11 +60,30 @@ export function TelegramSetup({
       setToken('');
       setUserId('');
       setEditing(false);
+      setJustSaved(true);
       await invalidate();
       toast.push({ tone: 'success', title: t('telegram.setup.savedToast') });
     },
     onError: (error: Error) =>
       toast.push({ tone: 'error', title: t('toast.saveFailed'), description: error.message }),
+  });
+
+  /**
+   * `hermes gateway restart` under the hood — the gateway only reads `.env`
+   * at its own startup, so a token/allowed-users save above changes nothing
+   * upstream until this runs. It briefly takes every messaging platform on
+   * this profile down, not just Telegram, hence the confirm.
+   */
+  const restart = useMutation({
+    mutationFn: () => restartGateway(profile),
+    onSuccess: async () => {
+      setConfirmRestart(false);
+      setJustSaved(false);
+      await invalidate();
+      toast.push({ tone: 'success', title: t('telegram.setup.restartStartedToast') });
+    },
+    onError: (error: Error) =>
+      toast.push({ tone: 'error', title: t('telegram.actionFailed'), description: error.message }),
   });
 
   const showForm = editing || !configured;
@@ -142,6 +167,37 @@ export function TelegramSetup({
           </div>
         </form>
       )}
+
+      {/* Always visible, not just after a save: the gateway-restart step is
+          easy to miss and is the actual reason a freshly saved token or
+          allowed-users list does not take effect yet. */}
+      <div className="mt-4 border-t border-[var(--color-hairline)] pt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <RotateCw size={13} className="shrink-0 text-[var(--color-ink-faint)]" aria-hidden />
+          <p className="min-w-0 flex-1 text-xs text-[var(--color-ink-muted)]">
+            {justSaved ? t('telegram.setup.restartHintAfterSave') : t('telegram.setup.restartHint')}
+          </p>
+          <button
+            type="button"
+            onClick={() => setConfirmRestart(true)}
+            disabled={restart.isPending}
+            className="shrink-0 rounded-lg border border-[var(--color-hairline)] px-2.5 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] disabled:opacity-40"
+          >
+            {t('telegram.setup.restartButton')}
+          </button>
+        </div>
+
+        {confirmRestart && (
+          <ConfirmInline
+            tone="warn"
+            message={t('telegram.setup.restartConfirm')}
+            confirmLabel={t('telegram.setup.restartButton')}
+            pending={restart.isPending}
+            onConfirm={() => restart.mutate()}
+            onCancel={() => setConfirmRestart(false)}
+          />
+        )}
+      </div>
     </section>
   );
 }

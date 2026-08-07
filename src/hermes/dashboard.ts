@@ -817,6 +817,25 @@ export class DashboardClient {
     );
   }
 
+  /**
+   * Restart the gateway for one profile — `hermes gateway restart` under the
+   * hood, spawned in the background the same way skill uninstall is.
+   *
+   * Necessary after any credential change (bot token, allowed users, …): the
+   * gateway process only reads `.env` at its own startup, so a save on the
+   * dashboard side changes nothing upstream until this runs. It briefly takes
+   * every messaging platform on this profile down, not just the one being
+   * edited — the caller has to say so before asking, same as
+   * {@link enableWebhooks}.
+   */
+  restartGateway(profile?: string | null, options?: RequestOptions): Promise<SpawnedAction> {
+    return this.client.json(spawnedActionSchema, '/api/gateway/restart', {
+      ...options,
+      method: 'POST',
+      query: { ...options?.query, profile: profile || undefined },
+    });
+  }
+
   // --- Settings: reads ------------------------------------------------------
 
   /**

@@ -171,6 +171,15 @@ export const fa: Dict = {
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'ذخیره شد',
   'telegram.setup.configuredNote': 'توکن ربات و شناسه کاربری تنظیم شده‌اند.',
+  'telegram.setup.restartHint':
+    'تغییر توکن یا کاربران مجاز فقط پس از راه‌اندازی مجدد گیت‌وی اعمال می‌شود — این مقادیر فقط هنگام شروع خودش خوانده می‌شوند.',
+  'telegram.setup.restartHintAfterSave':
+    'ذخیره شد — اما تا راه‌اندازی مجدد گیت‌وی اعمال نمی‌شود. برای اعمال تغییر همین حالا آن را راه‌اندازی مجدد کنید.',
+  'telegram.setup.restartButton': 'راه‌اندازی مجدد گیت‌وی',
+  'telegram.setup.restartConfirm':
+    'با این کار تمام پلتفرم‌های پیام‌رسانی این پروفایل، نه فقط تلگرام، برای مدت کوتاهی آفلاین می‌شوند تا گیت‌وی دوباره بالا بیاید. ادامه می‌دهید؟',
+  'telegram.setup.restartStartedToast':
+    'راه‌اندازی مجدد گیت‌وی آغاز شد — چند ثانیه دیگر اتصال را آزمایش کنید.',
   'telegram.gatewayUp': 'دروازه در حال اجرا',
   'telegram.gateway': 'دروازه',
   'telegram.gatewayYes': 'در حال اجرا',

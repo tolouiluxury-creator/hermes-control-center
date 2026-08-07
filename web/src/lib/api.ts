@@ -218,6 +218,15 @@ export const testPlatform = (id: string, profile?: string | null): Promise<TestR
     method: 'POST',
   });
 
+/**
+ * Restart the gateway for one profile so a credential change (bot token,
+ * allowed users, …) actually takes effect — the gateway only reads `.env` at
+ * its own startup. Only started, not finished: re-test the platform a few
+ * seconds later to see whether it worked.
+ */
+export const restartGateway = (profile?: string | null): Promise<ActionResult> =>
+  apiRequest<ActionResult>(withProfile('/hermes/gateway/restart', profile), { method: 'POST' });
+
 // --- Settings ---------------------------------------------------------------
 
 export const getEnv = (profile?: string | null): Promise<EnvVar[]> =>

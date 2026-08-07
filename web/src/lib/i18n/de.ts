@@ -175,6 +175,15 @@ export const de: Dict = {
   'telegram.setup.userIdPlaceholder': '123456789',
   'telegram.setup.savedToast': 'Gespeichert',
   'telegram.setup.configuredNote': 'Bot-Token und User-ID sind gesetzt.',
+  'telegram.setup.restartHint':
+    'Eine Änderung an Token oder erlaubten Nutzern wirkt erst nach einem Gateway-Neustart — die Werte werden nur beim eigenen Start gelesen.',
+  'telegram.setup.restartHintAfterSave':
+    'Gespeichert — wird aber erst nach einem Neustart des Gateways verwendet. Jetzt neu starten, um die Änderung zu übernehmen.',
+  'telegram.setup.restartButton': 'Gateway neu starten',
+  'telegram.setup.restartConfirm':
+    'Dadurch gehen kurzzeitig alle Messaging-Plattformen dieses Profils offline, nicht nur Telegram, während das Gateway neu startet. Fortfahren?',
+  'telegram.setup.restartStartedToast':
+    'Gateway-Neustart gestartet — Verbindung in ein paar Sekunden testen.',
   'telegram.gatewayUp': 'Gateway läuft',
   'telegram.gateway': 'Gateway',
   'telegram.gatewayYes': 'läuft',

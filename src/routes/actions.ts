@@ -434,6 +434,21 @@ export async function registerActionRoutes(
     return guard(reply, () => ctx.dashboard.testPlatform(id, profile));
   });
 
+  /**
+   * Restart the gateway process for one profile. Only started, not finished:
+   * Hermes spawns `hermes gateway restart` and answers with the child's pid,
+   * so the messaging cache is invalidated on a best-effort basis — the caller
+   * re-tests a few seconds later to see the real result.
+   */
+  app.post('/api/hermes/gateway/restart', async (request, reply) => {
+    const profile = (request.query as { profile?: string } | undefined)?.profile?.trim();
+    return guard(reply, async () => {
+      const result = await ctx.dashboard.restartGateway(profile);
+      cache.invalidatePrefix(CACHE_KEYS.messaging);
+      return result;
+    });
+  });
+
   // --- Environment variables and secrets ------------------------------------
 
   app.put('/api/hermes/env', async (request, reply) => {
