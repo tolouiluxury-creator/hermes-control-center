@@ -6,6 +6,7 @@ import {
   Check,
   ListChecks,
   Pencil,
+  Play,
   Plus,
   StickyNote,
   Trash2,
@@ -17,9 +18,11 @@ import {
   deleteWorkflow,
   getCronJobs,
   getPrompts,
+  getWorkflowRuns,
   getWorkflows,
   queryKeys,
   setWorkflowEnabled,
+  startWorkflowRun,
   updateWorkflow,
 } from '@/lib/api';
 import { PageShell } from '@/components/PageShell';
@@ -272,6 +275,26 @@ export function WorkflowsPage() {
   const { t } = useI18n();
   const [editing, setEditing] = useState<Workflow | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [activeRunWorkflowId, setActiveRunWorkflowId] = useState<string | null>(null);
+
+  const runsQuery = useQuery({
+    queryKey: queryKeys.workflowRuns(activeRunWorkflowId ?? ''),
+    queryFn: () => getWorkflowRuns(activeRunWorkflowId as string),
+    enabled: activeRunWorkflowId !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.runs[0]?.status;
+      return status === 'running' || status === 'waiting_for_user' ? 1500 : false;
+    },
+  });
+
+  const startRun = useMutation({
+    mutationFn: (workflowId: string) => startWorkflowRun(workflowId, 'chain'),
+    onSuccess: (_data, workflowId) => setActiveRunWorkflowId(workflowId),
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: t('workflowRuns.startFailed'), description: e.message }),
+  });
+
+  const currentRun = activeRunWorkflowId ? runsQuery.data?.runs[0] : undefined;
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.workflows,
@@ -399,6 +422,26 @@ export function WorkflowsPage() {
                 <div className="flex shrink-0 gap-1">
                   <button
                     type="button"
+                    onClick={() => startRun.mutate(workflow.id)}
+                    disabled={
+                      !workflow.enabled ||
+                      workflow.steps.length === 0 ||
+                      workflow.steps.some((s) => s.kind === 'prompt') ||
+                      (startRun.isPending && startRun.variables === workflow.id) ||
+                      (activeRunWorkflowId === workflow.id && currentRun?.status === 'running')
+                    }
+                    title={
+                      workflow.steps.some((s) => s.kind === 'prompt')
+                        ? t('workflowRuns.promptNotSupported')
+                        : undefined
+                    }
+                    className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
+                    aria-label={t('workflowRuns.runChainAria', { name: workflow.name })}
+                  >
+                    <Play size={14} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setEditing(workflow)}
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
                     aria-label={t('workflows.editAria', { name: workflow.name })}
@@ -432,6 +475,29 @@ export function WorkflowsPage() {
                     );
                   })}
                 </ol>
+              )}
+
+              {activeRunWorkflowId === workflow.id && currentRun && (
+                <div className="mt-3 rounded-xl border border-[var(--color-hairline)] p-3">
+                  <p className="text-xs font-medium">
+                    {t('workflowRuns.statusLabel', {
+                      status: t(`workflowRuns.status.${currentRun.status}`),
+                    })}
+                  </p>
+                  <ol className="mt-2 space-y-1">
+                    {currentRun.steps.map((step) => (
+                      <li key={step.id} className="text-xs">
+                        <span className="text-[var(--color-ink-muted)]">
+                          {t(`workflowRuns.stepStatus.${step.status}`)}
+                        </span>{' '}
+                        {step.label}
+                        {step.status === 'failed' && step.error && (
+                          <p className="mt-0.5 text-[var(--color-danger)]">{step.error}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
 
               {confirmDelete === workflow.id && (
