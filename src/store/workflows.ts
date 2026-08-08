@@ -7,10 +7,11 @@ import type { Store } from './db.js';
  * library — they live in our database.
  *
  * A step references either a library prompt or a Hermes cron job, or is a plain
- * note. `cron`/`note` chains are executable today: `WorkflowRunner`
- * (`src/hermes/workflowRunner.ts`) runs them straight from the already-running
- * dashboard, no separate Hermes API server needed. Only `prompt` steps remain
- * unsupported for now, pending the chat-streaming stage.
+ * note. All three kinds are executable today: `WorkflowRunner`
+ * (`src/hermes/workflowRunner.ts`) runs cron/note steps straight from the
+ * already-running dashboard, and prompt steps through the same chat session
+ * mechanism the Chat page uses — no separate Hermes API server needed either
+ * way. Only automatic/scheduled runs remain unsupported for now.
  */
 
 export type WorkflowStepKind = 'prompt' | 'cron' | 'note';

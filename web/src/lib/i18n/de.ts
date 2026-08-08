@@ -55,7 +55,7 @@ export const de: Dict = {
   'page.chats.desc':
     'Unterhalte dich direkt mit deinem Agenten — über das laufende Dashboard, ohne zusätzliche Server.',
   'page.workflows.desc':
-    'Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Ketten aus geplanten Jobs und Notizen lassen sich jetzt manuell über die ▶-Schaltfläche ausführen; Prompt-Schritte und automatische Läufe folgen in einem späteren Update.',
+    'Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Jede Kette lässt sich manuell über die ▶-Schaltfläche ausführen — automatische, zeitgesteuerte Läufe folgen noch.',
   'page.aufgaben.desc':
     'Geplante Jobs, die dein Agent von selbst ausführt. Pausieren, Auslösen und Löschen greifen in den laufenden Betrieb ein.',
   'page.wissen.desc':
@@ -626,7 +626,7 @@ export const de: Dict = {
   'workflows.deleted': 'Workflow gelöscht',
   'workflows.empty.title': 'Noch keine Workflows',
   'workflows.empty.desc':
-    'Verkette Prompts und geplante Jobs zu einem benannten, sortierten Ablauf. Ketten aus geplanten Jobs und Notizen lassen sich sofort manuell ausführen; Prompt-Schritte folgen in einem späteren Update.',
+    'Verkette Prompts und geplante Jobs zu einem benannten, sortierten Ablauf. Jeder Schritt-Typ lässt sich sofort manuell ausführen — automatische, zeitgesteuerte Läufe folgen in einem späteren Update.',
   'workflows.stepIncomplete': 'Jeder Schritt braucht einen Prompt, einen Job oder einen Notiztext.',
   'workflows.deleteConfirm': '„{name}“ löschen? Der Ablauf ist dann weg.',
   'workflows.enableAria': '{name} aktivieren',

@@ -54,7 +54,7 @@ export const en: Dict = {
   // Page descriptions
   'page.chats.desc': 'Talk to your agent directly — over the running dashboard, no extra server.',
   'page.workflows.desc':
-    'Named, ordered sequences of prompts and scheduled jobs. Chains of scheduled jobs and notes can now be run manually with the ▶ button; prompt steps and automatic runs are still coming.',
+    'Named, ordered sequences of prompts and scheduled jobs. Run any chain manually with the ▶ button — automatic, scheduled runs are still coming.',
   'page.aufgaben.desc':
     'Scheduled jobs your agent runs on its own. Pausing, triggering and deleting affect live operation.',
   'page.wissen.desc':
@@ -620,7 +620,7 @@ export const en: Dict = {
   'workflows.deleted': 'Workflow deleted',
   'workflows.empty.title': 'No workflows yet',
   'workflows.empty.desc':
-    'Chain prompts and scheduled jobs into a named, ordered sequence. Chains of scheduled jobs and notes can be run manually right away; prompt steps are still coming in a later update.',
+    'Chain prompts and scheduled jobs into a named, ordered sequence. Every step type can be run manually right away — automatic, scheduled runs are still coming in a later update.',
   'workflows.stepIncomplete': 'Every step needs a prompt, a job or a note text.',
   'workflows.deleteConfirm': 'Delete “{name}”? The sequence is then gone.',
   'workflows.enableAria': 'enable {name}',
