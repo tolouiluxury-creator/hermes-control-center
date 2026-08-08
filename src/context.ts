@@ -12,6 +12,7 @@ import { Store } from './store/db.js';
 import { WorkflowsRepo } from './store/workflows.js';
 import { WorkflowRunsRepo } from './store/workflowRuns.js';
 import { WorkflowRunner } from './hermes/workflowRunner.js';
+import { PromptsRepo } from './store/prompts.js';
 import { SettingsRepo } from './store/settings.js';
 import { MetricsRepo } from './store/metrics.js';
 import { EventBus } from './events.js';
@@ -120,7 +121,14 @@ export function createContext(
   const workflows = new WorkflowsRepo(store);
   const workflowRuns = new WorkflowRunsRepo(store);
   workflowRuns.reconcileInterrupted();
-  const workflowRunner = new WorkflowRunner({ dashboard, workflows, runs: workflowRuns });
+  const prompts = new PromptsRepo(store);
+  const workflowRunner = new WorkflowRunner({
+    dashboard,
+    gateway,
+    prompts,
+    workflows,
+    runs: workflowRuns,
+  });
   const settings = new SettingsRepo(store);
   const metrics = new MetricsRepo(store);
   const bus = new EventBus();
