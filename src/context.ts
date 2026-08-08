@@ -9,6 +9,9 @@ import { ApiServerClient } from './hermes/apiServer.js';
 import { DashboardClient } from './hermes/dashboard.js';
 import { GatewayClient } from './hermes/gateway.js';
 import { Store } from './store/db.js';
+import { WorkflowsRepo } from './store/workflows.js';
+import { WorkflowRunsRepo } from './store/workflowRuns.js';
+import { WorkflowRunner } from './hermes/workflowRunner.js';
 import { SettingsRepo } from './store/settings.js';
 import { MetricsRepo } from './store/metrics.js';
 import { EventBus } from './events.js';
@@ -30,6 +33,8 @@ export interface AppContext {
   /** Chat with the agent over the dashboard's tui_gateway WebSocket. */
   gateway: GatewayClient;
   store: Store;
+  workflowRuns: WorkflowRunsRepo;
+  workflowRunner: WorkflowRunner;
   settings: SettingsRepo;
   metrics: MetricsRepo;
   bus: EventBus;
@@ -112,6 +117,9 @@ export function createContext(
   const gateway = new GatewayClient(connection.dashboard.url, dashboardToken, connection.profile);
 
   const store = Store.open(controlCenterDatabasePath(env));
+  const workflows = new WorkflowsRepo(store);
+  const workflowRuns = new WorkflowRunsRepo(store);
+  const workflowRunner = new WorkflowRunner({ dashboard, workflows, runs: workflowRuns });
   const settings = new SettingsRepo(store);
   const metrics = new MetricsRepo(store);
   const bus = new EventBus();
@@ -142,6 +150,8 @@ export function createContext(
     dashboard,
     gateway,
     store,
+    workflowRuns,
+    workflowRunner,
     settings,
     metrics,
     bus,
