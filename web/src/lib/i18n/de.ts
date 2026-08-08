@@ -285,7 +285,7 @@ export const de: Dict = {
   // Settings
   'settings.appearance': 'Erscheinungsbild',
   'settings.appearance.desc': 'Gilt nur für dieses Gerät.',
-  'settings.categories': 'Einstellungskategorien',
+  'settings.jumpTo': 'Springe zu',
   'settings.language': 'Sprache',
   'settings.language.desc': 'Die Sprache der Oberfläche, für dieses Gerät.',
   'settings.theme.dark': 'Dunkel',
@@ -643,7 +643,7 @@ export const de: Dict = {
   'workflowRuns.status.failed': 'Fehlgeschlagen',
   'workflowRuns.status.stopped': 'Gestoppt',
   'workflowRuns.stepStatus.pending': 'Wartend',
-  'workflowRuns.stepStatus.running': 'Läuft...',
+  'workflowRuns.stepStatus.running': 'Läuft…',
   'workflowRuns.stepStatus.succeeded': 'Fertig',
   'workflowRuns.stepStatus.failed': 'Fehlgeschlagen',
   'workflowRuns.stepStatus.skipped': 'Übersprungen',

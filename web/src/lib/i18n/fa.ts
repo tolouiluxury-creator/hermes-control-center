@@ -280,7 +280,7 @@ export const fa: Dict = {
   // Settings
   'settings.appearance': 'ظاهر',
   'settings.appearance.desc': 'فقط برای این دستگاه اعمال می‌شود.',
-  'settings.categories': 'دسته‌های تنظیمات',
+  'settings.jumpTo': 'پرش به',
   'settings.language': 'زبان',
   'settings.language.desc': 'زبان رابط کاربری، برای این دستگاه.',
   'settings.theme.dark': 'تیره',
@@ -635,7 +635,7 @@ export const fa: Dict = {
   'workflowRuns.status.failed': 'ناموفق',
   'workflowRuns.status.stopped': 'متوقف‌شده',
   'workflowRuns.stepStatus.pending': 'در انتظار',
-  'workflowRuns.stepStatus.running': 'در حال اجرا...',
+  'workflowRuns.stepStatus.running': 'در حال اجرا…',
   'workflowRuns.stepStatus.succeeded': 'انجام‌شد',
   'workflowRuns.stepStatus.failed': 'ناموفق',
   'workflowRuns.stepStatus.skipped': 'نادیده گرفته‌شد',
