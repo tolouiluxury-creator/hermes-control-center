@@ -10,6 +10,7 @@ import { registerActionRoutes } from './routes/actions.js';
 import { ResponseCache, CACHE_TTL_MS } from './routes/cache.js';
 import { registerWorkspaceRoutes } from './routes/workspace.js';
 import { registerWorkflowRunRoutes } from './routes/workflowRuns.js';
+import { registerWorkflowEventRoutes } from './routes/workflowEvents.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerChatRoutes } from './routes/chat.js';
 import { registerMetaRoutes } from './routes/meta.js';
@@ -89,6 +90,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerActionRoutes(app, ctx, cache);
   await registerWorkspaceRoutes(app, ctx);
   await registerWorkflowRunRoutes(app, ctx);
+  await registerWorkflowEventRoutes(app, ctx);
   await registerFileRoutes(app, ctx);
   await registerChatRoutes(app, ctx, cache);
   await registerStreamRoutes(app, ctx);
