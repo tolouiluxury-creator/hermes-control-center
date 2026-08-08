@@ -641,6 +641,8 @@ export const fa: Dict = {
   'workflowRuns.stepStatus.skipped': 'نادیده گرفته‌شد',
   'workflowRuns.cronRunningHint':
     'این ممکن است چند دقیقه طول بکشد — به‌طور خودکار به‌روزرسانی می‌شود.',
+  'workflowRuns.promptRunningHint':
+    'دستیار در حال پاسخ‌گویی است — برای پاسخ‌های طولانی‌تر ممکن است طول بکشد.',
   'workflowRuns.reason.disabled': 'این گردش‌کار غیرفعال است.',
   'workflowRuns.reason.noSteps': 'این گردش‌کار هیچ مرحله‌ای ندارد.',
   'workflowRuns.reason.alreadyActive': 'این گردش‌کار در حال حاضر یک اجرای در حال انجام دارد.',

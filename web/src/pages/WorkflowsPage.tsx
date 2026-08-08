@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDown,
@@ -20,7 +20,6 @@ import {
   deleteWorkflow,
   getCronJobs,
   getPrompts,
-  getWorkflowRuns,
   getWorkflows,
   queryKeys,
   setWorkflowEnabled,
@@ -35,6 +34,8 @@ import { useI18n } from '@/lib/i18n';
 import type {
   Workflow,
   WorkflowInput,
+  WorkflowRunStatus,
+  WorkflowRunStepStatus,
   WorkflowStepInput,
   WorkflowStepKind,
 } from '@/lib/hermesTypes';
@@ -277,21 +278,94 @@ export function WorkflowsPage() {
   const { t } = useI18n();
   const [editing, setEditing] = useState<Workflow | null | undefined>(undefined);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const [activeRunWorkflowId, setActiveRunWorkflowId] = useState<string | null>(null);
+  interface LiveStep {
+    status: WorkflowRunStepStatus;
+    output: string;
+    error: string | null;
+  }
+  interface LiveRun {
+    workflowId: string;
+    runId: string;
+    status: WorkflowRunStatus;
+    steps: Record<string, LiveStep>;
+  }
 
-  const runsQuery = useQuery({
-    queryKey: queryKeys.workflowRuns(activeRunWorkflowId ?? ''),
-    queryFn: () => getWorkflowRuns(activeRunWorkflowId as string),
-    enabled: activeRunWorkflowId !== null,
-    refetchInterval: (query) => {
-      const status = query.state.data?.runs[0]?.status;
-      return status === 'running' || status === 'waiting_for_user' ? 1500 : false;
-    },
+  const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
+
+  const patchStep = (run: LiveRun, stepId: string, patch: Partial<LiveStep>): LiveRun => ({
+    ...run,
+    steps: { ...run.steps, [stepId]: { ...run.steps[stepId]!, ...patch } },
   });
+
+  useEffect(() => {
+    const source = new EventSource('/api/workflows/events');
+
+    const on = <T extends { runId: string }>(type: string, handler: (data: T) => void) => {
+      source.addEventListener(type, (event: MessageEvent) => {
+        try {
+          handler(JSON.parse(event.data as string) as T);
+        } catch {
+          // Malformed frame: ignore rather than crash the stream handler.
+        }
+      });
+    };
+
+    on<{ runId: string; stepId: string }>('step.started', (data) =>
+      setLiveRun((run) =>
+        run && run.runId === data.runId ? patchStep(run, data.stepId, { status: 'running' }) : run,
+      ),
+    );
+    on<{ runId: string; stepId: string; text: string }>('step.delta', (data) =>
+      setLiveRun((run) =>
+        run && run.runId === data.runId
+          ? patchStep(run, data.stepId, {
+              output: (run.steps[data.stepId]?.output ?? '') + data.text,
+            })
+          : run,
+      ),
+    );
+    on<{
+      runId: string;
+      stepId: string;
+      status: WorkflowRunStepStatus;
+      output: string;
+      error: string | null;
+    }>('step.finished', (data) =>
+      setLiveRun((run) =>
+        run && run.runId === data.runId
+          ? patchStep(run, data.stepId, {
+              status: data.status,
+              output: data.output,
+              error: data.error,
+            })
+          : run,
+      ),
+    );
+    on<{ runId: string; status: WorkflowRunStatus }>('run.finished', (data) =>
+      setLiveRun((run) =>
+        run && run.runId === data.runId ? { ...run, status: data.status } : run,
+      ),
+    );
+
+    return () => source.close();
+  }, []);
 
   const startRun = useMutation({
     mutationFn: (workflowId: string) => startWorkflowRun(workflowId, 'chain'),
-    onSuccess: (_data, workflowId) => setActiveRunWorkflowId(workflowId),
+    onSuccess: (data, workflowId) => {
+      const workflow = workflows.find((w) => w.id === workflowId);
+      setLiveRun({
+        workflowId,
+        runId: data.runId,
+        status: 'running',
+        steps: Object.fromEntries(
+          (workflow?.steps ?? []).map((s) => [
+            s.id,
+            { status: 'pending' as const, output: '', error: null },
+          ]),
+        ),
+      });
+    },
     onError: (e: Error) => {
       const code = e instanceof ApiError ? e.code : undefined;
       const key =
@@ -299,11 +373,9 @@ export function WorkflowsPage() {
           ? 'workflowRuns.reason.disabled'
           : code === 'no_steps'
             ? 'workflowRuns.reason.noSteps'
-            : code === 'prompt_unsupported'
-              ? 'workflowRuns.promptNotSupported'
-              : code === 'run_in_progress'
-                ? 'workflowRuns.reason.alreadyActive'
-                : null;
+            : code === 'run_in_progress'
+              ? 'workflowRuns.reason.alreadyActive'
+              : null;
       toast.push({
         tone: 'error',
         title: t('workflowRuns.startFailed'),
@@ -311,8 +383,6 @@ export function WorkflowsPage() {
       });
     },
   });
-
-  const currentRun = activeRunWorkflowId ? runsQuery.data?.runs[0] : undefined;
 
   const { data, isPending, error } = useQuery({
     queryKey: queryKeys.workflows,
@@ -444,14 +514,8 @@ export function WorkflowsPage() {
                     disabled={
                       !workflow.enabled ||
                       workflow.steps.length === 0 ||
-                      workflow.steps.some((s) => s.kind === 'prompt') ||
                       (startRun.isPending && startRun.variables === workflow.id) ||
-                      (activeRunWorkflowId === workflow.id && currentRun?.status === 'running')
-                    }
-                    title={
-                      workflow.steps.some((s) => s.kind === 'prompt')
-                        ? t('workflowRuns.promptNotSupported')
-                        : undefined
+                      (liveRun?.workflowId === workflow.id && liveRun.status === 'running')
                     }
                     className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
                     aria-label={t('workflowRuns.runChainAria', { name: workflow.name })}
@@ -495,10 +559,10 @@ export function WorkflowsPage() {
                 </ol>
               )}
 
-              {activeRunWorkflowId === workflow.id && currentRun && (
+              {liveRun?.workflowId === workflow.id && (
                 <div className="mt-3 rounded-xl border border-[var(--color-hairline)] p-3">
                   <p className="flex items-center gap-1.5 text-xs font-medium">
-                    {currentRun.status === 'running' && (
+                    {liveRun.status === 'running' && (
                       <Loader2
                         size={12}
                         className="animate-spin text-[var(--color-accent)]"
@@ -506,35 +570,44 @@ export function WorkflowsPage() {
                       />
                     )}
                     {t('workflowRuns.statusLabel', {
-                      status: t(`workflowRuns.status.${currentRun.status}`),
+                      status: t(`workflowRuns.status.${liveRun.status}`),
                     })}
                   </p>
                   <ol className="mt-2 space-y-1">
-                    {currentRun.steps.map((step) => (
-                      <li key={step.id} className="text-xs">
-                        <div className="flex items-center gap-1.5">
-                          {step.status === 'running' && (
-                            <Loader2
-                              size={11}
-                              className="animate-spin text-[var(--color-accent)]"
-                              aria-hidden
-                            />
+                    {workflow.steps.map((step) => {
+                      const live = liveRun.steps[step.id];
+                      if (!live) return null;
+                      return (
+                        <li key={step.id} className="text-xs">
+                          <div className="flex items-center gap-1.5">
+                            {live.status === 'running' && (
+                              <Loader2
+                                size={11}
+                                className="animate-spin text-[var(--color-accent)]"
+                                aria-hidden
+                              />
+                            )}
+                            <span className="text-[var(--color-ink-muted)]">
+                              {t(`workflowRuns.stepStatus.${live.status}`)}
+                            </span>
+                            <span>{step.label}</span>
+                          </div>
+                          {live.status === 'running' && step.kind === 'cron' && (
+                            <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                              {t('workflowRuns.cronRunningHint')}
+                            </p>
                           )}
-                          <span className="text-[var(--color-ink-muted)]">
-                            {t(`workflowRuns.stepStatus.${step.status}`)}
-                          </span>
-                          <span>{step.label}</span>
-                        </div>
-                        {step.status === 'running' && step.kind === 'cron' && (
-                          <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                            {t('workflowRuns.cronRunningHint')}
-                          </p>
-                        )}
-                        {step.status === 'failed' && step.error && (
-                          <p className="mt-0.5 text-[var(--color-danger)]">{step.error}</p>
-                        )}
-                      </li>
-                    ))}
+                          {live.status === 'running' && step.kind === 'prompt' && (
+                            <p className="mt-0.5 whitespace-pre-wrap text-[var(--color-ink-muted)]">
+                              {live.output || t('workflowRuns.promptRunningHint')}
+                            </p>
+                          )}
+                          {live.status === 'failed' && live.error && (
+                            <p className="mt-0.5 text-[var(--color-danger)]">{live.error}</p>
+                          )}
+                        </li>
+                      );
+                    })}
                   </ol>
                 </div>
               )}

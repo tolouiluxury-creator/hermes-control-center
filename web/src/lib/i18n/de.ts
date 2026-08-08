@@ -649,6 +649,8 @@ export const de: Dict = {
   'workflowRuns.stepStatus.skipped': 'Übersprungen',
   'workflowRuns.cronRunningHint':
     'Das kann ein paar Minuten dauern — aktualisiert sich automatisch.',
+  'workflowRuns.promptRunningHint':
+    'Der Agent antwortet gerade — das kann bei längeren Antworten dauern.',
   'workflowRuns.reason.disabled': 'Dieser Workflow ist deaktiviert.',
   'workflowRuns.reason.noSteps': 'Dieser Workflow hat keine Schritte.',
   'workflowRuns.reason.alreadyActive': 'Dieser Workflow hat bereits einen laufenden Durchlauf.',
