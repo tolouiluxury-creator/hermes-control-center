@@ -266,6 +266,34 @@ export interface WorkflowInput {
   steps?: WorkflowStepInput[];
 }
 
+export type WorkflowRunTrigger = 'manual' | 'scheduled';
+export type WorkflowRunMode = 'chain' | 'single_step';
+export type WorkflowRunStatus = 'running' | 'waiting_for_user' | 'completed' | 'failed' | 'stopped';
+export type WorkflowRunStepStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'skipped';
+
+export interface WorkflowRunStep {
+  id: string;
+  kind: WorkflowStepKind;
+  ref: string | null;
+  label: string;
+  status: WorkflowRunStepStatus;
+  output: string;
+  error: string | null;
+  startedAt: number | null;
+  finishedAt: number | null;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflowId: string;
+  status: WorkflowRunStatus;
+  trigger: WorkflowRunTrigger;
+  mode: WorkflowRunMode;
+  steps: WorkflowRunStep[];
+  startedAt: number;
+  finishedAt: number | null;
+}
+
 export interface MemoryProvider {
   name: string;
   description: string | null;

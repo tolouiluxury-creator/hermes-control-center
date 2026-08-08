@@ -30,6 +30,7 @@ import type {
   WebhooksOverview,
   Workflow,
   WorkflowInput,
+  WorkflowRun,
 } from './hermesTypes';
 
 /**
@@ -526,6 +527,15 @@ export const setWorkflowEnabled = (id: string, enabled: boolean): Promise<{ work
 export const deleteWorkflow = (id: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>(`/workflows/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
+export const startWorkflowRun = (id: string, mode: 'chain'): Promise<{ runId: string }> =>
+  apiRequest<{ runId: string }>(`/workflows/${encodeURIComponent(id)}/runs`, {
+    method: 'POST',
+    ...jsonBody({ mode }),
+  });
+
+export const getWorkflowRuns = (id: string): Promise<{ runs: WorkflowRun[] }> =>
+  apiRequest<{ runs: WorkflowRun[] }>(`/workflows/${encodeURIComponent(id)}/runs`);
+
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
 
@@ -831,6 +841,7 @@ export const queryKeys = {
   prompts: ['prompts'] as const,
   todos: (sessionId: string) => ['todos', sessionId] as const,
   workflows: ['workflows'] as const,
+  workflowRuns: (id: string) => ['workflows', id, 'runs'] as const,
   skills: ['hermes', 'skills'] as const,
   skillList: ['hermes', 'skills', 'list'] as const,
   models: ['hermes', 'models'] as const,
