@@ -164,4 +164,43 @@ describe('WorkflowRunner', () => {
     expect(run?.status).toBe('failed');
     expect(run?.steps[0]?.error).toMatch(/no result/i);
   });
+
+  it('stops before the next step and does not trigger it when the workflow is deleted mid-run', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'First' },
+        { kind: 'cron', ref: 'job-2', label: 'Second' },
+      ],
+    });
+
+    const before1 = cronJob({ id: 'job-1', lastRun: 1000 });
+    const after1 = cronJob({ id: 'job-1', lastRun: 2000, lastStatus: 'ok' });
+    const cronJobsMock = vi
+      .fn()
+      .mockResolvedValueOnce([before1]) // step 1: read before triggering
+      .mockImplementationOnce(async () => {
+        // Step 1's poll just saw the job finish (lastRun changed). Delete the
+        // workflow at exactly this moment, before the runner's loop gets a
+        // chance to start step 2 — this is the scenario the mid-run guard in
+        // execute() exists for.
+        workflows.delete(workflow.id);
+        return [after1];
+      });
+    const cronAction = vi.fn().mockResolvedValue({ ok: true });
+    const dashboard: CronExecutor = { cronJobs: cronJobsMock, cronAction };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    runner.start(workflow.id);
+    await flushPolls(5);
+
+    expect(cronAction).toHaveBeenCalledTimes(1);
+    expect(cronAction).toHaveBeenCalledWith('job-1', 'trigger', 'sunrise');
+  });
 });

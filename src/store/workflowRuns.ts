@@ -169,4 +169,36 @@ export class WorkflowRunsRepo {
       MAX_RUNS_PER_WORKFLOW,
     );
   }
+
+  /**
+   * Marks any run left `running`/`waiting_for_user` from before a restart as
+   * `failed`, and every one of its still-open steps too — a run that can no
+   * longer be observed must not be shown as still in progress. Call once at
+   * startup, before the scheduler or any request can start a new run.
+   */
+  reconcileInterrupted(now = Date.now()): void {
+    const stale = this.store.all<WorkflowRunRow>(
+      `SELECT * FROM workflow_runs WHERE status IN ('running', 'waiting_for_user')`,
+    );
+    for (const row of stale) {
+      const detail = JSON.parse(row.detail) as RunDetail;
+      detail.steps = detail.steps.map((step) =>
+        step.status === 'pending' || step.status === 'running'
+          ? {
+              ...step,
+              status: 'failed' as const,
+              error: 'Interrupted by a server restart.',
+              finishedAt: now,
+            }
+          : step,
+      );
+      this.store.run(
+        'UPDATE workflow_runs SET status = ?, finished_at = ?, detail = ? WHERE id = ?',
+        'failed',
+        now,
+        JSON.stringify(detail),
+        row.id,
+      );
+    }
+  }
 }

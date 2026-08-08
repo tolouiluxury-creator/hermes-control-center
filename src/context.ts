@@ -119,6 +119,7 @@ export function createContext(
   const store = Store.open(controlCenterDatabasePath(env));
   const workflows = new WorkflowsRepo(store);
   const workflowRuns = new WorkflowRunsRepo(store);
+  workflowRuns.reconcileInterrupted();
   const workflowRunner = new WorkflowRunner({ dashboard, workflows, runs: workflowRuns });
   const settings = new SettingsRepo(store);
   const metrics = new MetricsRepo(store);

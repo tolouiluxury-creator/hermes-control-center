@@ -29,7 +29,8 @@ export async function registerWorkflowRunRoutes(
       return reply.code(201).send({ runId });
     } catch (error) {
       if (error instanceof WorkflowRunnerValidationError) {
-        return reply.code(409).send({ error: 'cannot_start_run', message: error.message });
+        const status = error.code === 'workflow_not_found' ? 404 : 409;
+        return reply.code(status).send({ error: error.code, message: error.message });
       }
       throw error;
     }

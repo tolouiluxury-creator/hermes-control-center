@@ -13,7 +13,15 @@ export interface CronExecutor {
 }
 
 export class WorkflowRunnerValidationError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    readonly code:
+      | 'workflow_not_found'
+      | 'workflow_disabled'
+      | 'no_steps'
+      | 'prompt_unsupported'
+      | 'run_in_progress',
+  ) {
     super(message);
     this.name = 'WorkflowRunnerValidationError';
   }
@@ -57,32 +65,47 @@ export class WorkflowRunner {
   start(workflowId: string): { runId: string } {
     const { workflows, runs } = this.options;
     const workflow = workflows.get(workflowId);
-    if (!workflow) throw new WorkflowRunnerValidationError('Workflow not found.');
-    if (!workflow.enabled) throw new WorkflowRunnerValidationError('Workflow is disabled.');
+    if (!workflow)
+      throw new WorkflowRunnerValidationError('Workflow not found.', 'workflow_not_found');
+    if (!workflow.enabled) {
+      throw new WorkflowRunnerValidationError('Workflow is disabled.', 'workflow_disabled');
+    }
     if (workflow.steps.length === 0) {
-      throw new WorkflowRunnerValidationError('Workflow has no steps.');
+      throw new WorkflowRunnerValidationError('Workflow has no steps.', 'no_steps');
     }
     if (workflow.steps.some((step) => step.kind === 'prompt')) {
       throw new WorkflowRunnerValidationError(
         'Prompt steps aren’t runnable yet — support is coming in a future update.',
+        'prompt_unsupported',
       );
     }
     if (this.active.has(workflowId) || runs.hasActiveRun(workflowId)) {
-      throw new WorkflowRunnerValidationError('This workflow already has a run in progress.');
+      throw new WorkflowRunnerValidationError(
+        'This workflow already has a run in progress.',
+        'run_in_progress',
+      );
     }
 
     const run = runs.create(workflowId, 'manual', 'chain', workflow.steps);
     this.active.add(workflowId);
-    void this.execute(workflowId, run.id).finally(() => this.active.delete(workflowId));
+    void this.execute(workflowId, run.id)
+      .catch((error: unknown) =>
+        log.warn(`workflow run ${run.id} crashed: ${describeError(error)}`),
+      )
+      .finally(() => this.active.delete(workflowId));
     return { runId: run.id };
   }
 
   private async execute(workflowId: string, runId: string): Promise<void> {
-    const { runs } = this.options;
+    const { runs, workflows } = this.options;
     const run = runs.get(runId);
     if (!run) return;
 
     for (const step of run.steps) {
+      if (!workflows.get(workflowId)) {
+        log.debug(`workflow run ${runId}: workflow ${workflowId} was deleted mid-run, stopping`);
+        return;
+      }
       runs.updateStep(runId, step.id, { status: 'running', startedAt: Date.now() });
       const result = await this.runStep(step);
       runs.updateStep(runId, step.id, {
@@ -102,8 +125,18 @@ export class WorkflowRunner {
   }
 
   private async runStep(step: WorkflowRunStep): Promise<StepResult> {
-    if (step.kind === 'note') return { status: 'succeeded', output: '', error: null };
-    return this.runCronStep(step);
+    switch (step.kind) {
+      case 'note':
+        return { status: 'succeeded', output: '', error: null };
+      case 'cron':
+        return this.runCronStep(step);
+      case 'prompt':
+        return {
+          status: 'failed',
+          output: '',
+          error: 'Prompt steps aren’t runnable yet — support is coming in a future update.',
+        };
+    }
   }
 
   private async runCronStep(step: WorkflowRunStep): Promise<StepResult> {
@@ -170,7 +203,7 @@ export class WorkflowRunner {
     return {
       status: 'failed',
       output: '',
-      error: 'No result from Hermes after 5 minutes — check the Aufgaben page directly.',
+      error: `No result from Hermes after ${Math.round(pollTimeoutMs / 60_000)} minutes — check the cron job's status directly.`,
     };
   }
 }

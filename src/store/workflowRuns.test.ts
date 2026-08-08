@@ -90,4 +90,33 @@ describe('WorkflowRunsRepo', () => {
     expect(remaining).toHaveLength(5);
     expect(remaining.map((r) => r.startedAt)).toEqual([1006, 1005, 1004, 1003, 1002]);
   });
+
+  it('marks interrupted runs and their open steps as failed', () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'cron', ref: 'job-1', label: 'A' }],
+    });
+    const run = runs.create(workflow.id, 'manual', 'chain', workflow.steps);
+    runs.updateStep(run.id, run.steps[0]!.id, { status: 'running', startedAt: 1 });
+
+    runs.reconcileInterrupted(500);
+
+    const reloaded = runs.get(run.id);
+    expect(reloaded?.status).toBe('failed');
+    expect(reloaded?.finishedAt).toBe(500);
+    expect(reloaded?.steps[0]).toMatchObject({
+      status: 'failed',
+      error: 'Interrupted by a server restart.',
+    });
+  });
+
+  it('leaves already-terminal runs untouched', () => {
+    const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
+    const run = runs.create(workflow.id, 'manual', 'chain', workflow.steps);
+    runs.finish(run.id, 'completed', 100);
+
+    runs.reconcileInterrupted(999);
+
+    expect(runs.get(run.id)).toMatchObject({ status: 'completed', finishedAt: 100 });
+  });
 });
