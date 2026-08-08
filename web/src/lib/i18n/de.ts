@@ -55,7 +55,7 @@ export const de: Dict = {
   'page.chats.desc':
     'Unterhalte dich direkt mit deinem Agenten — über das laufende Dashboard, ohne zusätzliche Server.',
   'page.workflows.desc':
-    'Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Sie werden hier angelegt; das automatische Ausführen der Kette kommt mit dem Hermes-API-Server.',
+    'Benannte, geordnete Abläufe aus Prompts und geplanten Jobs. Ketten aus geplanten Jobs und Notizen lassen sich jetzt manuell über die ▶-Schaltfläche ausführen; Prompt-Schritte und automatische Läufe folgen in einem späteren Update.',
   'page.aufgaben.desc':
     'Geplante Jobs, die dein Agent von selbst ausführt. Pausieren, Auslösen und Löschen greifen in den laufenden Betrieb ein.',
   'page.wissen.desc':
@@ -626,7 +626,7 @@ export const de: Dict = {
   'workflows.deleted': 'Workflow gelöscht',
   'workflows.empty.title': 'Noch keine Workflows',
   'workflows.empty.desc':
-    'Verkette Prompts und geplante Jobs zu einem benannten, sortierten Ablauf. Anlegen geht jetzt; das Durchlaufen braucht den Hermes-API-Server.',
+    'Verkette Prompts und geplante Jobs zu einem benannten, sortierten Ablauf. Ketten aus geplanten Jobs und Notizen lassen sich sofort manuell ausführen; Prompt-Schritte folgen in einem späteren Update.',
   'workflows.stepIncomplete': 'Jeder Schritt braucht einen Prompt, einen Job oder einen Notiztext.',
   'workflows.deleteConfirm': '„{name}“ löschen? Der Ablauf ist dann weg.',
   'workflows.enableAria': '{name} aktivieren',
@@ -647,6 +647,9 @@ export const de: Dict = {
   'workflowRuns.stepStatus.succeeded': 'Fertig',
   'workflowRuns.stepStatus.failed': 'Fehlgeschlagen',
   'workflowRuns.stepStatus.skipped': 'Übersprungen',
+  'workflowRuns.reason.disabled': 'Dieser Workflow ist deaktiviert.',
+  'workflowRuns.reason.noSteps': 'Dieser Workflow hat keine Schritte.',
+  'workflowRuns.reason.alreadyActive': 'Dieser Workflow hat bereits einen laufenden Durchlauf.',
 
   // Integrations
   'integrations.summary': '{enabled} aktiv · {configured} eingerichtet · {total} möglich',

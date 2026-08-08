@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  ApiError,
   createWorkflow,
   deleteWorkflow,
   getCronJobs,
@@ -290,8 +291,24 @@ export function WorkflowsPage() {
   const startRun = useMutation({
     mutationFn: (workflowId: string) => startWorkflowRun(workflowId, 'chain'),
     onSuccess: (_data, workflowId) => setActiveRunWorkflowId(workflowId),
-    onError: (e: Error) =>
-      toast.push({ tone: 'error', title: t('workflowRuns.startFailed'), description: e.message }),
+    onError: (e: Error) => {
+      const code = e instanceof ApiError ? e.code : undefined;
+      const key =
+        code === 'workflow_disabled'
+          ? 'workflowRuns.reason.disabled'
+          : code === 'no_steps'
+            ? 'workflowRuns.reason.noSteps'
+            : code === 'prompt_unsupported'
+              ? 'workflowRuns.promptNotSupported'
+              : code === 'run_in_progress'
+                ? 'workflowRuns.reason.alreadyActive'
+                : null;
+      toast.push({
+        tone: 'error',
+        title: t('workflowRuns.startFailed'),
+        description: key ? t(key) : e.message,
+      });
+    },
   });
 
   const currentRun = activeRunWorkflowId ? runsQuery.data?.runs[0] : undefined;

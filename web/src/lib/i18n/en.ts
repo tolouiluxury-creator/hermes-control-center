@@ -54,7 +54,7 @@ export const en: Dict = {
   // Page descriptions
   'page.chats.desc': 'Talk to your agent directly — over the running dashboard, no extra server.',
   'page.workflows.desc':
-    'Named, ordered sequences of prompts and scheduled jobs. Created here; automatic execution of the chain arrives with the Hermes API server.',
+    'Named, ordered sequences of prompts and scheduled jobs. Chains of scheduled jobs and notes can now be run manually with the ▶ button; prompt steps and automatic runs are still coming.',
   'page.aufgaben.desc':
     'Scheduled jobs your agent runs on its own. Pausing, triggering and deleting affect live operation.',
   'page.wissen.desc':
@@ -620,7 +620,7 @@ export const en: Dict = {
   'workflows.deleted': 'Workflow deleted',
   'workflows.empty.title': 'No workflows yet',
   'workflows.empty.desc':
-    'Chain prompts and scheduled jobs into a named, ordered sequence. Building one works now; running the chain needs the Hermes API server.',
+    'Chain prompts and scheduled jobs into a named, ordered sequence. Chains of scheduled jobs and notes can be run manually right away; prompt steps are still coming in a later update.',
   'workflows.stepIncomplete': 'Every step needs a prompt, a job or a note text.',
   'workflows.deleteConfirm': 'Delete “{name}”? The sequence is then gone.',
   'workflows.enableAria': 'enable {name}',
@@ -641,6 +641,9 @@ export const en: Dict = {
   'workflowRuns.stepStatus.succeeded': 'Done',
   'workflowRuns.stepStatus.failed': 'Failed',
   'workflowRuns.stepStatus.skipped': 'Skipped',
+  'workflowRuns.reason.disabled': 'This workflow is disabled.',
+  'workflowRuns.reason.noSteps': 'This workflow has no steps.',
+  'workflowRuns.reason.alreadyActive': 'This workflow already has a run in progress.',
 
   // Integrations
   'integrations.summary': '{enabled} active · {configured} set up · {total} possible',
