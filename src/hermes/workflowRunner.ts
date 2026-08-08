@@ -203,7 +203,7 @@ export class WorkflowRunner {
     return {
       status: 'failed',
       output: '',
-      error: `No result from Hermes after ${Math.round(pollTimeoutMs / 60_000)} minutes — check the cron job's status directly.`,
+      error: `No result from Hermes after ${Math.max(1, Math.round(pollTimeoutMs / 60_000))} minutes — check the cron job’s status directly.`,
     };
   }
 }

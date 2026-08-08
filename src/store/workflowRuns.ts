@@ -172,8 +172,10 @@ export class WorkflowRunsRepo {
 
   /**
    * Marks any run left `running`/`waiting_for_user` from before a restart as
-   * `failed`, and every one of its still-open steps too — a run that can no
-   * longer be observed must not be shown as still in progress. Call once at
+   * `failed` — a run that can no longer be observed must not be shown as
+   * still in progress. Its still-open steps are updated too: one that was
+   * actively `running` becomes `failed`, while one that was still `pending`
+   * (never got a chance to start) becomes `skipped` instead. Call once at
    * startup, before the scheduler or any request can start a new run.
    */
   reconcileInterrupted(now = Date.now()): void {
@@ -182,16 +184,25 @@ export class WorkflowRunsRepo {
     );
     for (const row of stale) {
       const detail = JSON.parse(row.detail) as RunDetail;
-      detail.steps = detail.steps.map((step) =>
-        step.status === 'pending' || step.status === 'running'
-          ? {
-              ...step,
-              status: 'failed' as const,
-              error: 'Interrupted by a server restart.',
-              finishedAt: now,
-            }
-          : step,
-      );
+      detail.steps = detail.steps.map((step) => {
+        if (step.status === 'running') {
+          return {
+            ...step,
+            status: 'failed' as const,
+            error: 'Interrupted by a server restart.',
+            finishedAt: now,
+          };
+        }
+        if (step.status === 'pending') {
+          return {
+            ...step,
+            status: 'skipped' as const,
+            error: null,
+            finishedAt: now,
+          };
+        }
+        return step;
+      });
       this.store.run(
         'UPDATE workflow_runs SET status = ?, finished_at = ?, detail = ? WHERE id = ?',
         'failed',

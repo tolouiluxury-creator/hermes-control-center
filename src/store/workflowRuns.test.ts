@@ -91,13 +91,18 @@ describe('WorkflowRunsRepo', () => {
     expect(remaining.map((r) => r.startedAt)).toEqual([1006, 1005, 1004, 1003, 1002]);
   });
 
-  it('marks interrupted runs and their open steps as failed', () => {
+  it('marks a running step as failed and a never-started step as skipped', () => {
     const workflow = workflows.create({
       name: 'W',
-      steps: [{ kind: 'cron', ref: 'job-1', label: 'A' }],
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'A' },
+        { kind: 'cron', ref: 'job-2', label: 'B' },
+      ],
     });
     const run = runs.create(workflow.id, 'manual', 'chain', workflow.steps);
     runs.updateStep(run.id, run.steps[0]!.id, { status: 'running', startedAt: 1 });
+    // run.steps[1] is left at its default 'pending' status — it never got a
+    // chance to start before the server restarted.
 
     runs.reconcileInterrupted(500);
 
@@ -107,6 +112,10 @@ describe('WorkflowRunsRepo', () => {
     expect(reloaded?.steps[0]).toMatchObject({
       status: 'failed',
       error: 'Interrupted by a server restart.',
+    });
+    expect(reloaded?.steps[1]).toMatchObject({
+      status: 'skipped',
+      error: null,
     });
   });
 

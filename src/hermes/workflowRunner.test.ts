@@ -202,5 +202,11 @@ describe('WorkflowRunner', () => {
 
     expect(cronAction).toHaveBeenCalledTimes(1);
     expect(cronAction).toHaveBeenCalledWith('job-1', 'trigger', 'sunrise');
+    // Without the mid-run deletion guard, execute() would proceed to step 2 and
+    // call cronJobs() a third time (to read job-2's "before" state), which would
+    // return undefined (only two resolved values are queued above) and throw
+    // inside .find() — failing step 2 without ever reaching cronAction, but only
+    // this call-count assertion actually catches that the guard ran.
+    expect(cronJobsMock).toHaveBeenCalledTimes(2);
   });
 });
