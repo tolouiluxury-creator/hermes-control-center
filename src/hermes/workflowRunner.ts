@@ -7,6 +7,7 @@ import type {
   WorkflowRunStepStatus,
 } from '../store/workflowRuns.js';
 import type { CronJobSummary } from './inventory.js';
+import type { GatewayEvent, GatewayEventListener } from './gateway.js';
 
 /**
  * The slice of `DashboardClient` the runner needs, kept structural so tests
@@ -17,15 +18,28 @@ export interface CronExecutor {
   cronAction(id: string, action: 'trigger', profile: string): Promise<unknown>;
 }
 
+/**
+ * The slice of `GatewayClient` a prompt step needs — same chat mechanism the
+ * Chat page uses (`session.create` + `prompt.submit` + the shared event bus),
+ * kept structural so tests never construct a real WebSocket-backed client.
+ */
+export interface PromptExecutor {
+  request<T = Record<string, unknown>>(
+    method: string,
+    params?: Record<string, unknown>,
+  ): Promise<T>;
+  onEvent(listener: GatewayEventListener): () => void;
+}
+
+/** The slice of `PromptsRepo` a prompt step needs to resolve its body. */
+export interface PromptLookup {
+  get(id: string): { body: string; variables: string[] } | null;
+}
+
 export class WorkflowRunnerValidationError extends Error {
   constructor(
     message: string,
-    readonly code:
-      | 'workflow_not_found'
-      | 'workflow_disabled'
-      | 'no_steps'
-      | 'prompt_unsupported'
-      | 'run_in_progress',
+    readonly code: 'workflow_not_found' | 'workflow_disabled' | 'no_steps' | 'run_in_progress',
   ) {
     super(message);
     this.name = 'WorkflowRunnerValidationError';
@@ -34,11 +48,14 @@ export class WorkflowRunnerValidationError extends Error {
 
 export interface WorkflowRunnerOptions {
   dashboard: CronExecutor;
+  gateway: PromptExecutor;
+  prompts: PromptLookup;
   workflows: WorkflowsRepo;
   runs: WorkflowRunsRepo;
-  /** Overridable for tests; production defaults poll every 3s for up to 5 minutes. */
   pollIntervalMs?: number;
   pollTimeoutMs?: number;
+  /** Overridable for tests; production default gives a full agent turn room to work. */
+  promptTimeoutMs?: number;
 }
 
 interface StepResult {
@@ -65,6 +82,7 @@ export type WorkflowRunnerEventListener = (event: WorkflowRunnerEvent) => void;
 
 const DEFAULT_POLL_INTERVAL_MS = 3_000;
 const DEFAULT_POLL_TIMEOUT_MS = 5 * 60_000;
+const DEFAULT_PROMPT_TIMEOUT_MS = 10 * 60_000;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -72,10 +90,12 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Executes a workflow's steps in order, persisting progress into
- * `workflow_runs` as it goes. This stage only knows `cron` and `note` steps —
- * `prompt` steps are rejected up front until the chat-streaming stage lands.
- * A run always stops at the first failed step: the manual continue/stop
- * dialog and the unattended/scheduled path are later stages, not this one.
+ * `workflow_runs` as it goes. Knows `note`, `cron`, and `prompt` steps —
+ * a `prompt` step sends its library prompt's body through a fresh Hermes
+ * chat session, the same `session.create` + `prompt.submit` mechanism the
+ * Chat page uses, and accumulates the streamed reply. A run always stops at
+ * the first failed step: the manual continue/stop dialog and the
+ * unattended/scheduled path are later stages, not this one.
  */
 export class WorkflowRunner {
   private readonly active = new Set<string>();
@@ -103,12 +123,6 @@ export class WorkflowRunner {
     }
     if (workflow.steps.length === 0) {
       throw new WorkflowRunnerValidationError('Workflow has no steps.', 'no_steps');
-    }
-    if (workflow.steps.some((step) => step.kind === 'prompt')) {
-      throw new WorkflowRunnerValidationError(
-        'Prompt steps aren’t runnable yet — support is coming in a future update.',
-        'prompt_unsupported',
-      );
     }
     if (this.active.has(workflowId) || runs.hasActiveRun(workflowId)) {
       throw new WorkflowRunnerValidationError(
@@ -140,7 +154,7 @@ export class WorkflowRunner {
       }
       runs.updateStep(runId, step.id, { status: 'running', startedAt: Date.now() });
       this.publish({ type: 'step.started', runId, stepId: step.id });
-      const result = await this.runStep(step);
+      const result = await this.runStep(runId, step);
       runs.updateStep(runId, step.id, {
         status: result.status,
         output: result.output,
@@ -167,18 +181,14 @@ export class WorkflowRunner {
     runs.prune(workflowId);
   }
 
-  private async runStep(step: WorkflowRunStep): Promise<StepResult> {
+  private async runStep(runId: string, step: WorkflowRunStep): Promise<StepResult> {
     switch (step.kind) {
       case 'note':
         return { status: 'succeeded', output: '', error: null };
       case 'cron':
         return this.runCronStep(step);
       case 'prompt':
-        return {
-          status: 'failed',
-          output: '',
-          error: 'Prompt steps aren’t runnable yet — support is coming in a future update.',
-        };
+        return this.runPromptStep(runId, step);
     }
   }
 
@@ -248,5 +258,97 @@ export class WorkflowRunner {
       output: '',
       error: `No result from Hermes after ${Math.max(1, Math.round(pollTimeoutMs / 60_000))} minutes — check the cron job’s status directly.`,
     };
+  }
+
+  private async runPromptStep(runId: string, step: WorkflowRunStep): Promise<StepResult> {
+    const { gateway, prompts } = this.options;
+    const promptTimeoutMs = this.options.promptTimeoutMs ?? DEFAULT_PROMPT_TIMEOUT_MS;
+
+    if (!step.ref) {
+      return { status: 'failed', output: '', error: 'No prompt is selected for this step.' };
+    }
+    const prompt = prompts.get(step.ref);
+    if (!prompt) {
+      return {
+        status: 'failed',
+        output: '',
+        error: 'This prompt no longer exists in the library.',
+      };
+    }
+    if (prompt.variables.length > 0) {
+      return {
+        status: 'failed',
+        output: '',
+        error: `This prompt has placeholders (${prompt.variables.map((v) => `{{${v}}}`).join(', ')}) that can't be filled in automatically in a workflow.`,
+      };
+    }
+
+    let sessionId: string | undefined;
+    try {
+      const created = await gateway.request<{ session_id?: string }>('session.create', {
+        cols: 80,
+        source: 'workflow',
+      });
+      sessionId = created.session_id;
+    } catch (error) {
+      return { status: 'failed', output: '', error: describeError(error) };
+    }
+    if (!sessionId) {
+      return { status: 'failed', output: '', error: 'Hermes did not return a session id.' };
+    }
+
+    return new Promise<StepResult>((resolve) => {
+      let output = '';
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        unsubscribe();
+        resolve({
+          status: 'failed',
+          output,
+          error: `No response from Hermes after ${Math.max(1, Math.round(promptTimeoutMs / 60_000))} minutes.`,
+        });
+      }, promptTimeoutMs);
+
+      const unsubscribe = gateway.onEvent((event: GatewayEvent) => {
+        if (settled || event.sessionId !== sessionId) return;
+        if (event.type === 'message.delta') {
+          const text = event.payload?.text;
+          if (typeof text === 'string' && text) {
+            output += text;
+            this.publish({ type: 'step.delta', runId, stepId: step.id, text });
+          }
+          return;
+        }
+        if (event.type === 'message.complete') {
+          settled = true;
+          clearTimeout(timer);
+          unsubscribe();
+          const payload = event.payload ?? {};
+          const status = payload.status;
+          const finalText = typeof payload.text === 'string' ? payload.text : output;
+          if (status === 'error' || status === 'interrupted') {
+            const error =
+              typeof payload.error === 'string' && payload.error
+                ? payload.error
+                : finalText || 'Hermes reported an error without a message.';
+            resolve({ status: 'failed', output, error });
+            return;
+          }
+          resolve({ status: 'succeeded', output: finalText, error: null });
+        }
+      });
+
+      gateway
+        .request('prompt.submit', { session_id: sessionId, text: prompt.body })
+        .catch((error: unknown) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          unsubscribe();
+          resolve({ status: 'failed', output, error: describeError(error) });
+        });
+    });
   }
 }

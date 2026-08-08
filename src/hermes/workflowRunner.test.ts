@@ -3,10 +3,13 @@ import { Store } from '../store/db.js';
 import { WorkflowsRepo } from '../store/workflows.js';
 import { WorkflowRunsRepo } from '../store/workflowRuns.js';
 import type { CronJobSummary } from './inventory.js';
+import type { GatewayEvent, GatewayEventListener } from './gateway.js';
 import {
   WorkflowRunner,
   WorkflowRunnerValidationError,
   type CronExecutor,
+  type PromptExecutor,
+  type PromptLookup,
   type WorkflowRunnerEvent,
 } from './workflowRunner.js';
 
@@ -33,6 +36,26 @@ async function flushPolls(times: number): Promise<void> {
   }
 }
 
+function makeGateway(): PromptExecutor & {
+  emit: (event: GatewayEvent) => void;
+  request: ReturnType<typeof vi.fn>;
+} {
+  const listeners = new Set<GatewayEventListener>();
+  return {
+    request: vi.fn(),
+    onEvent: (listener: GatewayEventListener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    emit: (event: GatewayEvent) => {
+      for (const listener of listeners) listener(event);
+    },
+  };
+}
+
+/** Stub for tests that don't exercise prompt steps at all. */
+const noPrompts: PromptLookup = { get: () => null };
+
 let store: Store;
 let workflows: WorkflowsRepo;
 let runs: WorkflowRunsRepo;
@@ -50,21 +73,16 @@ afterEach(() => {
 });
 
 describe('WorkflowRunner', () => {
-  it('rejects a workflow with a prompt step', () => {
-    const workflow = workflows.create({
-      name: 'W',
-      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
-    });
-    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
-    const runner = new WorkflowRunner({ dashboard, workflows, runs });
-
-    expect(() => runner.start(workflow.id)).toThrow(WorkflowRunnerValidationError);
-  });
-
   it('rejects starting a second run while one is active', async () => {
     const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
     const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
-    const runner = new WorkflowRunner({ dashboard, workflows, runs });
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
 
     runner.start(workflow.id);
 
@@ -97,6 +115,8 @@ describe('WorkflowRunner', () => {
       dashboard,
       workflows,
       runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
       pollIntervalMs: 10,
       pollTimeoutMs: 1000,
     });
@@ -127,6 +147,8 @@ describe('WorkflowRunner', () => {
       dashboard,
       workflows,
       runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
       pollIntervalMs: 10,
       pollTimeoutMs: 1000,
     });
@@ -154,6 +176,8 @@ describe('WorkflowRunner', () => {
       dashboard,
       workflows,
       runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
       pollIntervalMs: 10,
       pollTimeoutMs: 25,
     });
@@ -194,6 +218,8 @@ describe('WorkflowRunner', () => {
       dashboard,
       workflows,
       runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
       pollIntervalMs: 10,
       pollTimeoutMs: 1000,
     });
@@ -219,7 +245,13 @@ describe('WorkflowRunner events', () => {
       steps: [{ kind: 'note', label: 'A' }],
     });
     const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
-    const runner = new WorkflowRunner({ dashboard, workflows, runs });
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
 
     const events: WorkflowRunnerEvent[] = [];
     const unsubscribe = runner.onEvent((event) => events.push(event));
@@ -240,7 +272,13 @@ describe('WorkflowRunner events', () => {
   it('stops publishing to an unsubscribed listener', async () => {
     const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
     const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
-    const runner = new WorkflowRunner({ dashboard, workflows, runs });
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
 
     const events: WorkflowRunnerEvent[] = [];
     const unsubscribe = runner.onEvent((event) => events.push(event));
@@ -250,5 +288,159 @@ describe('WorkflowRunner events', () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(events).toEqual([]);
+  });
+});
+
+describe('WorkflowRunner prompt steps', () => {
+  it('rejects a prompt step whose prompt has unresolved variables', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Has vars' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    const prompts: PromptLookup = { get: () => ({ body: 'Hello {{name}}', variables: ['name'] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('failed');
+    expect(run?.steps[0]?.error).toMatch(/placeholder/i);
+    expect(gateway.request).not.toHaveBeenCalled();
+  });
+
+  it('rejects a prompt step whose prompt no longer exists', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'missing', label: 'Gone' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    const prompts: PromptLookup = { get: () => null };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(runs.get(runId)?.steps[0]).toMatchObject({
+      status: 'failed',
+      error: expect.stringMatching(/no longer exists/i),
+    });
+  });
+
+  it('runs a prompt step: creates a session, submits the body, accumulates deltas, succeeds on message.complete', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) => {
+      if (method === 'session.create') return Promise.resolve({ session_id: 'live-1' });
+      if (method === 'prompt.submit') return Promise.resolve({ ok: true });
+      throw new Error(`unexpected method ${method}`);
+    });
+    const prompts: PromptLookup = { get: () => ({ body: 'Summarize the week', variables: [] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+    gateway.emit({ type: 'message.delta', sessionId: 'live-1', payload: { text: 'Hello ' } });
+    gateway.emit({ type: 'message.delta', sessionId: 'live-1', payload: { text: 'world' } });
+    gateway.emit({
+      type: 'message.complete',
+      sessionId: 'live-1',
+      payload: { text: 'Hello world', status: 'complete' },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('completed');
+    expect(run?.steps[0]).toMatchObject({ status: 'succeeded', output: 'Hello world' });
+    expect(gateway.request).toHaveBeenCalledWith('session.create', {
+      cols: 80,
+      source: 'workflow',
+    });
+    expect(gateway.request).toHaveBeenCalledWith('prompt.submit', {
+      session_id: 'live-1',
+      text: 'Summarize the week',
+    });
+  });
+
+  it('fails a prompt step when message.complete reports an error status', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) =>
+      method === 'session.create'
+        ? Promise.resolve({ session_id: 'live-1' })
+        : Promise.resolve({ ok: true }),
+    );
+    const prompts: PromptLookup = { get: () => ({ body: 'Do a thing', variables: [] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+    gateway.emit({
+      type: 'message.complete',
+      sessionId: 'live-1',
+      payload: { text: 'Error: model unavailable', status: 'error', error: 'model unavailable' },
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(runs.get(runId)?.steps[0]).toMatchObject({
+      status: 'failed',
+      error: 'model unavailable',
+    });
+  });
+
+  it('ignores gateway events for a different session id', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) =>
+      Promise.resolve(method === 'session.create' ? { session_id: 'live-1' } : { ok: true }),
+    );
+    const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+    gateway.emit({
+      type: 'message.delta',
+      sessionId: 'someone-elses-session',
+      payload: { text: 'noise' },
+    });
+    // Still running: proves the foreign-session delta was ignored, not appended.
+    const runId = runs.listByWorkflow(workflow.id)[0]!.id;
+    expect(runs.get(runId)?.steps[0]?.output).toBe('');
+  });
+
+  it('fails a prompt step if no session id comes back from session.create', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockResolvedValue({});
+    const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(runs.get(runId)?.steps[0]).toMatchObject({
+      status: 'failed',
+      error: expect.stringMatching(/session/i),
+    });
   });
 });
