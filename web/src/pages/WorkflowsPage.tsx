@@ -5,6 +5,7 @@ import {
   ArrowUp,
   Check,
   ListChecks,
+  Loader2,
   Pencil,
   Play,
   Plus,
@@ -496,7 +497,14 @@ export function WorkflowsPage() {
 
               {activeRunWorkflowId === workflow.id && currentRun && (
                 <div className="mt-3 rounded-xl border border-[var(--color-hairline)] p-3">
-                  <p className="text-xs font-medium">
+                  <p className="flex items-center gap-1.5 text-xs font-medium">
+                    {currentRun.status === 'running' && (
+                      <Loader2
+                        size={12}
+                        className="animate-spin text-[var(--color-accent)]"
+                        aria-hidden
+                      />
+                    )}
                     {t('workflowRuns.statusLabel', {
                       status: t(`workflowRuns.status.${currentRun.status}`),
                     })}
@@ -504,10 +512,24 @@ export function WorkflowsPage() {
                   <ol className="mt-2 space-y-1">
                     {currentRun.steps.map((step) => (
                       <li key={step.id} className="text-xs">
-                        <span className="text-[var(--color-ink-muted)]">
-                          {t(`workflowRuns.stepStatus.${step.status}`)}
-                        </span>{' '}
-                        {step.label}
+                        <div className="flex items-center gap-1.5">
+                          {step.status === 'running' && (
+                            <Loader2
+                              size={11}
+                              className="animate-spin text-[var(--color-accent)]"
+                              aria-hidden
+                            />
+                          )}
+                          <span className="text-[var(--color-ink-muted)]">
+                            {t(`workflowRuns.stepStatus.${step.status}`)}
+                          </span>
+                          <span>{step.label}</span>
+                        </div>
+                        {step.status === 'running' && step.kind === 'cron' && (
+                          <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                            {t('workflowRuns.cronRunningHint')}
+                          </p>
+                        )}
                         {step.status === 'failed' && step.error && (
                           <p className="mt-0.5 text-[var(--color-danger)]">{step.error}</p>
                         )}

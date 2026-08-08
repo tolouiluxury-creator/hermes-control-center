@@ -641,6 +641,7 @@ export const en: Dict = {
   'workflowRuns.stepStatus.succeeded': 'Done',
   'workflowRuns.stepStatus.failed': 'Failed',
   'workflowRuns.stepStatus.skipped': 'Skipped',
+  'workflowRuns.cronRunningHint': 'This can take a few minutes — it updates automatically.',
   'workflowRuns.reason.disabled': 'This workflow is disabled.',
   'workflowRuns.reason.noSteps': 'This workflow has no steps.',
   'workflowRuns.reason.alreadyActive': 'This workflow already has a run in progress.',
