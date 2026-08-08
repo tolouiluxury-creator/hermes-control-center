@@ -7,6 +7,7 @@ import {
   WorkflowRunner,
   WorkflowRunnerValidationError,
   type CronExecutor,
+  type WorkflowRunnerEvent,
 } from './workflowRunner.js';
 
 function cronJob(overrides: Partial<CronJobSummary> = {}): CronJobSummary {
@@ -208,5 +209,46 @@ describe('WorkflowRunner', () => {
     // inside .find() — failing step 2 without ever reaching cronAction, but only
     // this call-count assertion actually catches that the guard ran.
     expect(cronJobsMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('WorkflowRunner events', () => {
+  it('publishes run/step lifecycle events in order for a successful chain', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'note', label: 'A' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs });
+
+    const events: WorkflowRunnerEvent[] = [];
+    const unsubscribe = runner.onEvent((event) => events.push(event));
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+    unsubscribe();
+
+    const stepId = workflow.steps[0]!.id;
+    expect(events).toEqual([
+      { type: 'run.started', runId, workflowId: workflow.id },
+      { type: 'step.started', runId, stepId },
+      { type: 'step.finished', runId, stepId, status: 'succeeded', output: '', error: null },
+      { type: 'run.finished', runId, status: 'completed' },
+    ]);
+  });
+
+  it('stops publishing to an unsubscribed listener', async () => {
+    const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs });
+
+    const events: WorkflowRunnerEvent[] = [];
+    const unsubscribe = runner.onEvent((event) => events.push(event));
+    unsubscribe();
+
+    runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(events).toEqual([]);
   });
 });

@@ -1,6 +1,11 @@
 import { describeError, log } from '../log.js';
 import type { WorkflowsRepo } from '../store/workflows.js';
-import type { WorkflowRunsRepo, WorkflowRunStep } from '../store/workflowRuns.js';
+import type {
+  WorkflowRunsRepo,
+  WorkflowRunStep,
+  WorkflowRunStatus,
+  WorkflowRunStepStatus,
+} from '../store/workflowRuns.js';
 import type { CronJobSummary } from './inventory.js';
 
 /**
@@ -42,6 +47,22 @@ interface StepResult {
   error: string | null;
 }
 
+export type WorkflowRunnerEvent =
+  | { type: 'run.started'; runId: string; workflowId: string }
+  | { type: 'step.started'; runId: string; stepId: string }
+  | { type: 'step.delta'; runId: string; stepId: string; text: string }
+  | {
+      type: 'step.finished';
+      runId: string;
+      stepId: string;
+      status: WorkflowRunStepStatus;
+      output: string;
+      error: string | null;
+    }
+  | { type: 'run.finished'; runId: string; status: WorkflowRunStatus };
+
+export type WorkflowRunnerEventListener = (event: WorkflowRunnerEvent) => void;
+
 const DEFAULT_POLL_INTERVAL_MS = 3_000;
 const DEFAULT_POLL_TIMEOUT_MS = 5 * 60_000;
 
@@ -58,8 +79,18 @@ function sleep(ms: number): Promise<void> {
  */
 export class WorkflowRunner {
   private readonly active = new Set<string>();
+  private readonly listeners = new Set<WorkflowRunnerEventListener>();
 
   constructor(private readonly options: WorkflowRunnerOptions) {}
+
+  onEvent(listener: WorkflowRunnerEventListener): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  private publish(event: WorkflowRunnerEvent): void {
+    for (const listener of this.listeners) listener(event);
+  }
 
   /** Validates synchronously, then runs the chain in the background. */
   start(workflowId: string): { runId: string } {
@@ -87,6 +118,7 @@ export class WorkflowRunner {
     }
 
     const run = runs.create(workflowId, 'manual', 'chain', workflow.steps);
+    this.publish({ type: 'run.started', runId: run.id, workflowId });
     this.active.add(workflowId);
     void this.execute(workflowId, run.id)
       .catch((error: unknown) =>
@@ -107,6 +139,7 @@ export class WorkflowRunner {
         return;
       }
       runs.updateStep(runId, step.id, { status: 'running', startedAt: Date.now() });
+      this.publish({ type: 'step.started', runId, stepId: step.id });
       const result = await this.runStep(step);
       runs.updateStep(runId, step.id, {
         status: result.status,
@@ -114,13 +147,23 @@ export class WorkflowRunner {
         error: result.error,
         finishedAt: Date.now(),
       });
+      this.publish({
+        type: 'step.finished',
+        runId,
+        stepId: step.id,
+        status: result.status,
+        output: result.output,
+        error: result.error,
+      });
       if (result.status === 'failed') {
         runs.finish(runId, 'failed');
+        this.publish({ type: 'run.finished', runId, status: 'failed' });
         runs.prune(workflowId);
         return;
       }
     }
     runs.finish(runId, 'completed');
+    this.publish({ type: 'run.finished', runId, status: 'completed' });
     runs.prune(workflowId);
   }
 
