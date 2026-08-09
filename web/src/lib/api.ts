@@ -31,6 +31,7 @@ import type {
   Workflow,
   WorkflowInput,
   WorkflowRun,
+  WorkflowRunMode,
 } from './hermesTypes';
 
 /**
@@ -527,7 +528,7 @@ export const setWorkflowEnabled = (id: string, enabled: boolean): Promise<{ work
 export const deleteWorkflow = (id: string): Promise<{ ok: boolean }> =>
   apiRequest<{ ok: boolean }>(`/workflows/${encodeURIComponent(id)}`, { method: 'DELETE' });
 
-export const startWorkflowRun = (id: string, mode: 'chain'): Promise<{ runId: string }> =>
+export const startWorkflowRun = (id: string, mode: WorkflowRunMode): Promise<{ runId: string }> =>
   apiRequest<{ runId: string }>(`/workflows/${encodeURIComponent(id)}/runs`, {
     method: 'POST',
     ...jsonBody({ mode }),
@@ -535,6 +536,20 @@ export const startWorkflowRun = (id: string, mode: 'chain'): Promise<{ runId: st
 
 export const getWorkflowRuns = (id: string): Promise<{ runs: WorkflowRun[] }> =>
   apiRequest<{ runs: WorkflowRun[] }>(`/workflows/${encodeURIComponent(id)}/runs`);
+
+export const advanceWorkflowRun = (runId: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/workflows/runs/${encodeURIComponent(runId)}/advance`, {
+    method: 'POST',
+  });
+
+export const resolveWorkflowRun = (
+  runId: string,
+  action: 'continue' | 'stop',
+): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/workflows/runs/${encodeURIComponent(runId)}/resolve`, {
+    method: 'POST',
+    ...jsonBody({ action }),
+  });
 
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');

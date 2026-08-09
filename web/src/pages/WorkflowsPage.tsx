@@ -9,12 +9,14 @@ import {
   Pencil,
   Play,
   Plus,
+  StepForward,
   StickyNote,
   Trash2,
   Workflow as WorkflowIcon,
   X,
 } from 'lucide-react';
 import {
+  advanceWorkflowRun,
   ApiError,
   createWorkflow,
   deleteWorkflow,
@@ -22,6 +24,7 @@ import {
   getPrompts,
   getWorkflows,
   queryKeys,
+  resolveWorkflowRun,
   setWorkflowEnabled,
   startWorkflowRun,
   updateWorkflow,
@@ -34,6 +37,7 @@ import { useI18n } from '@/lib/i18n';
 import type {
   Workflow,
   WorkflowInput,
+  WorkflowRunMode,
   WorkflowRunStatus,
   WorkflowRunStepStatus,
   WorkflowStepInput,
@@ -291,6 +295,19 @@ export function WorkflowsPage() {
   }
 
   const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
+  // The single source of truth the SSE handlers below read and write —
+  // synchronously, not through React's render/effect cycle. A ref synced via
+  // a `useEffect([liveRun])` lags behind bursts of same-tick SSE events (a
+  // fast run can fire run.started..run.finished before React ever gets to
+  // flush that effect), which silently dropped the completion toast on fast
+  // successful runs. `setLiveRun` below is only ever called with the
+  // already-computed next value, never a functional updater, so there's
+  // nothing left depending on render timing.
+  const liveRunRef = useRef<LiveRun | null>(null);
+  const applyLiveRun = (next: LiveRun | null): void => {
+    liveRunRef.current = next;
+    setLiveRun(next);
+  };
 
   const patchStep = (run: LiveRun, stepId: string, patch: Partial<LiveStep>): LiveRun => ({
     ...run,
@@ -305,16 +322,14 @@ export function WorkflowsPage() {
   const workflows = useMemo(() => data?.workflows ?? [], [data]);
 
   // The SSE subscription below only runs once on mount, so it reads
-  // workflows and liveRun through these refs rather than the closed-over
-  // state, which would otherwise always be the initial value.
+  // workflows through this ref rather than the closed-over array, which
+  // would otherwise always be the empty initial value. Workflow refetches
+  // aren't part of the same tight SSE-event timing liveRunRef guards
+  // against, so an effect-synced ref is fine here.
   const workflowsRef = useRef(workflows);
   useEffect(() => {
     workflowsRef.current = workflows;
   }, [workflows]);
-  const liveRunRef = useRef(liveRun);
-  useEffect(() => {
-    liveRunRef.current = liveRun;
-  }, [liveRun]);
 
   useEffect(() => {
     const source = new EventSource('/api/workflows/events');
@@ -337,7 +352,7 @@ export function WorkflowsPage() {
     // have missed them (liveRun was still null when they arrived).
     on<{ runId: string; workflowId: string }>('run.started', (data) => {
       const workflow = workflowsRef.current.find((w) => w.id === data.workflowId);
-      setLiveRun({
+      applyLiveRun({
         workflowId: data.workflowId,
         runId: data.runId,
         status: 'running',
@@ -349,60 +364,72 @@ export function WorkflowsPage() {
         ),
       });
     });
-    on<{ runId: string; stepId: string }>('step.started', (data) =>
-      setLiveRun((run) =>
-        run && run.runId === data.runId ? patchStep(run, data.stepId, { status: 'running' }) : run,
-      ),
-    );
-    on<{ runId: string; stepId: string; text: string }>('step.delta', (data) =>
-      setLiveRun((run) =>
-        run && run.runId === data.runId
-          ? patchStep(run, data.stepId, {
-              output: (run.steps[data.stepId]?.output ?? '') + data.text,
-            })
-          : run,
-      ),
-    );
+    on<{ runId: string; stepId: string }>('step.started', (data) => {
+      const run = liveRunRef.current;
+      if (run && run.runId === data.runId) {
+        applyLiveRun(patchStep(run, data.stepId, { status: 'running' }));
+      }
+    });
+    on<{ runId: string; stepId: string; text: string }>('step.delta', (data) => {
+      const run = liveRunRef.current;
+      if (run && run.runId === data.runId) {
+        applyLiveRun(
+          patchStep(run, data.stepId, {
+            output: (run.steps[data.stepId]?.output ?? '') + data.text,
+          }),
+        );
+      }
+    });
     on<{
       runId: string;
       stepId: string;
       status: WorkflowRunStepStatus;
       output: string;
       error: string | null;
-    }>('step.finished', (data) =>
-      setLiveRun((run) =>
-        run && run.runId === data.runId
-          ? patchStep(run, data.stepId, {
-              status: data.status,
-              output: data.output,
-              error: data.error,
-            })
-          : run,
-      ),
-    );
+    }>('step.finished', (data) => {
+      const run = liveRunRef.current;
+      if (run && run.runId === data.runId) {
+        applyLiveRun(
+          patchStep(run, data.stepId, {
+            status: data.status,
+            output: data.output,
+            error: data.error,
+          }),
+        );
+      }
+    });
+    on<{ runId: string }>('run.waiting_for_user', (data) => {
+      const run = liveRunRef.current;
+      if (run && run.runId === data.runId) {
+        applyLiveRun({ ...run, status: 'waiting_for_user' });
+      }
+    });
     on<{ runId: string; status: WorkflowRunStatus }>('run.finished', (data) => {
-      // Read from the ref, not a state updater — this needs to be a side
-      // effect (a toast), and updater functions must stay pure (StrictMode
-      // double-invokes them in dev to catch exactly this).
-      const current = liveRunRef.current;
-      if (current && current.runId === data.runId) {
-        const name = workflowsRef.current.find((w) => w.id === current.workflowId)?.name ?? '';
+      const run = liveRunRef.current;
+      if (run && run.runId === data.runId) {
+        const name = workflowsRef.current.find((w) => w.id === run.workflowId)?.name ?? '';
         if (data.status === 'completed') {
-          toast.push({ tone: 'success', title: t('workflowRuns.runFinished', { name }) });
+          const anyStepFailed = Object.values(run.steps).some((s) => s.status === 'failed');
+          toast.push(
+            anyStepFailed
+              ? { tone: 'warning', title: t('workflowRuns.runFinishedWithErrors', { name }) }
+              : { tone: 'success', title: t('workflowRuns.runFinished', { name }) },
+          );
         } else if (data.status === 'failed') {
           toast.push({ tone: 'error', title: t('workflowRuns.runFailed', { name }) });
+        } else if (data.status === 'stopped') {
+          toast.push({ tone: 'info', title: t('workflowRuns.runStopped', { name }) });
         }
+        applyLiveRun({ ...run, status: data.status });
       }
-      setLiveRun((run) =>
-        run && run.runId === data.runId ? { ...run, status: data.status } : run,
-      );
     });
 
     return () => source.close();
   }, []);
 
   const startRun = useMutation({
-    mutationFn: (workflowId: string) => startWorkflowRun(workflowId, 'chain'),
+    mutationFn: ({ workflowId, mode }: { workflowId: string; mode: WorkflowRunMode }) =>
+      startWorkflowRun(workflowId, mode),
     // No onSuccess seeding here — the run.started SSE handler above does it,
     // and does so earlier than this callback can ever fire.
     onError: (e: Error) => {
@@ -421,6 +448,19 @@ export function WorkflowsPage() {
         description: key ? t(key) : e.message,
       });
     },
+  });
+
+  const advanceRun = useMutation({
+    mutationFn: (runId: string) => advanceWorkflowRun(runId),
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: t('workflowRuns.actionFailed'), description: e.message }),
+  });
+
+  const resolveRun = useMutation({
+    mutationFn: ({ runId, action }: { runId: string; action: 'continue' | 'stop' }) =>
+      resolveWorkflowRun(runId, action),
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: t('workflowRuns.actionFailed'), description: e.message }),
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows });
@@ -539,20 +579,45 @@ export function WorkflowsPage() {
                 </div>
 
                 <div className="flex shrink-0 gap-1">
-                  <button
-                    type="button"
-                    onClick={() => startRun.mutate(workflow.id)}
-                    disabled={
-                      !workflow.enabled ||
-                      workflow.steps.length === 0 ||
-                      (startRun.isPending && startRun.variables === workflow.id) ||
-                      (liveRun?.workflowId === workflow.id && liveRun.status === 'running')
-                    }
-                    className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
-                    aria-label={t('workflowRuns.runChainAria', { name: workflow.name })}
-                  >
-                    <Play size={14} aria-hidden />
-                  </button>
+                  {(() => {
+                    const workflowRunActive =
+                      liveRun?.workflowId === workflow.id &&
+                      (liveRun.status === 'running' || liveRun.status === 'waiting_for_user');
+                    const runDisabled =
+                      !workflow.enabled || workflow.steps.length === 0 || workflowRunActive;
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startRun.mutate({ workflowId: workflow.id, mode: 'chain' })
+                          }
+                          disabled={
+                            runDisabled ||
+                            (startRun.isPending && startRun.variables?.workflowId === workflow.id)
+                          }
+                          className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
+                          aria-label={t('workflowRuns.runChainAria', { name: workflow.name })}
+                        >
+                          <Play size={14} aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startRun.mutate({ workflowId: workflow.id, mode: 'single_step' })
+                          }
+                          disabled={
+                            runDisabled ||
+                            (startRun.isPending && startRun.variables?.workflowId === workflow.id)
+                          }
+                          className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
+                          aria-label={t('workflowRuns.runStepByStepAria', { name: workflow.name })}
+                        >
+                          <StepForward size={14} aria-hidden />
+                        </button>
+                      </>
+                    );
+                  })()}
                   <button
                     type="button"
                     onClick={() => setEditing(workflow)}
@@ -640,6 +705,50 @@ export function WorkflowsPage() {
                       );
                     })}
                   </ol>
+
+                  {liveRun.status === 'waiting_for_user' &&
+                    (() => {
+                      const hasFailedStep = Object.values(liveRun.steps).some(
+                        (s) => s.status === 'failed',
+                      );
+                      const busy = advanceRun.isPending || resolveRun.isPending;
+                      return hasFailedStep ? (
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              resolveRun.mutate({ runId: liveRun.runId, action: 'continue' })
+                            }
+                            className="rounded-lg border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] disabled:opacity-40"
+                          >
+                            {t('workflowRuns.continue')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() =>
+                              resolveRun.mutate({ runId: liveRun.runId, action: 'stop' })
+                            }
+                            className="rounded-lg border border-[var(--color-danger)]/40 px-3 py-1 text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-40"
+                          >
+                            {t('workflowRuns.stop')}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => advanceRun.mutate(liveRun.runId)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+                          >
+                            <StepForward size={12} aria-hidden />
+                            {t('workflowRuns.nextStep')}
+                          </button>
+                        </div>
+                      );
+                    })()}
                 </div>
               )}
 

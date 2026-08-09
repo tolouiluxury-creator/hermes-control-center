@@ -84,9 +84,9 @@ describe('WorkflowRunner', () => {
       prompts: noPrompts,
     });
 
-    runner.start(workflow.id);
+    runner.start(workflow.id, 'chain');
 
-    expect(() => runner.start(workflow.id)).toThrow(WorkflowRunnerValidationError);
+    expect(() => runner.start(workflow.id, 'chain')).toThrow(WorkflowRunnerValidationError);
 
     // Let the first run's background note-step execution settle before the
     // store closes in afterEach — it only needs microtasks, no real timers.
@@ -121,7 +121,7 @@ describe('WorkflowRunner', () => {
       pollTimeoutMs: 1000,
     });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await flushPolls(5);
 
     const run = runs.get(runId);
@@ -131,7 +131,7 @@ describe('WorkflowRunner', () => {
     expect(cronAction).toHaveBeenCalledWith('job-1', 'trigger', 'sunrise');
   });
 
-  it('fails the run and skips nothing further when the cron job errors', async () => {
+  it('pauses waiting for a decision, with the failed step recorded, when the cron job errors', async () => {
     const workflow = workflows.create({
       name: 'W',
       steps: [{ kind: 'cron', ref: 'job-1', label: 'Report' }],
@@ -153,15 +153,15 @@ describe('WorkflowRunner', () => {
       pollTimeoutMs: 1000,
     });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await flushPolls(5);
 
     const run = runs.get(runId);
-    expect(run?.status).toBe('failed');
+    expect(run?.status).toBe('waiting_for_user');
     expect(run?.steps[0]).toMatchObject({ status: 'failed', error: 'ImportError: boom' });
   });
 
-  it('fails the step when no result arrives before the poll timeout', async () => {
+  it('pauses waiting for a decision when no result arrives before the poll timeout', async () => {
     const workflow = workflows.create({
       name: 'W',
       steps: [{ kind: 'cron', ref: 'job-1', label: 'Report' }],
@@ -182,11 +182,11 @@ describe('WorkflowRunner', () => {
       pollTimeoutMs: 25,
     });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await flushPolls(10);
 
     const run = runs.get(runId);
-    expect(run?.status).toBe('failed');
+    expect(run?.status).toBe('waiting_for_user');
     expect(run?.steps[0]?.error).toMatch(/no result/i);
   });
 
@@ -224,7 +224,7 @@ describe('WorkflowRunner', () => {
       pollTimeoutMs: 1000,
     });
 
-    runner.start(workflow.id);
+    runner.start(workflow.id, 'chain');
     await flushPolls(5);
 
     expect(cronAction).toHaveBeenCalledTimes(1);
@@ -235,6 +235,170 @@ describe('WorkflowRunner', () => {
     // inside .find() — failing step 2 without ever reaching cronAction, but only
     // this call-count assertion actually catches that the guard ran.
     expect(cronJobsMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('WorkflowRunner pause/resume', () => {
+  it('stops the run and skips the remaining steps when resumed with "stop" after a failure', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'Report' },
+        { kind: 'note', label: 'Never reached' },
+      ],
+    });
+    const before = cronJob({ lastRun: 1000 });
+    const after = cronJob({ lastRun: 2000, lastStatus: 'error', lastError: 'boom' });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValueOnce([before]).mockResolvedValueOnce([after]),
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain');
+    await flushPolls(5);
+    expect(runs.get(runId)?.status).toBe('waiting_for_user');
+
+    runner.resume(runId, 'stop');
+    await vi.advanceTimersByTimeAsync(0);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('stopped');
+    expect(run?.steps[0]).toMatchObject({ status: 'failed' });
+    expect(run?.steps[1]).toMatchObject({ status: 'skipped', error: null });
+  });
+
+  it('moves on to the next step and can still complete when resumed with "continue" past a failure', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'Report' },
+        { kind: 'note', label: 'Runs anyway' },
+      ],
+    });
+    const before = cronJob({ lastRun: 1000 });
+    const after = cronJob({ lastRun: 2000, lastStatus: 'error', lastError: 'boom' });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValueOnce([before]).mockResolvedValueOnce([after]),
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain');
+    await flushPolls(5);
+
+    runner.resume(runId, 'continue');
+    await vi.advanceTimersByTimeAsync(0);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('completed');
+    expect(run?.steps[0]).toMatchObject({ status: 'failed' });
+    expect(run?.steps[1]).toMatchObject({ status: 'succeeded' });
+  });
+
+  it('single-step mode pauses after a successful step too, and advancing runs the next one', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'note', label: 'First' },
+        { kind: 'note', label: 'Second' },
+      ],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
+
+    const { runId } = runner.start(workflow.id, 'single_step');
+    await vi.advanceTimersByTimeAsync(0);
+
+    let run = runs.get(runId);
+    expect(run?.status).toBe('waiting_for_user');
+    expect(run?.steps[0]).toMatchObject({ status: 'succeeded' });
+    expect(run?.steps[1]).toMatchObject({ status: 'pending' });
+
+    runner.resume(runId, 'continue');
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The second step is also the last one — no further pause after it.
+    run = runs.get(runId);
+    expect(run?.status).toBe('completed');
+    expect(run?.steps[1]).toMatchObject({ status: 'succeeded' });
+  });
+
+  it('rejects resuming a run that is not currently waiting', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'cron', ref: 'job-1', label: 'Report' }],
+    });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValue([cronJob({ lastRun: 1000 })]),
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    // Right after start() returns, execute() is mid-flight (polling) but not
+    // yet paused — status is still 'running', not 'waiting_for_user'.
+    const { runId } = runner.start(workflow.id, 'chain');
+    expect(() => runner.resume(runId, 'continue')).toThrow(WorkflowRunnerValidationError);
+    try {
+      runner.resume(runId, 'continue');
+      expect.unreachable('resume() should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(WorkflowRunnerValidationError);
+      expect((error as WorkflowRunnerValidationError).code).toBe('run_not_waiting');
+    }
+
+    // Let the still in-flight execute() settle its pending microtasks before
+    // the store closes in afterEach — it stays polling forever in fake time,
+    // which is fine, nothing here awaits it to finish.
+    await vi.advanceTimersByTimeAsync(0);
+  });
+
+  it('rejects resuming an unknown run', () => {
+    const runner = new WorkflowRunner({
+      dashboard: { cronJobs: vi.fn(), cronAction: vi.fn() },
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
+
+    try {
+      runner.resume('does-not-exist', 'continue');
+      expect.unreachable('resume() should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(WorkflowRunnerValidationError);
+      expect((error as WorkflowRunnerValidationError).code).toBe('run_not_found');
+    }
   });
 });
 
@@ -256,7 +420,7 @@ describe('WorkflowRunner events', () => {
     const events: WorkflowRunnerEvent[] = [];
     const unsubscribe = runner.onEvent((event) => events.push(event));
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
     unsubscribe();
 
@@ -284,7 +448,7 @@ describe('WorkflowRunner events', () => {
     const unsubscribe = runner.onEvent((event) => events.push(event));
     unsubscribe();
 
-    runner.start(workflow.id);
+    runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
 
     expect(events).toEqual([]);
@@ -307,7 +471,7 @@ describe('WorkflowRunner events', () => {
     const events: WorkflowRunnerEvent[] = [];
     runner.onEvent((event) => events.push(event));
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
 
     // The well-behaved listener still saw every event, and the run itself
@@ -334,11 +498,11 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => ({ body: 'Hello {{name}}', variables: ['name'] }) };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
 
     const run = runs.get(runId);
-    expect(run?.status).toBe('failed');
+    expect(run?.status).toBe('waiting_for_user');
     expect(run?.steps[0]?.error).toMatch(/placeholder/i);
     expect(gateway.request).not.toHaveBeenCalled();
   });
@@ -353,7 +517,7 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => null };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
 
     expect(runs.get(runId)?.steps[0]).toMatchObject({
@@ -377,7 +541,7 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => ({ body: 'Summarize the week', variables: [] }) };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
     gateway.emit({ type: 'message.delta', sessionId: 'live-1', payload: { text: 'Hello ' } });
     gateway.emit({ type: 'message.delta', sessionId: 'live-1', payload: { text: 'world' } });
@@ -416,7 +580,7 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => ({ body: 'Do a thing', variables: [] }) };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
     gateway.emit({
       type: 'message.complete',
@@ -444,7 +608,7 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    runner.start(workflow.id);
+    runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
     gateway.emit({
       type: 'message.delta',
@@ -478,7 +642,7 @@ describe('WorkflowRunner prompt steps', () => {
       promptTimeoutMs: 50,
     });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(50);
 
@@ -500,7 +664,7 @@ describe('WorkflowRunner prompt steps', () => {
     const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
     const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
 
-    const { runId } = runner.start(workflow.id);
+    const { runId } = runner.start(workflow.id, 'chain');
     await vi.advanceTimersByTimeAsync(0);
 
     expect(runs.get(runId)?.steps[0]).toMatchObject({

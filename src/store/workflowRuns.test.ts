@@ -67,6 +67,15 @@ describe('WorkflowRunsRepo', () => {
     expect(runs.get(run.id)).toMatchObject({ status: 'completed', finishedAt: 999 });
   });
 
+  it('marks a run as waiting without touching finishedAt', () => {
+    const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
+    const run = runs.create(workflow.id, 'manual', 'chain', workflow.steps);
+
+    runs.setWaiting(run.id);
+
+    expect(runs.get(run.id)).toMatchObject({ status: 'waiting_for_user', finishedAt: null });
+  });
+
   it('reports an active run only while running or waiting_for_user', () => {
     const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
     const run = runs.create(workflow.id, 'manual', 'chain', workflow.steps);

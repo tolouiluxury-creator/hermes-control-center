@@ -147,6 +147,11 @@ export class WorkflowRunsRepo {
     );
   }
 
+  /** Marks a run as paused, waiting for a continue/stop/advance decision. Not terminal — leaves `finishedAt` untouched. */
+  setWaiting(runId: string): void {
+    this.store.run('UPDATE workflow_runs SET status = ? WHERE id = ?', 'waiting_for_user', runId);
+  }
+
   finish(runId: string, status: WorkflowRunStatus, now = Date.now()): void {
     this.store.run(
       'UPDATE workflow_runs SET status = ?, finished_at = ? WHERE id = ?',

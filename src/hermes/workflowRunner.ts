@@ -2,6 +2,7 @@ import { describeError, log } from '../log.js';
 import type { WorkflowsRepo } from '../store/workflows.js';
 import type {
   WorkflowRunsRepo,
+  WorkflowRunMode,
   WorkflowRunStep,
   WorkflowRunStatus,
   WorkflowRunStepStatus,
@@ -39,12 +40,21 @@ export interface PromptLookup {
 export class WorkflowRunnerValidationError extends Error {
   constructor(
     message: string,
-    readonly code: 'workflow_not_found' | 'workflow_disabled' | 'no_steps' | 'run_in_progress',
+    readonly code:
+      | 'workflow_not_found'
+      | 'workflow_disabled'
+      | 'no_steps'
+      | 'run_in_progress'
+      | 'run_not_found'
+      | 'run_not_waiting',
   ) {
     super(message);
     this.name = 'WorkflowRunnerValidationError';
   }
 }
+
+/** What a paused run's next `resume()` call decides. */
+export type WorkflowRunResumeAction = 'continue' | 'stop';
 
 export interface WorkflowRunnerOptions {
   dashboard: CronExecutor;
@@ -76,6 +86,7 @@ export type WorkflowRunnerEvent =
       output: string;
       error: string | null;
     }
+  | { type: 'run.waiting_for_user'; runId: string }
   | { type: 'run.finished'; runId: string; status: WorkflowRunStatus };
 
 export type WorkflowRunnerEventListener = (event: WorkflowRunnerEvent) => void;
@@ -100,6 +111,8 @@ function sleep(ms: number): Promise<void> {
 export class WorkflowRunner {
   private readonly active = new Set<string>();
   private readonly listeners = new Set<WorkflowRunnerEventListener>();
+  /** One resolver per currently-paused run, fed by `resume()`. */
+  private readonly pausedResumers = new Map<string, (action: WorkflowRunResumeAction) => void>();
 
   constructor(private readonly options: WorkflowRunnerOptions) {}
 
@@ -119,7 +132,7 @@ export class WorkflowRunner {
   }
 
   /** Validates synchronously, then runs the chain in the background. */
-  start(workflowId: string): { runId: string } {
+  start(workflowId: string, mode: WorkflowRunMode): { runId: string } {
     const { workflows, runs } = this.options;
     const workflow = workflows.get(workflowId);
     if (!workflow)
@@ -137,15 +150,63 @@ export class WorkflowRunner {
       );
     }
 
-    const run = runs.create(workflowId, 'manual', 'chain', workflow.steps);
+    const run = runs.create(workflowId, 'manual', mode, workflow.steps);
     this.publish({ type: 'run.started', runId: run.id, workflowId });
     this.active.add(workflowId);
     void this.execute(workflowId, run.id)
       .catch((error: unknown) =>
         log.warn(`workflow run ${run.id} crashed: ${describeError(error)}`),
       )
-      .finally(() => this.active.delete(workflowId));
+      .finally(() => {
+        this.active.delete(workflowId);
+        this.pausedResumers.delete(run.id);
+      });
     return { runId: run.id };
+  }
+
+  /**
+   * Answers a paused run: `advance` and a `resolve` "continue" both mean the
+   * same thing to the runner (move on to the next step) — the two routes
+   * exist only because the frontend shows different UI for "nothing to
+   * decide, just go" (single-step mode after a success) versus "a step
+   * failed, pick continue or stop".
+   */
+  resume(runId: string, action: WorkflowRunResumeAction): void {
+    const resolve = this.pausedResumers.get(runId);
+    if (!resolve) {
+      if (!this.options.runs.get(runId)) {
+        throw new WorkflowRunnerValidationError('Run not found.', 'run_not_found');
+      }
+      throw new WorkflowRunnerValidationError(
+        'This run is not waiting for a decision.',
+        'run_not_waiting',
+      );
+    }
+    this.pausedResumers.delete(runId);
+    resolve(action);
+  }
+
+  private awaitResume(runId: string): Promise<WorkflowRunResumeAction> {
+    return new Promise((resolve) => {
+      this.pausedResumers.set(runId, resolve);
+    });
+  }
+
+  /** Marks every not-yet-started step from `fromIndex` on as `skipped`, e.g. after a manual stop. */
+  private skipRemaining(runId: string, steps: readonly WorkflowRunStep[], fromIndex: number): void {
+    const { runs } = this.options;
+    for (let i = fromIndex; i < steps.length; i++) {
+      const step = steps[i]!;
+      runs.updateStep(runId, step.id, { status: 'skipped', finishedAt: Date.now() });
+      this.publish({
+        type: 'step.finished',
+        runId,
+        stepId: step.id,
+        status: 'skipped',
+        output: '',
+        error: null,
+      });
+    }
   }
 
   private async execute(workflowId: string, runId: string): Promise<void> {
@@ -153,7 +214,8 @@ export class WorkflowRunner {
     const run = runs.get(runId);
     if (!run) return;
 
-    for (const step of run.steps) {
+    for (let i = 0; i < run.steps.length; i++) {
+      const step = run.steps[i]!;
       if (!workflows.get(workflowId)) {
         log.debug(`workflow run ${runId}: workflow ${workflowId} was deleted mid-run, stopping`);
         return;
@@ -175,11 +237,26 @@ export class WorkflowRunner {
         output: result.output,
         error: result.error,
       });
-      if (result.status === 'failed') {
-        runs.finish(runId, 'failed');
-        this.publish({ type: 'run.finished', runId, status: 'failed' });
-        runs.prune(workflowId);
-        return;
+
+      const isLastStep = i === run.steps.length - 1;
+      // A failed step always pauses for a continue/stop decision (manual runs
+      // only — the unattended/scheduled path stops immediately instead, a
+      // later stage). Single-step mode additionally pauses after every
+      // successful, non-final step, waiting for an explicit "next".
+      const needsPause = result.status === 'failed' || (run.mode === 'single_step' && !isLastStep);
+      if (needsPause) {
+        runs.setWaiting(runId);
+        this.publish({ type: 'run.waiting_for_user', runId });
+        const action = await this.awaitResume(runId);
+        if (action === 'stop') {
+          this.skipRemaining(runId, run.steps, i + 1);
+          runs.finish(runId, 'stopped');
+          this.publish({ type: 'run.finished', runId, status: 'stopped' });
+          runs.prune(workflowId);
+          return;
+        }
+        // 'continue': the loop naturally moves on to the next step, whether
+        // this pause was a failure being waved past or a single-step "next".
       }
     }
     runs.finish(runId, 'completed');
