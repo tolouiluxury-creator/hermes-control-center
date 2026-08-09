@@ -156,6 +156,20 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX todos_session_idx ON todos (session_id);
     `,
   },
+  {
+    version: 4,
+    name: 'add workflow scheduling',
+    // `schedule` mirrors what Aufgaben already teaches users (relative
+    // one-off, `every …` interval, cron expression, or an ISO-local
+    // timestamp — see `src/store/workflowSchedule.ts`). `next_run_at` caches
+    // the next due time so a restart doesn't need to recompute every
+    // workflow's schedule from scratch, and so the scheduler's query stays a
+    // plain indexed comparison instead of parsing `schedule` on every tick.
+    sql: `
+      ALTER TABLE workflows ADD COLUMN schedule TEXT;
+      ALTER TABLE workflows ADD COLUMN next_run_at INTEGER;
+    `,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(

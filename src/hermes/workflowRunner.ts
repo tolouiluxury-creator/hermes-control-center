@@ -6,6 +6,7 @@ import type {
   WorkflowRunStep,
   WorkflowRunStatus,
   WorkflowRunStepStatus,
+  WorkflowRunTrigger,
 } from '../store/workflowRuns.js';
 import type { CronJobSummary } from './inventory.js';
 import type { GatewayEvent, GatewayEventListener } from './gateway.js';
@@ -140,8 +141,16 @@ export class WorkflowRunner {
     }
   }
 
-  /** Validates synchronously, then runs the chain in the background. */
-  start(workflowId: string, mode: WorkflowRunMode): { runId: string } {
+  /**
+   * Validates synchronously, then runs the chain in the background.
+   * `trigger` defaults to `'manual'` — only `WorkflowScheduler` ever passes
+   * `'scheduled'`, which changes how a failed step is handled (§ `execute`).
+   */
+  start(
+    workflowId: string,
+    mode: WorkflowRunMode,
+    trigger: WorkflowRunTrigger = 'manual',
+  ): { runId: string } {
     const { workflows, runs } = this.options;
     const workflow = workflows.get(workflowId);
     if (!workflow)
@@ -159,7 +168,7 @@ export class WorkflowRunner {
       );
     }
 
-    const run = runs.create(workflowId, 'manual', mode, workflow.steps);
+    const run = runs.create(workflowId, trigger, mode, workflow.steps);
     this.publish({ type: 'run.started', runId: run.id, workflowId, mode });
     this.active.add(workflowId);
     void this.execute(workflowId, run.id)
@@ -241,6 +250,10 @@ export class WorkflowRunner {
     const { runs, workflows } = this.options;
     const run = runs.get(runId);
     if (!run) return;
+    // Captured once, before the loop: the mid-run "was it deleted" guard
+    // below already stops the run before any code past it can read this, so
+    // a later deletion can never leave it stale mid-use.
+    const workflowName = workflows.get(workflowId)?.name ?? run.workflowId;
 
     for (let i = 0; i < run.steps.length; i++) {
       const step = run.steps[i]!;
@@ -291,12 +304,26 @@ export class WorkflowRunner {
         error: result.error,
       });
 
+      if (result.status === 'failed' && run.trigger === 'scheduled') {
+        // Nobody is present to answer a pause on an unattended run — stop
+        // right here instead, and tell the agent to notify the user, the
+        // same way a failed cron job would surface.
+        this.sendTelegramFailureNotice(runId, workflowName, i, step.label, result.error);
+        runs.finish(runId, 'failed');
+        this.publish({ type: 'run.finished', runId, status: 'failed' });
+        runs.prune(workflowId);
+        return;
+      }
+
       const isLastStep = i === run.steps.length - 1;
-      // A failed step always pauses for a continue/stop decision (manual runs
-      // only — the unattended/scheduled path stops immediately instead, a
-      // later stage). Single-step mode additionally pauses after every
-      // successful, non-final step, waiting for an explicit "next".
-      const needsPause = result.status === 'failed' || (run.mode === 'single_step' && !isLastStep);
+      // A failed step always pauses for a continue/stop decision on a manual
+      // run. Single-step mode additionally pauses after every successful,
+      // non-final step, waiting for an explicit "next" — scheduled runs are
+      // always `chain` (§ WorkflowScheduler), so this branch is manual-only
+      // in practice, but the mode check stays explicit rather than assumed.
+      const needsPause =
+        run.trigger === 'manual' &&
+        (result.status === 'failed' || (run.mode === 'single_step' && !isLastStep));
       if (needsPause) {
         runs.setWaiting(runId);
         this.publish({ type: 'run.waiting_for_user', runId });
@@ -315,6 +342,40 @@ export class WorkflowRunner {
     runs.finish(runId, 'completed');
     this.publish({ type: 'run.finished', runId, status: 'completed' });
     runs.prune(workflowId);
+  }
+
+  /**
+   * A scheduled run has nobody watching it fail, so it tells the agent to
+   * notify the user itself — the same chat-session mechanism a prompt step
+   * uses, but a second, throwaway session, and not recorded as a step of the
+   * run. Fire-and-forget: the run's own lifecycle (finish/publish/prune)
+   * must not wait on whether this notice, or Hermes' own delivery of it,
+   * succeeds.
+   */
+  private sendTelegramFailureNotice(
+    runId: string,
+    workflowName: string,
+    stepIndex: number,
+    stepLabel: string,
+    error: string | null,
+  ): void {
+    const { gateway } = this.options;
+    void (async () => {
+      const created = await gateway.request<{ session_id?: string }>('session.create', {
+        cols: 80,
+        source: 'workflow',
+      });
+      const sessionId = created.session_id;
+      if (!sessionId) return;
+      const text =
+        `Scheduled workflow '${workflowName}' failed at step ${stepIndex + 1} (${stepLabel}): ` +
+        `${error ?? 'Unknown error.'} Please notify the user about this via Telegram.`;
+      await gateway.request('prompt.submit', { session_id: sessionId, text });
+    })().catch((err: unknown) =>
+      log.debug(
+        `workflow run ${runId}: failed to send the Telegram failure notice: ${describeError(err)}`,
+      ),
+    );
   }
 
   private async runStep(runId: string, step: WorkflowRunStep): Promise<StepResult> {

@@ -12,6 +12,7 @@ import { Store } from './store/db.js';
 import { WorkflowsRepo } from './store/workflows.js';
 import { WorkflowRunsRepo } from './store/workflowRuns.js';
 import { WorkflowRunner } from './hermes/workflowRunner.js';
+import { WorkflowScheduler } from './hermes/workflowScheduler.js';
 import { PromptsRepo } from './store/prompts.js';
 import { SettingsRepo } from './store/settings.js';
 import { MetricsRepo } from './store/metrics.js';
@@ -36,6 +37,7 @@ export interface AppContext {
   store: Store;
   workflowRuns: WorkflowRunsRepo;
   workflowRunner: WorkflowRunner;
+  workflowScheduler: WorkflowScheduler;
   settings: SettingsRepo;
   metrics: MetricsRepo;
   bus: EventBus;
@@ -129,6 +131,8 @@ export function createContext(
     workflows,
     runs: workflowRuns,
   });
+  const workflowScheduler = new WorkflowScheduler({ workflows, runner: workflowRunner });
+  workflowScheduler.start();
   const settings = new SettingsRepo(store);
   const metrics = new MetricsRepo(store);
   const bus = new EventBus();
@@ -161,6 +165,7 @@ export function createContext(
     store,
     workflowRuns,
     workflowRunner,
+    workflowScheduler,
     settings,
     metrics,
     bus,
@@ -201,6 +206,7 @@ export function createContext(
     },
 
     close() {
+      workflowScheduler.stop();
       gateway.close();
       store.close();
     },

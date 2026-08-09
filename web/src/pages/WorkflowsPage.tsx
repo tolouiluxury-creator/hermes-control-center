@@ -42,9 +42,12 @@ import {
 import { PageShell } from '@/components/PageShell';
 import { SkeletonText } from '@/components/Skeleton';
 import { ConfirmInline } from '@/components/ConfirmInline';
+import { ScheduleField } from '@/components/ScheduleField';
 import { useToast } from '@/components/Toast';
 import { useI18n } from '@/lib/i18n';
 import { formatDateTime, formatRelativeTime } from '@/lib/format';
+import { buildSchedule, parseSchedule } from '@/lib/schedule';
+import { describeCron } from '@/widgets/SchedulerWidget';
 import type {
   Workflow,
   WorkflowInput,
@@ -148,6 +151,10 @@ function WorkflowEditor({
   const [steps, setSteps] = useState<WorkflowStepInput[]>(
     workflow?.steps.map((s) => ({ kind: s.kind, ref: s.ref, label: s.label })) ?? [],
   );
+  const [scheduleEnabled, setScheduleEnabled] = useState(workflow?.schedule != null);
+  const [scheduleDraft, setScheduleDraft] = useState(() =>
+    parseSchedule(workflow?.schedule ?? null),
+  );
 
   const prompts = useQuery({ queryKey: queryKeys.prompts, queryFn: getPrompts, staleTime: 60_000 });
   const cron = useQuery({ queryKey: queryKeys.cron, queryFn: getCronJobs, staleTime: 60_000 });
@@ -179,7 +186,9 @@ function WorkflowEditor({
    * and getting three back with a success toast, so saving waits instead.
    */
   const incomplete = steps.some((step) => step.label.trim() === '');
-  const canSave = name.trim() !== '' && !incomplete && !saving;
+  const scheduleExpression = scheduleEnabled ? buildSchedule(scheduleDraft) : null;
+  const scheduleBlocksSave = scheduleEnabled && scheduleExpression === null;
+  const canSave = name.trim() !== '' && !incomplete && !scheduleBlocksSave && !saving;
 
   return (
     <form
@@ -187,7 +196,13 @@ function WorkflowEditor({
       onSubmit={(event) => {
         event.preventDefault();
         if (!canSave) return;
-        onSave({ name, description, enabled: workflow?.enabled ?? true, steps });
+        onSave({
+          name,
+          description,
+          enabled: workflow?.enabled ?? true,
+          steps,
+          schedule: scheduleEnabled ? scheduleExpression : null,
+        });
       }}
     >
       <div className="flex items-center justify-between gap-3">
@@ -225,6 +240,22 @@ function WorkflowEditor({
           className={`mt-1 ${field}`}
         />
       </label>
+
+      <div className="mt-4">
+        <label className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)]">
+          <input
+            type="checkbox"
+            checked={scheduleEnabled}
+            onChange={(e) => setScheduleEnabled(e.target.checked)}
+          />
+          {t('workflows.scheduleEnable')}
+        </label>
+        {scheduleEnabled && (
+          <div className="mt-2">
+            <ScheduleField draft={scheduleDraft} onChange={setScheduleDraft} />
+          </div>
+        )}
+      </div>
 
       <div className="mt-4">
         <p className="mb-2 text-xs text-[var(--color-ink-faint)]">{t('workflows.steps')}</p>
@@ -455,6 +486,22 @@ function WorkflowCard({
           <p className="text-sm font-medium">{workflow.name}</p>
           {workflow.description && (
             <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">{workflow.description}</p>
+          )}
+          {workflow.schedule && (
+            <p
+              className="mt-0.5 text-xs text-[var(--color-ink-faint)]"
+              title={
+                workflow.nextRunAt
+                  ? (formatDateTime(workflow.nextRunAt, lang) ?? undefined)
+                  : undefined
+              }
+            >
+              {describeCron(workflow.schedule, t) ?? workflow.schedule}
+              {' · '}
+              {workflow.nextRunAt
+                ? t('workflows.nextRun', { time: formatRelativeTime(workflow.nextRunAt, lang) })
+                : t('workflows.scheduleRetired')}
+            </p>
           )}
         </div>
 

@@ -790,3 +790,73 @@ describe('WorkflowRunner prompt steps', () => {
     });
   });
 });
+
+describe('WorkflowRunner scheduled trigger', () => {
+  it('fails immediately, without pausing, when a step fails on a scheduled run', async () => {
+    const workflow = workflows.create({
+      name: 'Weekly Report',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'Report' },
+        { kind: 'note', label: 'Never reached' },
+      ],
+    });
+    const before = cronJob({ lastRun: 1000 });
+    const after = cronJob({ lastRun: 2000, lastStatus: 'error', lastError: 'boom' });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValueOnce([before]).mockResolvedValueOnce([after]),
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) =>
+      Promise.resolve(method === 'session.create' ? { session_id: 'notice-1' } : { ok: true }),
+    );
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway,
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain', 'scheduled');
+    await flushPolls(5);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('failed');
+    expect(run?.steps[0]).toMatchObject({ status: 'failed', error: 'boom' });
+    expect(run?.steps[1]).toMatchObject({ status: 'pending' }); // never started, not even skipped
+
+    // The Telegram notice is fire-and-forget on its own session, separate
+    // from the failed run's own gateway traffic.
+    expect(gateway.request).toHaveBeenCalledWith('session.create', {
+      cols: 80,
+      source: 'workflow',
+    });
+    expect(gateway.request).toHaveBeenCalledWith(
+      'prompt.submit',
+      expect.objectContaining({
+        session_id: 'notice-1',
+        text: expect.stringContaining("Weekly Report' failed at step 1 (Report): boom"),
+      }),
+    );
+  });
+
+  it('completes normally when every step succeeds on a scheduled run', async () => {
+    const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain', 'scheduled');
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(runs.get(runId)?.status).toBe('completed');
+  });
+});

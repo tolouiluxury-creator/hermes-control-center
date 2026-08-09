@@ -47,6 +47,9 @@ const workflowInputSchema = z.object({
     )
     .max(100)
     .optional(),
+  // Validated for shape only — WorkflowsRepo is the source of truth for
+  // whether the text actually parses into a usable schedule.
+  schedule: z.string().trim().max(200).nullish(),
 });
 
 export async function registerWorkspaceRoutes(

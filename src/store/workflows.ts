@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Store } from './db.js';
+import { isRecurringSchedule, nextRunAt } from './workflowSchedule.js';
 
 /**
  * Workflows: named, ordered chains of steps that the control center stores on
@@ -11,7 +12,9 @@ import type { Store } from './db.js';
  * (`src/hermes/workflowRunner.ts`) runs cron/note steps straight from the
  * already-running dashboard, and prompt steps through the same chat session
  * mechanism the Chat page uses — no separate Hermes API server needed either
- * way. Only automatic/scheduled runs remain unsupported for now.
+ * way. A workflow can also carry a `schedule` (see `workflowSchedule.ts` for
+ * the accepted formats); `workflowScheduler.ts` polls `dueForSchedule` and
+ * starts those runs unattended.
  */
 
 export type WorkflowStepKind = 'prompt' | 'cron' | 'note';
@@ -30,6 +33,10 @@ export interface Workflow {
   description: string;
   enabled: boolean;
   steps: WorkflowStep[];
+  /** null means "manual only, no automatic runs". */
+  schedule: string | null;
+  /** Cached next due time; null when unscheduled or a one-off has already fired. */
+  nextRunAt: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -45,6 +52,7 @@ export interface WorkflowInput {
   description?: string;
   enabled?: boolean;
   steps?: WorkflowStepInput[];
+  schedule?: string | null;
 }
 
 interface WorkflowRow {
@@ -52,6 +60,8 @@ interface WorkflowRow {
   name: string;
   description: string;
   enabled: number;
+  schedule: string | null;
+  next_run_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -111,6 +121,8 @@ export class WorkflowsRepo {
       description: row.description,
       enabled: row.enabled !== 0,
       steps: this.steps(row.id),
+      schedule: row.schedule,
+      nextRunAt: row.next_run_at,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
@@ -143,15 +155,19 @@ export class WorkflowsRepo {
   create(input: WorkflowInput, now = Date.now()): Workflow {
     const id = randomUUID();
     const steps = normalizeSteps(input.steps);
+    const schedule = input.schedule?.trim() || null;
+    const scheduledAt = schedule ? nextRunAt(schedule, now) : null;
 
     this.store.transaction(() => {
       this.store.run(
-        `INSERT INTO workflows (id, name, description, enabled, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO workflows (id, name, description, enabled, schedule, next_run_at, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         id,
         input.name.trim(),
         input.description?.trim() ?? '',
         input.enabled === false ? 0 : 1,
+        schedule,
+        scheduledAt,
         now,
         now,
       );
@@ -162,15 +178,30 @@ export class WorkflowsRepo {
   }
 
   update(id: string, input: WorkflowInput, now = Date.now()): Workflow | null {
-    if (!this.get(id)) return null;
+    const existing = this.get(id);
+    if (!existing) return null;
     const steps = normalizeSteps(input.steps);
+    const schedule = input.schedule?.trim() || null;
+    // Only recompute the cached due time when the schedule text actually
+    // changed — an edit to, say, just the name must not silently push out a
+    // still-valid next_run_at.
+    const scheduledAt =
+      schedule === null
+        ? null
+        : schedule === existing.schedule
+          ? existing.nextRunAt
+          : nextRunAt(schedule, now);
 
     this.store.transaction(() => {
       this.store.run(
-        'UPDATE workflows SET name = ?, description = ?, enabled = ?, updated_at = ? WHERE id = ?',
+        `UPDATE workflows
+         SET name = ?, description = ?, enabled = ?, schedule = ?, next_run_at = ?, updated_at = ?
+         WHERE id = ?`,
         input.name.trim(),
         input.description?.trim() ?? '',
         input.enabled === false ? 0 : 1,
+        schedule,
+        scheduledAt,
         now,
         id,
       );
@@ -198,5 +229,45 @@ export class WorkflowsRepo {
     // workflow_steps and workflow_runs cascade on delete (see the schema).
     this.store.run('DELETE FROM workflows WHERE id = ?', id);
     return true;
+  }
+
+  /**
+   * Workflows the scheduler should start right now. Deliberately requires
+   * `next_run_at` to be a concrete, past-or-due timestamp — not `NULL` — so a
+   * one-off schedule that already fired (see `rescheduleAfterFire`) stays
+   * excluded instead of looking perpetually due.
+   */
+  dueForSchedule(now = Date.now()): Workflow[] {
+    return this.store
+      .all<WorkflowRow>(
+        `SELECT * FROM workflows
+         WHERE enabled = 1 AND schedule IS NOT NULL AND next_run_at IS NOT NULL AND next_run_at <= ?`,
+        now,
+      )
+      .map((row) => this.toWorkflow(row));
+  }
+
+  /**
+   * Called by the scheduler right after starting a due run. A recurring
+   * schedule (`every …` or a cron expression) gets its next occurrence;
+   * a one-off (relative duration or fixed timestamp) is retired entirely —
+   * both `schedule` and `next_run_at` clear, rather than leaving a stale
+   * expression sitting in the editor for something that already happened.
+   */
+  rescheduleAfterFire(id: string, now = Date.now()): void {
+    const row = this.store.get<{ schedule: string | null }>(
+      'SELECT schedule FROM workflows WHERE id = ?',
+      id,
+    );
+    const schedule = row?.schedule ?? null;
+    if (schedule && isRecurringSchedule(schedule)) {
+      this.store.run(
+        'UPDATE workflows SET next_run_at = ? WHERE id = ?',
+        nextRunAt(schedule, now),
+        id,
+      );
+      return;
+    }
+    this.store.run('UPDATE workflows SET schedule = NULL, next_run_at = NULL WHERE id = ?', id);
   }
 }

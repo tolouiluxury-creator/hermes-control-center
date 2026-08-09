@@ -249,6 +249,10 @@ export interface Workflow {
   description: string;
   enabled: boolean;
   steps: WorkflowStep[];
+  /** null means "manual only, no automatic runs". */
+  schedule: string | null;
+  /** Cached next due time; null when unscheduled or a one-off has already fired. */
+  nextRunAt: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -264,6 +268,7 @@ export interface WorkflowInput {
   description?: string;
   enabled?: boolean;
   steps?: WorkflowStepInput[];
+  schedule?: string | null;
 }
 
 export type WorkflowRunTrigger = 'manual' | 'scheduled';
