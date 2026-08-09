@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowDown,
@@ -297,6 +297,21 @@ export function WorkflowsPage() {
     steps: { ...run.steps, [stepId]: { ...run.steps[stepId]!, ...patch } },
   });
 
+  const { data, isPending, error } = useQuery({
+    queryKey: queryKeys.workflows,
+    queryFn: getWorkflows,
+    staleTime: 30_000,
+  });
+  const workflows = useMemo(() => data?.workflows ?? [], [data]);
+
+  // The SSE subscription below only runs once on mount, so it reads
+  // workflows through this ref rather than the closed-over `workflows`
+  // array, which would otherwise always be the empty initial value.
+  const workflowsRef = useRef(workflows);
+  useEffect(() => {
+    workflowsRef.current = workflows;
+  }, [workflows]);
+
   useEffect(() => {
     const source = new EventSource('/api/workflows/events');
 
@@ -310,6 +325,26 @@ export function WorkflowsPage() {
       });
     };
 
+    // Seeding here — on the SSE event itself — rather than in startRun's
+    // onSuccess is what lets a fast chain (e.g. a single prompt step) be
+    // followed live: run.started is always published before any step.*
+    // event for the same run, but the POST response can arrive after those
+    // step events already fired, in which case seeding on onSuccess would
+    // have missed them (liveRun was still null when they arrived).
+    on<{ runId: string; workflowId: string }>('run.started', (data) => {
+      const workflow = workflowsRef.current.find((w) => w.id === data.workflowId);
+      setLiveRun({
+        workflowId: data.workflowId,
+        runId: data.runId,
+        status: 'running',
+        steps: Object.fromEntries(
+          (workflow?.steps ?? []).map((s) => [
+            s.id,
+            { status: 'pending' as const, output: '', error: null },
+          ]),
+        ),
+      });
+    });
     on<{ runId: string; stepId: string }>('step.started', (data) =>
       setLiveRun((run) =>
         run && run.runId === data.runId ? patchStep(run, data.stepId, { status: 'running' }) : run,
@@ -352,20 +387,8 @@ export function WorkflowsPage() {
 
   const startRun = useMutation({
     mutationFn: (workflowId: string) => startWorkflowRun(workflowId, 'chain'),
-    onSuccess: (data, workflowId) => {
-      const workflow = workflows.find((w) => w.id === workflowId);
-      setLiveRun({
-        workflowId,
-        runId: data.runId,
-        status: 'running',
-        steps: Object.fromEntries(
-          (workflow?.steps ?? []).map((s) => [
-            s.id,
-            { status: 'pending' as const, output: '', error: null },
-          ]),
-        ),
-      });
-    },
+    // No onSuccess seeding here — the run.started SSE handler above does it,
+    // and does so earlier than this callback can ever fire.
     onError: (e: Error) => {
       const code = e instanceof ApiError ? e.code : undefined;
       const key =
@@ -382,12 +405,6 @@ export function WorkflowsPage() {
         description: key ? t(key) : e.message,
       });
     },
-  });
-
-  const { data, isPending, error } = useQuery({
-    queryKey: queryKeys.workflows,
-    queryFn: getWorkflows,
-    staleTime: 30_000,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows });
@@ -421,8 +438,6 @@ export function WorkflowsPage() {
     onError: (e: Error) =>
       toast.push({ tone: 'error', title: t('toast.deleteFailed'), description: e.message }),
   });
-
-  const workflows = data?.workflows ?? [];
 
   return (
     <PageShell

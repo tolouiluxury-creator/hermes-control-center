@@ -289,6 +289,38 @@ describe('WorkflowRunner events', () => {
 
     expect(events).toEqual([]);
   });
+
+  it('keeps delivering to other listeners, and keeps running the chain, when one listener throws', async () => {
+    const workflow = workflows.create({ name: 'W', steps: [{ kind: 'note', label: 'A' }] });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
+
+    runner.onEvent(() => {
+      throw new Error('boom: a broken SSE client write');
+    });
+    const events: WorkflowRunnerEvent[] = [];
+    runner.onEvent((event) => events.push(event));
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+
+    // The well-behaved listener still saw every event, and the run itself
+    // completed normally — a throwing listener must not take down publish()
+    // for the others or unwind out of execute()'s background chain.
+    expect(events.map((e) => e.type)).toEqual([
+      'run.started',
+      'step.started',
+      'step.finished',
+      'run.finished',
+    ]);
+    expect(runs.get(runId)?.status).toBe('completed');
+  });
 });
 
 describe('WorkflowRunner prompt steps', () => {
@@ -422,6 +454,39 @@ describe('WorkflowRunner prompt steps', () => {
     // Still running: proves the foreign-session delta was ignored, not appended.
     const runId = runs.listByWorkflow(workflow.id)[0]!.id;
     expect(runs.get(runId)?.steps[0]?.output).toBe('');
+  });
+
+  it('interrupts the Hermes session server-side when the prompt step times out', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) =>
+      // prompt.submit and session.interrupt both just need to resolve; only
+      // message.complete ever arrives, so the step times out.
+      Promise.resolve(method === 'session.create' ? { session_id: 'live-1' } : { ok: true }),
+    );
+    const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway,
+      prompts,
+      promptTimeoutMs: 50,
+    });
+
+    const { runId } = runner.start(workflow.id);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(50);
+
+    expect(runs.get(runId)?.steps[0]).toMatchObject({
+      status: 'failed',
+      error: expect.stringMatching(/no response/i),
+    });
+    expect(gateway.request).toHaveBeenCalledWith('session.interrupt', { session_id: 'live-1' });
   });
 
   it('fails a prompt step if no session id comes back from session.create', async () => {

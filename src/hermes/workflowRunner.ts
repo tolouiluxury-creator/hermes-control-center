@@ -109,7 +109,13 @@ export class WorkflowRunner {
   }
 
   private publish(event: WorkflowRunnerEvent): void {
-    for (const listener of this.listeners) listener(event);
+    for (const listener of this.listeners) {
+      try {
+        listener(event);
+      } catch (error) {
+        log.warn(`workflow event listener threw on ${event.type}: ${describeError(error)}`);
+      }
+    }
   }
 
   /** Validates synchronously, then runs the chain in the background. */
@@ -304,6 +310,17 @@ export class WorkflowRunner {
         if (settled) return;
         settled = true;
         unsubscribe();
+        // A dropped connection leaves the turn running server-side (same
+        // reasoning as /api/chat/interrupt) — without this, a timed-out step
+        // reports failure here while Hermes keeps working the same turn in
+        // the background.
+        gateway
+          .request('session.interrupt', { session_id: sessionId })
+          .catch((error: unknown) =>
+            log.warn(
+              `workflow run ${runId}: failed to interrupt timed-out session ${sessionId}: ${describeError(error)}`,
+            ),
+          );
         resolve({
           status: 'failed',
           output,
