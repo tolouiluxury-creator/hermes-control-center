@@ -58,7 +58,12 @@ browser.
   every conversation that has come through it, readable in full. You can carry a conversation on
   from here; the answer appears in the control center and never goes back out over Telegram, which
   the page says out loud rather than leaving you to find out.
-- **Workflows.** Ordered chains of prompts and scheduled jobs, in the control center's own database.
+- **Workflows.** Ordered chains of prompts, scheduled jobs and notes, in the control center's own
+  database — and actually runnable, not just organized. Run a chain in one go or step by step, watch
+  it live (streamed prompt replies, cron-step polling status), and decide continue-or-stop when a
+  step fails instead of it silently breaking. Give one a schedule and it runs unattended; a failed
+  unattended run has the agent notify you over Telegram rather than failing in silence. The last 5
+  runs of each workflow stay browsable, frozen, after the fact.
 - **A prompt library** — your own reusable prompts with `{{placeholders}}`, tags and a use counter.
   Hermes has no such thing, so this lives in the control center's database.
 - **Rule-based insights**, not a chatbot: deterministic checks over your metrics, logs and
