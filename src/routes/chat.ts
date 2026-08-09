@@ -33,6 +33,19 @@ const KEEPALIVE_MS = 20_000;
 const CHAT_SOURCE = 'desktop';
 
 /**
+ * Automation sources that must never show up as a "conversation" in the
+ * Chats list. Hermes' own `session.list` deliberately includes them (its
+ * resume picker treats every human-facing source as fair game, deny-listing
+ * only truly internal noise like `tool`/`kanban` — see
+ * `tui_gateway/methods_session.py`), and its own desktop app is the one that
+ * does this separation, keeping `source === 'cron'` sessions in their own
+ * sidebar section instead of the recents list. `workflow` is this app's own
+ * equivalent: every prompt step (manual or, later, scheduled) opens a session
+ * this same way, and none of those are something a user created by hand here.
+ */
+const AUTOMATION_SOURCES = new Set(['cron', 'workflow']);
+
+/**
  * How many stored rows are consulted to learn which model a conversation runs
  * on. The gateway's own `session.list` does not report the model, so the list is
  * joined against the dashboard's session table; anything older than this window
@@ -204,7 +217,7 @@ export async function registerChatRoutes(
       );
       return {
         sessions: normalizeSessions(result, models, pins, tokens)
-          .filter((s) => s.id !== '')
+          .filter((s) => s.id !== '' && !AUTOMATION_SOURCES.has(s.source.trim().toLowerCase()))
           // Pinned first; within each group the gateway's own recency order is
           // kept, so nothing else about the list shifts.
           .sort((a, b) => Number(b.pinned) - Number(a.pinned)),
