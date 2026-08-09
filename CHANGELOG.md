@@ -23,6 +23,10 @@ All notable changes to this project are documented here. The format follows
     there to make — it fails immediately and the agent is asked to notify you about it via Telegram.
 - **Settings moved to a sidebar + detail layout** (from seven stacked sections), URL-addressable via
   `?tab=`, with only the active section's data loading.
+- **A quiet update notice in the topbar.** Checks this repo's GitHub releases once an hour; when a
+  newer one exists, a chip appears with the update command
+  (`git pull && npm ci && npm run build`) ready to copy, plus a link to the release. Silent
+  otherwise, including on a failed check.
 
 ### Fixed
 
