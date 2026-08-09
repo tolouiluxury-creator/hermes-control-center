@@ -83,7 +83,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   // routes (which invalidate the keys a write touches).
   const cache = new ResponseCache(CACHE_TTL_MS);
 
-  await registerMetaRoutes(app, ctx.options);
+  await registerMetaRoutes(app, ctx.options, ctx.updateChecker);
   await registerStatusRoutes(app, ctx);
   await registerDashboardRoutes(app, ctx);
   await registerInventoryRoutes(app, ctx, cache);

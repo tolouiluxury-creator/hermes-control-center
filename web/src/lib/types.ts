@@ -111,3 +111,10 @@ export interface Meta {
   stateHome: string;
   startedAt: string;
 }
+
+export interface UpdateCheck {
+  currentVersion: string;
+  latestVersion: string | null;
+  updateAvailable: boolean;
+  releaseUrl: string | null;
+}

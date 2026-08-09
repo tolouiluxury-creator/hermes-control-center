@@ -1,4 +1,10 @@
-import type { Meta, MetricSeries, PublicHermesConnection, StatusSnapshot } from './types';
+import type {
+  Meta,
+  MetricSeries,
+  PublicHermesConnection,
+  StatusSnapshot,
+  UpdateCheck,
+} from './types';
 import type { DashboardLayout } from '@/widgets/types';
 import type {
   AnalyticsSummary,
@@ -78,6 +84,8 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export const getMeta = (): Promise<Meta> => apiRequest<Meta>('/meta');
+
+export const getUpdateCheck = (): Promise<UpdateCheck> => apiRequest<UpdateCheck>('/meta/update');
 
 export interface AuthStatus {
   required: boolean;
@@ -855,6 +863,7 @@ export const getMetricSeries = (metric: string, windowMs?: number): Promise<Metr
 /** Query keys used across the app, so invalidation stays consistent. */
 export const queryKeys = {
   meta: ['meta'] as const,
+  updateCheck: ['meta', 'update'] as const,
   auth: ['auth'] as const,
   dashboardLayout: ['dashboard', 'layout'] as const,
   insights: ['insights'] as const,

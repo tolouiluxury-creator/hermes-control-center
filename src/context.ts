@@ -25,6 +25,7 @@ import {
   type WorkspaceRoot,
 } from './routes/workspaceRoot.js';
 import { log } from './log.js';
+import { UpdateChecker } from './updateCheck.js';
 
 export interface AppContext {
   options: CliOptions;
@@ -38,6 +39,7 @@ export interface AppContext {
   workflowRuns: WorkflowRunsRepo;
   workflowRunner: WorkflowRunner;
   workflowScheduler: WorkflowScheduler;
+  updateChecker: UpdateChecker;
   settings: SettingsRepo;
   metrics: MetricsRepo;
   bus: EventBus;
@@ -133,6 +135,7 @@ export function createContext(
   });
   const workflowScheduler = new WorkflowScheduler({ workflows, runner: workflowRunner });
   workflowScheduler.start();
+  const updateChecker = new UpdateChecker();
   const settings = new SettingsRepo(store);
   const metrics = new MetricsRepo(store);
   const bus = new EventBus();
@@ -166,6 +169,7 @@ export function createContext(
     workflowRuns,
     workflowRunner,
     workflowScheduler,
+    updateChecker,
     settings,
     metrics,
     bus,

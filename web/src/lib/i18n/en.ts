@@ -890,6 +890,10 @@ export const en: Dict = {
   'shell.language': 'Language: {lang}',
   'shell.home': 'Hermes Control Center — to the dashboard',
   'shell.collapseSidebar': 'Collapse sidebar',
+  'shell.updateAvailable': 'Update to {version}',
+  'shell.updateInstructions': 'A newer release is available. Run this in the install directory:',
+  'shell.copyCommand': 'Copy command',
+  'shell.viewRelease': 'View release',
   'shell.expandSidebar': 'Expand sidebar',
 
   // Command palette

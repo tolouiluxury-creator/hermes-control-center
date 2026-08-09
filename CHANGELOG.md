@@ -4,6 +4,37 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
+## [0.1.0-beta.3] — 2026-08-09
+
+### Added
+
+- **Workflows are now actually executable, manually and on a schedule.** Previously a pure
+  organizer (name a chain of prompt/cron/note steps, no way to run one) — now:
+  - **Run chain** or **run step by step** from each workflow's card, with a live panel (per-step
+    status, streamed prompt-step text, cron-step polling status).
+  - A failed step pauses for **Continue** or **Stop** instead of failing silently; step-by-step
+    mode pauses after every successful step too, waiting for an explicit "next".
+  - A run can be stopped at any point — mid-step, not just while paused — via a pause control on
+    each card.
+  - A **Recent runs** section per card (last 5) shows past runs; clicking one reopens its step list
+    in a read-only, frozen view.
+  - An optional **schedule** (same picker as Aufgaben: daily/weekly/monthly/interval/once/advanced)
+    makes a workflow run unattended. A scheduled run that fails doesn't wait for a decision nobody's
+    there to make — it fails immediately and the agent is asked to notify you about it via Telegram.
+- **Settings moved to a sidebar + detail layout** (from seven stacked sections), URL-addressable via
+  `?tab=`, with only the active section's data loading.
+
+### Fixed
+
+- **`text-base` silently made text invisible in three places** (the dashboard analytics widget, the
+  donation page's card titles, chat markdown headings) — a Tailwind v4 color-token/utility name
+  collision, not a design or content bug. Fixed at each call site; the underlying `--color-base`
+  token naming is left as-is; the classes just use an explicit size everywhere.
+- **Cron-job and workflow sessions no longer show up in the Chats list.** Hermes' own `session.list`
+  deliberately includes every human-facing source; its own desktop client is the one that separates
+  `cron` sessions into their own view instead of recents. This app does the same now, and treats
+  workflow sessions (manual or scheduled) the same way.
+
 ## [0.1.0-beta.2] — 2026-08-07
 
 ### Added
