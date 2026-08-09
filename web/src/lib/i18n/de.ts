@@ -635,6 +635,8 @@ export const de: Dict = {
   'workflows.deleteAria': '{name} löschen',
   'workflowRuns.runChainAria': '{name} ausführen',
   'workflowRuns.startFailed': 'Lauf konnte nicht gestartet werden',
+  'workflowRuns.runFinished': '„{name}“ ist fertig',
+  'workflowRuns.runFailed': '„{name}“ ist fehlgeschlagen',
   'workflowRuns.promptNotSupported': 'Prompt-Schritte sind noch nicht ausführbar',
   'workflowRuns.statusLabel': 'Status: {status}',
   'workflowRuns.status.running': 'Läuft',

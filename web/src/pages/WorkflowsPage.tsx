@@ -305,12 +305,16 @@ export function WorkflowsPage() {
   const workflows = useMemo(() => data?.workflows ?? [], [data]);
 
   // The SSE subscription below only runs once on mount, so it reads
-  // workflows through this ref rather than the closed-over `workflows`
-  // array, which would otherwise always be the empty initial value.
+  // workflows and liveRun through these refs rather than the closed-over
+  // state, which would otherwise always be the initial value.
   const workflowsRef = useRef(workflows);
   useEffect(() => {
     workflowsRef.current = workflows;
   }, [workflows]);
+  const liveRunRef = useRef(liveRun);
+  useEffect(() => {
+    liveRunRef.current = liveRun;
+  }, [liveRun]);
 
   useEffect(() => {
     const source = new EventSource('/api/workflows/events');
@@ -376,11 +380,23 @@ export function WorkflowsPage() {
           : run,
       ),
     );
-    on<{ runId: string; status: WorkflowRunStatus }>('run.finished', (data) =>
+    on<{ runId: string; status: WorkflowRunStatus }>('run.finished', (data) => {
+      // Read from the ref, not a state updater — this needs to be a side
+      // effect (a toast), and updater functions must stay pure (StrictMode
+      // double-invokes them in dev to catch exactly this).
+      const current = liveRunRef.current;
+      if (current && current.runId === data.runId) {
+        const name = workflowsRef.current.find((w) => w.id === current.workflowId)?.name ?? '';
+        if (data.status === 'completed') {
+          toast.push({ tone: 'success', title: t('workflowRuns.runFinished', { name }) });
+        } else if (data.status === 'failed') {
+          toast.push({ tone: 'error', title: t('workflowRuns.runFailed', { name }) });
+        }
+      }
       setLiveRun((run) =>
         run && run.runId === data.runId ? { ...run, status: data.status } : run,
-      ),
-    );
+      );
+    });
 
     return () => source.close();
   }, []);
