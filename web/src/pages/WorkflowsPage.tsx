@@ -6,7 +6,6 @@ import {
   Check,
   ListChecks,
   Loader2,
-  Pause,
   Pencil,
   Play,
   Plus,
@@ -291,6 +290,7 @@ export function WorkflowsPage() {
   interface LiveRun {
     workflowId: string;
     runId: string;
+    mode: WorkflowRunMode;
     status: WorkflowRunStatus;
     steps: Record<string, LiveStep>;
   }
@@ -351,11 +351,12 @@ export function WorkflowsPage() {
     // event for the same run, but the POST response can arrive after those
     // step events already fired, in which case seeding on onSuccess would
     // have missed them (liveRun was still null when they arrived).
-    on<{ runId: string; workflowId: string }>('run.started', (data) => {
+    on<{ runId: string; workflowId: string; mode: WorkflowRunMode }>('run.started', (data) => {
       const workflow = workflowsRef.current.find((w) => w.id === data.workflowId);
       applyLiveRun({
         workflowId: data.workflowId,
         runId: data.runId,
+        mode: data.mode,
         status: 'running',
         steps: Object.fromEntries(
           (workflow?.steps ?? []).map((s) => [
@@ -584,8 +585,20 @@ export function WorkflowsPage() {
                     const workflowRunActive =
                       liveRun?.workflowId === workflow.id &&
                       (liveRun.status === 'running' || liveRun.status === 'waiting_for_user');
+                    // Which mode is actually running — only that button gets
+                    // the "in progress" treatment. Both buttons still get
+                    // disabled either way: only one run per workflow at a time.
+                    const chainIsActive = workflowRunActive && liveRun?.mode === 'chain';
+                    const stepIsActive = workflowRunActive && liveRun?.mode === 'single_step';
                     const runDisabled =
                       !workflow.enabled || workflow.steps.length === 0 || workflowRunActive;
+                    const idleClass =
+                      'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30';
+                    // A spinner, not a pause/stop icon — nothing here is
+                    // actually clickable to interrupt an active run (there's
+                    // no way to cancel an in-flight step yet), so the icon
+                    // must not look like a control that does something.
+                    const activeClass = 'rounded-lg p-1.5 text-[var(--color-accent)]';
                     return (
                       <>
                         <button
@@ -597,20 +610,16 @@ export function WorkflowsPage() {
                             runDisabled ||
                             (startRun.isPending && startRun.variables?.workflowId === workflow.id)
                           }
-                          className={
-                            workflowRunActive
-                              ? 'rounded-lg p-1.5 text-[var(--color-accent)]'
-                              : 'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30'
-                          }
+                          className={chainIsActive ? activeClass : idleClass}
                           aria-label={t(
-                            workflowRunActive
+                            chainIsActive
                               ? 'workflowRuns.runningAria'
                               : 'workflowRuns.runChainAria',
                             { name: workflow.name },
                           )}
                         >
-                          {workflowRunActive ? (
-                            <Pause size={14} className="animate-pulse" aria-hidden />
+                          {chainIsActive ? (
+                            <Loader2 size={14} className="animate-spin" aria-hidden />
                           ) : (
                             <Play size={14} aria-hidden />
                           )}
@@ -624,20 +633,16 @@ export function WorkflowsPage() {
                             runDisabled ||
                             (startRun.isPending && startRun.variables?.workflowId === workflow.id)
                           }
-                          className={
-                            workflowRunActive
-                              ? 'rounded-lg p-1.5 text-[var(--color-accent)]'
-                              : 'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30'
-                          }
+                          className={stepIsActive ? activeClass : idleClass}
                           aria-label={t(
-                            workflowRunActive
+                            stepIsActive
                               ? 'workflowRuns.runningAria'
                               : 'workflowRuns.runStepByStepAria',
                             { name: workflow.name },
                           )}
                         >
-                          {workflowRunActive ? (
-                            <Pause size={14} className="animate-pulse" aria-hidden />
+                          {stepIsActive ? (
+                            <Loader2 size={14} className="animate-spin" aria-hidden />
                           ) : (
                             <StepForward size={14} aria-hidden />
                           )}

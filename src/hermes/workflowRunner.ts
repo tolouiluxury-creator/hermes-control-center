@@ -75,7 +75,7 @@ interface StepResult {
 }
 
 export type WorkflowRunnerEvent =
-  | { type: 'run.started'; runId: string; workflowId: string }
+  | { type: 'run.started'; runId: string; workflowId: string; mode: WorkflowRunMode }
   | { type: 'step.started'; runId: string; stepId: string }
   | { type: 'step.delta'; runId: string; stepId: string; text: string }
   | {
@@ -151,7 +151,7 @@ export class WorkflowRunner {
     }
 
     const run = runs.create(workflowId, 'manual', mode, workflow.steps);
-    this.publish({ type: 'run.started', runId: run.id, workflowId });
+    this.publish({ type: 'run.started', runId: run.id, workflowId, mode });
     this.active.add(workflowId);
     void this.execute(workflowId, run.id)
       .catch((error: unknown) =>

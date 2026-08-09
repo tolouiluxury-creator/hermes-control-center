@@ -426,7 +426,7 @@ describe('WorkflowRunner events', () => {
 
     const stepId = workflow.steps[0]!.id;
     expect(events).toEqual([
-      { type: 'run.started', runId, workflowId: workflow.id },
+      { type: 'run.started', runId, workflowId: workflow.id, mode: 'chain' },
       { type: 'step.started', runId, stepId },
       { type: 'step.finished', runId, stepId, status: 'succeeded', output: '', error: null },
       { type: 'run.finished', runId, status: 'completed' },
