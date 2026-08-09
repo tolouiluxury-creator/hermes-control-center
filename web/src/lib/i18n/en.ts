@@ -284,6 +284,7 @@ export const en: Dict = {
   'settings.appearance': 'Appearance',
   'settings.appearance.desc': 'Applies to this device only.',
   'settings.jumpTo': 'Jump to',
+  'settings.categories': 'Settings categories',
   'settings.language': 'Language',
   'settings.language.desc': 'The interface language, for this device.',
   'settings.theme.dark': 'Dark',

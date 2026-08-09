@@ -281,6 +281,7 @@ export const fa: Dict = {
   'settings.appearance': 'ظاهر',
   'settings.appearance.desc': 'فقط برای این دستگاه اعمال می‌شود.',
   'settings.jumpTo': 'پرش به',
+  'settings.categories': 'دسته‌های تنظیمات',
   'settings.language': 'زبان',
   'settings.language.desc': 'زبان رابط کاربری، برای این دستگاه.',
   'settings.theme.dark': 'تیره',
