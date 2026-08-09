@@ -6,6 +6,7 @@ import {
   Check,
   ListChecks,
   Loader2,
+  Pause,
   Pencil,
   Play,
   Plus,
@@ -16,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  abortWorkflowRun,
   advanceWorkflowRun,
   ApiError,
   createWorkflow,
@@ -465,6 +467,12 @@ export function WorkflowsPage() {
       toast.push({ tone: 'error', title: t('workflowRuns.actionFailed'), description: e.message }),
   });
 
+  const abortRun = useMutation({
+    mutationFn: (runId: string) => abortWorkflowRun(runId),
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: t('workflowRuns.actionFailed'), description: e.message }),
+  });
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows });
 
   const save = useMutation({
@@ -585,64 +593,65 @@ export function WorkflowsPage() {
                     const workflowRunActive =
                       liveRun?.workflowId === workflow.id &&
                       (liveRun.status === 'running' || liveRun.status === 'waiting_for_user');
-                    // Which mode is actually running — only that button gets
-                    // the "in progress" treatment. Both buttons still get
-                    // disabled either way: only one run per workflow at a time.
+                    // Which mode is actually running — only that button
+                    // becomes the stop control; the other stays a plain,
+                    // disabled start button (only one run per workflow at a
+                    // time).
                     const chainIsActive = workflowRunActive && liveRun?.mode === 'chain';
                     const stepIsActive = workflowRunActive && liveRun?.mode === 'single_step';
-                    const runDisabled =
-                      !workflow.enabled || workflow.steps.length === 0 || workflowRunActive;
+                    const startDisabled =
+                      !workflow.enabled ||
+                      workflow.steps.length === 0 ||
+                      (startRun.isPending && startRun.variables?.workflowId === workflow.id);
                     const idleClass =
                       'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30';
-                    // A spinner, not a pause/stop icon — nothing here is
-                    // actually clickable to interrupt an active run (there's
-                    // no way to cancel an in-flight step yet), so the icon
-                    // must not look like a control that does something.
-                    const activeClass = 'rounded-lg p-1.5 text-[var(--color-accent)]';
+                    const activeClass =
+                      'rounded-lg p-1.5 text-[var(--color-accent)] disabled:opacity-40';
+                    const abortBusy = abortRun.isPending && abortRun.variables === liveRun?.runId;
                     return (
                       <>
                         <button
                           type="button"
-                          onClick={() =>
-                            startRun.mutate({ workflowId: workflow.id, mode: 'chain' })
-                          }
-                          disabled={
-                            runDisabled ||
-                            (startRun.isPending && startRun.variables?.workflowId === workflow.id)
-                          }
+                          onClick={() => {
+                            if (chainIsActive) {
+                              if (liveRun) abortRun.mutate(liveRun.runId);
+                            } else {
+                              startRun.mutate({ workflowId: workflow.id, mode: 'chain' });
+                            }
+                          }}
+                          disabled={chainIsActive ? abortBusy : workflowRunActive || startDisabled}
                           className={chainIsActive ? activeClass : idleClass}
                           aria-label={t(
-                            chainIsActive
-                              ? 'workflowRuns.runningAria'
-                              : 'workflowRuns.runChainAria',
+                            chainIsActive ? 'workflowRuns.stopAria' : 'workflowRuns.runChainAria',
                             { name: workflow.name },
                           )}
                         >
                           {chainIsActive ? (
-                            <Loader2 size={14} className="animate-spin" aria-hidden />
+                            <Pause size={14} className="animate-pulse" aria-hidden />
                           ) : (
                             <Play size={14} aria-hidden />
                           )}
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            startRun.mutate({ workflowId: workflow.id, mode: 'single_step' })
-                          }
-                          disabled={
-                            runDisabled ||
-                            (startRun.isPending && startRun.variables?.workflowId === workflow.id)
-                          }
+                          onClick={() => {
+                            if (stepIsActive) {
+                              if (liveRun) abortRun.mutate(liveRun.runId);
+                            } else {
+                              startRun.mutate({ workflowId: workflow.id, mode: 'single_step' });
+                            }
+                          }}
+                          disabled={stepIsActive ? abortBusy : workflowRunActive || startDisabled}
                           className={stepIsActive ? activeClass : idleClass}
                           aria-label={t(
                             stepIsActive
-                              ? 'workflowRuns.runningAria'
+                              ? 'workflowRuns.stopAria'
                               : 'workflowRuns.runStepByStepAria',
                             { name: workflow.name },
                           )}
                         >
                           {stepIsActive ? (
-                            <Loader2 size={14} className="animate-spin" aria-hidden />
+                            <Pause size={14} className="animate-pulse" aria-hidden />
                           ) : (
                             <StepForward size={14} aria-hidden />
                           )}

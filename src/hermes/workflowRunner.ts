@@ -113,6 +113,15 @@ export class WorkflowRunner {
   private readonly listeners = new Set<WorkflowRunnerEventListener>();
   /** One resolver per currently-paused run, fed by `resume()`. */
   private readonly pausedResumers = new Map<string, (action: WorkflowRunResumeAction) => void>();
+  /** Runs whose in-flight step should stop at its next opportunity to notice. */
+  private readonly abortRequested = new Set<string>();
+  /**
+   * One "wake up now" callback per run currently inside a step that can be
+   * nudged early (right now: only a prompt step waiting on Hermes) — lets
+   * `abort()` end that step immediately instead of waiting for its next poll
+   * tick or timeout.
+   */
+  private readonly activeStepAborts = new Map<string, () => void>();
 
   constructor(private readonly options: WorkflowRunnerOptions) {}
 
@@ -186,6 +195,25 @@ export class WorkflowRunner {
     resolve(action);
   }
 
+  /**
+   * Stops a run right now, whichever state it's in: already paused (same as
+   * `resume(runId, 'stop')`), waiting on a prompt reply (interrupts the
+   * Hermes session immediately), or mid cron-poll (noticed within one poll
+   * tick — there's no way to cancel a cron job Hermes already triggered, only
+   * to stop tracking it).
+   */
+  abort(runId: string): void {
+    if (this.pausedResumers.has(runId)) {
+      this.resume(runId, 'stop');
+      return;
+    }
+    if (!this.options.runs.get(runId)) {
+      throw new WorkflowRunnerValidationError('Run not found.', 'run_not_found');
+    }
+    this.abortRequested.add(runId);
+    this.activeStepAborts.get(runId)?.();
+  }
+
   private awaitResume(runId: string): Promise<WorkflowRunResumeAction> {
     return new Promise((resolve) => {
       this.pausedResumers.set(runId, resolve);
@@ -223,6 +251,31 @@ export class WorkflowRunner {
       runs.updateStep(runId, step.id, { status: 'running', startedAt: Date.now() });
       this.publish({ type: 'step.started', runId, stepId: step.id });
       const result = await this.runStep(runId, step);
+
+      if (this.abortRequested.has(runId)) {
+        this.abortRequested.delete(runId);
+        this.activeStepAborts.delete(runId);
+        runs.updateStep(runId, step.id, {
+          status: 'skipped',
+          output: result.output,
+          error: null,
+          finishedAt: Date.now(),
+        });
+        this.publish({
+          type: 'step.finished',
+          runId,
+          stepId: step.id,
+          status: 'skipped',
+          output: result.output,
+          error: null,
+        });
+        this.skipRemaining(runId, run.steps, i + 1);
+        runs.finish(runId, 'stopped');
+        this.publish({ type: 'run.finished', runId, status: 'stopped' });
+        runs.prune(workflowId);
+        return;
+      }
+
       runs.updateStep(runId, step.id, {
         status: result.status,
         output: result.output,
@@ -269,13 +322,13 @@ export class WorkflowRunner {
       case 'note':
         return { status: 'succeeded', output: '', error: null };
       case 'cron':
-        return this.runCronStep(step);
+        return this.runCronStep(step, runId);
       case 'prompt':
         return this.runPromptStep(runId, step);
     }
   }
 
-  private async runCronStep(step: WorkflowRunStep): Promise<StepResult> {
+  private async runCronStep(step: WorkflowRunStep, runId: string): Promise<StepResult> {
     const { dashboard } = this.options;
     const pollIntervalMs = this.options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     const pollTimeoutMs = this.options.pollTimeoutMs ?? DEFAULT_POLL_TIMEOUT_MS;
@@ -310,6 +363,12 @@ export class WorkflowRunner {
     const deadline = Date.now() + pollTimeoutMs;
     while (Date.now() < deadline) {
       await sleep(pollIntervalMs);
+      // Noticed within one poll tick — Hermes already triggered the cron job
+      // and it'll run to completion on its own regardless; this only stops
+      // this workflow run from waiting on it any longer.
+      if (this.abortRequested.has(runId)) {
+        return { status: 'failed', output: '', error: null };
+      }
       let jobs: CronJobSummary[];
       try {
         jobs = await dashboard.cronJobs();
@@ -383,22 +442,37 @@ export class WorkflowRunner {
     return new Promise<StepResult>((resolve) => {
       let output = '';
       let settled = false;
-      const timer = setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        unsubscribe();
-        // A dropped connection leaves the turn running server-side (same
-        // reasoning as /api/chat/interrupt) — without this, a timed-out step
-        // reports failure here while Hermes keeps working the same turn in
-        // the background.
+
+      const interruptSession = (reason: string): void => {
         gateway
           .request('session.interrupt', { session_id: sessionId })
           .catch((error: unknown) =>
             log.warn(
-              `workflow run ${runId}: failed to interrupt timed-out session ${sessionId}: ${describeError(error)}`,
+              `workflow run ${runId}: failed to interrupt ${reason} session ${sessionId}: ${describeError(error)}`,
             ),
           );
-        resolve({
+      };
+
+      const settleOnce = (result: StepResult): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        unsubscribe();
+        this.activeStepAborts.delete(runId);
+        resolve(result);
+      };
+
+      // Lets abort() end this step immediately instead of waiting for the
+      // timeout — same reasoning as /api/chat/interrupt: a dropped connection
+      // leaves the turn running server-side, so it has to be told to stop.
+      this.activeStepAborts.set(runId, () => {
+        interruptSession('an aborted');
+        settleOnce({ status: 'failed', output, error: null });
+      });
+
+      const timer = setTimeout(() => {
+        interruptSession('a timed-out');
+        settleOnce({
           status: 'failed',
           output,
           error: `No response from Hermes after ${Math.max(1, Math.round(promptTimeoutMs / 60_000))} minutes.`,
@@ -416,9 +490,6 @@ export class WorkflowRunner {
           return;
         }
         if (event.type === 'message.complete') {
-          settled = true;
-          clearTimeout(timer);
-          unsubscribe();
           const payload = event.payload ?? {};
           const status = payload.status;
           const finalText = typeof payload.text === 'string' ? payload.text : output;
@@ -427,22 +498,18 @@ export class WorkflowRunner {
               typeof payload.error === 'string' && payload.error
                 ? payload.error
                 : finalText || 'Hermes reported an error without a message.';
-            resolve({ status: 'failed', output, error });
+            settleOnce({ status: 'failed', output, error });
             return;
           }
-          resolve({ status: 'succeeded', output: finalText, error: null });
+          settleOnce({ status: 'succeeded', output: finalText, error: null });
         }
       });
 
       gateway
         .request('prompt.submit', { session_id: sessionId, text: prompt.body })
-        .catch((error: unknown) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          unsubscribe();
-          resolve({ status: 'failed', output, error: describeError(error) });
-        });
+        .catch((error: unknown) =>
+          settleOnce({ status: 'failed', output, error: describeError(error) }),
+        );
     });
   }
 }

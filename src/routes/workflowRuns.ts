@@ -76,4 +76,16 @@ export async function registerWorkflowRunRoutes(
       throw error;
     }
   });
+
+  /** Stops a run right now, whether it's already paused or still mid-step. */
+  app.post('/api/workflows/runs/:runId/abort', async (request, reply) => {
+    const { runId } = request.params as { runId: string };
+    try {
+      ctx.workflowRunner.abort(runId);
+      return { ok: true };
+    } catch (error) {
+      if (error instanceof WorkflowRunnerValidationError) return sendValidationError(reply, error);
+      throw error;
+    }
+  });
 }

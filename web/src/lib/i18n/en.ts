@@ -630,7 +630,7 @@ export const en: Dict = {
   'workflows.deleteAria': 'delete {name}',
   'workflowRuns.runChainAria': 'run {name}',
   'workflowRuns.runStepByStepAria': 'run {name} step by step',
-  'workflowRuns.runningAria': '{name} is running',
+  'workflowRuns.stopAria': 'stop {name}',
   'workflowRuns.startFailed': 'Could not start the run',
   'workflowRuns.actionFailed': 'Could not update the run',
   'workflowRuns.runFinished': '“{name}” finished',

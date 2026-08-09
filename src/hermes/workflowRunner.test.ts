@@ -402,6 +402,123 @@ describe('WorkflowRunner pause/resume', () => {
   });
 });
 
+describe('WorkflowRunner abort', () => {
+  it('stops an already-paused run the same as resume(..., "stop")', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'Report' },
+        { kind: 'note', label: 'Never reached' },
+      ],
+    });
+    const before = cronJob({ lastRun: 1000 });
+    const after = cronJob({ lastRun: 2000, lastStatus: 'error', lastError: 'boom' });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValueOnce([before]).mockResolvedValueOnce([after]),
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 1000,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain');
+    await flushPolls(5);
+    expect(runs.get(runId)?.status).toBe('waiting_for_user');
+
+    runner.abort(runId);
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(runs.get(runId)?.status).toBe('stopped');
+  });
+
+  it('stops a run mid cron-poll within one poll tick, skipping that step and the rest', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [
+        { kind: 'cron', ref: 'job-1', label: 'First' },
+        { kind: 'note', label: 'Never reached' },
+      ],
+    });
+    const dashboard: CronExecutor = {
+      cronJobs: vi.fn().mockResolvedValue([cronJob({ lastRun: 1000 })]), // never changes
+      cronAction: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const runner = new WorkflowRunner({
+      dashboard,
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+      pollIntervalMs: 10,
+      pollTimeoutMs: 10_000,
+    });
+
+    const { runId } = runner.start(workflow.id, 'chain');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(runs.get(runId)?.status).toBe('running'); // mid-poll, nowhere near the 10s timeout
+
+    runner.abort(runId);
+    await flushPolls(2); // give the poll loop one more tick to notice
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('stopped');
+    expect(run?.steps[0]).toMatchObject({ status: 'skipped' });
+    expect(run?.steps[1]).toMatchObject({ status: 'skipped' });
+  });
+
+  it('stops a run mid prompt-step immediately, interrupting the Hermes session', async () => {
+    const workflow = workflows.create({
+      name: 'W',
+      steps: [{ kind: 'prompt', ref: 'p-1', label: 'Summarize' }],
+    });
+    const dashboard: CronExecutor = { cronJobs: vi.fn(), cronAction: vi.fn() };
+    const gateway = makeGateway();
+    gateway.request.mockImplementation((method: string) =>
+      // Only session.create resolves meaningfully; the step never gets a
+      // message.complete, so it's genuinely still waiting when aborted.
+      Promise.resolve(method === 'session.create' ? { session_id: 'live-1' } : { ok: true }),
+    );
+    const prompts: PromptLookup = { get: () => ({ body: 'Hi', variables: [] }) };
+    const runner = new WorkflowRunner({ dashboard, workflows, runs, gateway, prompts });
+
+    const { runId } = runner.start(workflow.id, 'chain');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(runs.get(runId)?.steps[0]).toMatchObject({ status: 'running' });
+
+    runner.abort(runId);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const run = runs.get(runId);
+    expect(run?.status).toBe('stopped');
+    expect(run?.steps[0]).toMatchObject({ status: 'skipped' });
+    expect(gateway.request).toHaveBeenCalledWith('session.interrupt', { session_id: 'live-1' });
+  });
+
+  it('rejects aborting an unknown run', () => {
+    const runner = new WorkflowRunner({
+      dashboard: { cronJobs: vi.fn(), cronAction: vi.fn() },
+      workflows,
+      runs,
+      gateway: makeGateway(),
+      prompts: noPrompts,
+    });
+
+    try {
+      runner.abort('does-not-exist');
+      expect.unreachable('abort() should have thrown');
+    } catch (error) {
+      expect(error).toBeInstanceOf(WorkflowRunnerValidationError);
+      expect((error as WorkflowRunnerValidationError).code).toBe('run_not_found');
+    }
+  });
+});
+
 describe('WorkflowRunner events', () => {
   it('publishes run/step lifecycle events in order for a successful chain', async () => {
     const workflow = workflows.create({

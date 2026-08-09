@@ -628,7 +628,7 @@ export const fa: Dict = {
   'workflows.deleteAria': 'حذف {name}',
   'workflowRuns.runChainAria': 'اجرای {name}',
   'workflowRuns.runStepByStepAria': 'اجرای گام‌به‌گام {name}',
-  'workflowRuns.runningAria': '{name} در حال اجراست',
+  'workflowRuns.stopAria': 'توقف {name}',
   'workflowRuns.startFailed': 'اجرا آغاز نشد',
   'workflowRuns.actionFailed': 'اجرا به‌روزرسانی نشد',
   'workflowRuns.runFinished': '«{name}» تمام شد',

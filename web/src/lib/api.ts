@@ -551,6 +551,11 @@ export const resolveWorkflowRun = (
     ...jsonBody({ action }),
   });
 
+export const abortWorkflowRun = (runId: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/workflows/runs/${encodeURIComponent(runId)}/abort`, {
+    method: 'POST',
+  });
+
 export const getDashboardLayout = (): Promise<{ layout: DashboardLayout | null }> =>
   apiRequest<{ layout: DashboardLayout | null }>('/dashboard/layout');
 
