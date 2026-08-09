@@ -14,7 +14,10 @@ const components: Components = {
   ol: ({ children }) => (
     <ol className="mb-2 list-decimal space-y-0.5 pl-5 last:mb-0">{children}</ol>
   ),
-  h1: ({ children }) => <h1 className="mb-1.5 text-base font-semibold">{children}</h1>,
+  // Not `text-base`: this theme also names its page-background color token
+  // `base`, and Tailwind's generated color utility wins that collision on
+  // `color` — `text-base` would render an invisible heading, not a 1rem one.
+  h1: ({ children }) => <h1 className="mb-1.5 text-[1rem] font-semibold">{children}</h1>,
   h2: ({ children }) => <h2 className="mb-1.5 text-[0.95rem] font-semibold">{children}</h2>,
   h3: ({ children }) => <h3 className="mb-1 text-sm font-semibold">{children}</h3>,
   a: ({ children, href }) => (

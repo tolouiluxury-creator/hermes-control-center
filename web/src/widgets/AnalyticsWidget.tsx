@@ -9,7 +9,13 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
   return (
     <div className="min-w-0">
       <p className="truncate text-[0.7rem] text-[var(--color-ink-faint)]">{label}</p>
-      <p className="truncate font-mono text-base tracking-tight">{value}</p>
+      {/* Not `text-base`: this theme also registers `base` as a color token
+          (the page background), and Tailwind's generated color utility wins
+          the name collision on `color` — `text-base` renders invisible text
+          rather than a 1rem heading. */}
+      <p className="truncate font-mono text-[1rem] text-[var(--color-ink)] tracking-tight">
+        {value}
+      </p>
       {hint && <p className="truncate text-[0.65rem] text-[var(--color-ink-faint)]">{hint}</p>}
     </div>
   );

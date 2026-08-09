@@ -1,6 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { KeyRound, Monitor, Moon, Sun, Type, UserRound } from 'lucide-react';
+import { useSearchParams } from 'react-router';
+import {
+  Braces,
+  FileCode,
+  KeyRound,
+  Languages,
+  Monitor,
+  Moon,
+  Palette,
+  RefreshCw,
+  Sun,
+  Type,
+  UserRound,
+  Wrench,
+} from 'lucide-react';
 import {
   changePassword,
   deleteEnv,
@@ -40,12 +54,18 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="mb-8 scroll-mt-4">
-      <h3 className="text-sm font-semibold">{title}</h3>
+    <section id={id}>
+      {/* Not `text-base`: this project's theme registers `base` as a color
+          token too (the page background), and Tailwind resolves the name
+          collision in the color utility's favor — `text-base` silently sets
+          the text color to the background instead of the font size,
+          rendering the heading invisible. `text-[0.9375rem]` sizes it
+          without touching that name. */}
+      <h3 className="text-[0.9375rem] font-semibold text-[var(--color-ink)]">{title}</h3>
       {description && (
-        <p className="mt-0.5 mb-3 max-w-2xl text-xs text-[var(--color-ink-muted)]">{description}</p>
+        <p className="mt-0.5 mb-4 max-w-2xl text-sm text-[var(--color-ink-muted)]">{description}</p>
       )}
-      {!description && <div className="mb-3" />}
+      {!description && <div className="mb-4" />}
       {children}
     </section>
   );
@@ -914,50 +934,121 @@ function SecuritySection() {
 }
 
 /**
- * Seven sections on one page, and the useful ones are at the bottom: the
- * toolsets alone are twenty-six rows, which put "Environment & keys" some two
- * thousand pixels down. Scrolling for it is how a user concludes a setting is
- * not there at all — so the page names its own sections and jumps to them.
+ * Seven sections, and the useful ones used to be at the bottom: the toolsets
+ * alone are twenty-six rows, which put "Environment & keys" some two thousand
+ * pixels down a single stacked column. A category picked here decides which
+ * one section mounts on the right — the other six, and their queries, stay
+ * unmounted until picked, not just visually out of the way.
  */
-function SectionIndex() {
+const SETTINGS_SECTIONS: { id: string; icon: typeof Languages; titleKey: string }[] = [
+  { id: 'language', icon: Languages, titleKey: 'settings.language' },
+  { id: 'appearance', icon: Palette, titleKey: 'settings.appearance' },
+  { id: 'tools', icon: Wrench, titleKey: 'settings.tools' },
+  { id: 'maintenance', icon: RefreshCw, titleKey: 'settings.maintenance' },
+  { id: 'env', icon: Braces, titleKey: 'settings.env' },
+  { id: 'config', icon: FileCode, titleKey: 'settings.config' },
+  { id: 'security', icon: KeyRound, titleKey: 'settings.security' },
+];
+
+function SettingsNav({ active, onSelect }: { active: string; onSelect: (id: string) => void }) {
   const { t } = useI18n();
-  const entries: [string, string][] = [
-    ['language', t('settings.language')],
-    ['appearance', t('settings.appearance')],
-    ['tools', t('settings.tools')],
-    ['maintenance', t('settings.maintenance')],
-    ['env', t('settings.env')],
-    ['config', t('settings.config')],
-    ['security', t('settings.security')],
-  ];
+  const label = t('settings.categories');
+
   return (
-    <nav aria-label={t('settings.jumpTo')} className="mb-6 flex flex-wrap items-center gap-1.5">
-      <span className="text-xs text-[var(--color-ink-faint)]">{t('settings.jumpTo')}</span>
-      {entries.map(([id, label]) => (
-        <a
-          key={id}
-          href={`#${id}`}
-          className="rounded-full border border-[var(--color-hairline)] px-2.5 py-1 text-[0.7rem] text-[var(--color-ink-muted)] transition-colors hover:border-[var(--color-accent)]/40 hover:text-[var(--color-accent)]"
-        >
-          {label}
-        </a>
-      ))}
-    </nav>
+    <>
+      {/* Narrow and medium widths: a wrapping row of chips above the content —
+          the same chip vocabulary as the theme/font pickers below, not a new one. */}
+      <nav aria-label={label} className="mb-5 flex flex-wrap gap-1.5 lg:hidden">
+        {SETTINGS_SECTIONS.map(({ id, icon: Icon, titleKey }) => {
+          const isActive = id === active;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelect(id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-colors ${
+                isActive
+                  ? 'border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                  : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+              }`}
+            >
+              <Icon size={13} aria-hidden />
+              {t(titleKey)}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Wide: a fixed sidebar, sticky under the page header, divided from the
+          detail pane by the same hairline every card border already uses. */}
+      <nav
+        aria-label={label}
+        className="hidden lg:sticky lg:top-6 lg:block lg:self-start lg:border-e lg:border-[var(--color-hairline)] lg:pe-5"
+      >
+        <ul className="space-y-0.5">
+          {SETTINGS_SECTIONS.map(({ id, icon: Icon, titleKey }) => {
+            const isActive = id === active;
+            return (
+              <li key={id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                    isActive
+                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                      : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)] hover:text-[var(--color-ink)]'
+                  }`}
+                >
+                  <Icon size={15} className="shrink-0" aria-hidden />
+                  <span>{t(titleKey)}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </>
   );
 }
 
+const DEFAULT_SETTINGS_TAB = SETTINGS_SECTIONS[0]!.id;
+
 export function EinstellungenPage() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const requested = searchParams.get('tab');
+  const active = SETTINGS_SECTIONS.some((section) => section.id === requested)
+    ? (requested as string)
+    : DEFAULT_SETTINGS_TAB;
+
+  const selectTab = (id: string) => {
+    setSearchParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        next.set('tab', id);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   return (
     <PageShell title={t('nav.einstellungen')} description={t('page.einstellungen.desc')}>
-      <SectionIndex />
-      <LanguageSection />
-      <AppearanceSection />
-      <ToolsetsSection />
-      <MaintenanceSection />
-      <EnvSection />
-      <ConfigSection />
-      <SecuritySection />
+      <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:items-start lg:gap-8">
+        <SettingsNav active={active} onSelect={selectTab} />
+        <div className="min-w-0">
+          {active === 'language' && <LanguageSection />}
+          {active === 'appearance' && <AppearanceSection />}
+          {active === 'tools' && <ToolsetsSection />}
+          {active === 'maintenance' && <MaintenanceSection />}
+          {active === 'env' && <EnvSection />}
+          {active === 'config' && <ConfigSection />}
+          {active === 'security' && <SecuritySection />}
+        </div>
+      </div>
     </PageShell>
   );
 }

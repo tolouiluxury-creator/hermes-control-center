@@ -101,7 +101,10 @@ function DonationCard({ entry }: { entry: DonationAddress }) {
       <span className={`rounded-full px-2.5 py-1 text-[0.7rem] font-medium ${accent.badge}`}>
         {t(entry.subtitleKey)}
       </span>
-      <h3 className="text-base font-semibold">{t(entry.titleKey)}</h3>
+      {/* Not `text-base`: `base` is also this theme's page-background color
+          token, and Tailwind's color utility wins that name collision on
+          `color` — `text-base` renders invisible text here, not a heading. */}
+      <h3 className="text-[1rem] font-semibold text-[var(--color-ink)]">{t(entry.titleKey)}</h3>
 
       {/* White backdrop is not decorative — a QR code needs strong contrast to
           scan, so this stays white in both the light and dark theme. */}
