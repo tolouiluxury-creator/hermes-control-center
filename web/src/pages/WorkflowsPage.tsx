@@ -297,20 +297,27 @@ export function WorkflowsPage() {
     steps: Record<string, LiveStep>;
   }
 
-  const [liveRun, setLiveRun] = useState<LiveRun | null>(null);
+  // Keyed by workflowId, not a single slot — different workflows can have
+  // runs active at the same time (the runner only ever blocks a *second* run
+  // of the *same* workflow), and each card needs to keep showing its own
+  // run's progress independently of whatever else is running.
+  const [liveRuns, setLiveRuns] = useState<Record<string, LiveRun>>({});
   // The single source of truth the SSE handlers below read and write —
   // synchronously, not through React's render/effect cycle. A ref synced via
-  // a `useEffect([liveRun])` lags behind bursts of same-tick SSE events (a
+  // a `useEffect([liveRuns])` lags behind bursts of same-tick SSE events (a
   // fast run can fire run.started..run.finished before React ever gets to
   // flush that effect), which silently dropped the completion toast on fast
-  // successful runs. `setLiveRun` below is only ever called with the
+  // successful runs. `setLiveRuns` below is only ever called with the
   // already-computed next value, never a functional updater, so there's
   // nothing left depending on render timing.
-  const liveRunRef = useRef<LiveRun | null>(null);
-  const applyLiveRun = (next: LiveRun | null): void => {
-    liveRunRef.current = next;
-    setLiveRun(next);
+  const liveRunsRef = useRef<Record<string, LiveRun>>({});
+  const applyLiveRun = (workflowId: string, run: LiveRun): void => {
+    liveRunsRef.current = { ...liveRunsRef.current, [workflowId]: run };
+    setLiveRuns(liveRunsRef.current);
   };
+  /** SSE events after run.started only carry a runId — find which workflow that belongs to. */
+  const findLiveRunByRunId = (runId: string): [string, LiveRun] | undefined =>
+    Object.entries(liveRunsRef.current).find(([, run]) => run.runId === runId);
 
   const patchStep = (run: LiveRun, stepId: string, patch: Partial<LiveStep>): LiveRun => ({
     ...run,
@@ -352,10 +359,10 @@ export function WorkflowsPage() {
     // followed live: run.started is always published before any step.*
     // event for the same run, but the POST response can arrive after those
     // step events already fired, in which case seeding on onSuccess would
-    // have missed them (liveRun was still null when they arrived).
+    // have missed them (no entry existed yet when they arrived).
     on<{ runId: string; workflowId: string; mode: WorkflowRunMode }>('run.started', (data) => {
       const workflow = workflowsRef.current.find((w) => w.id === data.workflowId);
-      applyLiveRun({
+      applyLiveRun(data.workflowId, {
         workflowId: data.workflowId,
         runId: data.runId,
         mode: data.mode,
@@ -369,15 +376,15 @@ export function WorkflowsPage() {
       });
     });
     on<{ runId: string; stepId: string }>('step.started', (data) => {
-      const run = liveRunRef.current;
-      if (run && run.runId === data.runId) {
-        applyLiveRun(patchStep(run, data.stepId, { status: 'running' }));
-      }
+      const found = findLiveRunByRunId(data.runId);
+      if (found) applyLiveRun(found[0], patchStep(found[1], data.stepId, { status: 'running' }));
     });
     on<{ runId: string; stepId: string; text: string }>('step.delta', (data) => {
-      const run = liveRunRef.current;
-      if (run && run.runId === data.runId) {
+      const found = findLiveRunByRunId(data.runId);
+      if (found) {
+        const [workflowId, run] = found;
         applyLiveRun(
+          workflowId,
           patchStep(run, data.stepId, {
             output: (run.steps[data.stepId]?.output ?? '') + data.text,
           }),
@@ -391,9 +398,11 @@ export function WorkflowsPage() {
       output: string;
       error: string | null;
     }>('step.finished', (data) => {
-      const run = liveRunRef.current;
-      if (run && run.runId === data.runId) {
+      const found = findLiveRunByRunId(data.runId);
+      if (found) {
+        const [workflowId, run] = found;
         applyLiveRun(
+          workflowId,
           patchStep(run, data.stepId, {
             status: data.status,
             output: data.output,
@@ -403,15 +412,14 @@ export function WorkflowsPage() {
       }
     });
     on<{ runId: string }>('run.waiting_for_user', (data) => {
-      const run = liveRunRef.current;
-      if (run && run.runId === data.runId) {
-        applyLiveRun({ ...run, status: 'waiting_for_user' });
-      }
+      const found = findLiveRunByRunId(data.runId);
+      if (found) applyLiveRun(found[0], { ...found[1], status: 'waiting_for_user' });
     });
     on<{ runId: string; status: WorkflowRunStatus }>('run.finished', (data) => {
-      const run = liveRunRef.current;
-      if (run && run.runId === data.runId) {
-        const name = workflowsRef.current.find((w) => w.id === run.workflowId)?.name ?? '';
+      const found = findLiveRunByRunId(data.runId);
+      if (found) {
+        const [workflowId, run] = found;
+        const name = workflowsRef.current.find((w) => w.id === workflowId)?.name ?? '';
         if (data.status === 'completed') {
           const anyStepFailed = Object.values(run.steps).some((s) => s.status === 'failed');
           toast.push(
@@ -424,7 +432,7 @@ export function WorkflowsPage() {
         } else if (data.status === 'stopped') {
           toast.push({ tone: 'info', title: t('workflowRuns.runStopped', { name }) });
         }
-        applyLiveRun({ ...run, status: data.status });
+        applyLiveRun(workflowId, { ...run, status: data.status });
       }
     });
 
@@ -554,257 +562,266 @@ export function WorkflowsPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {workflows.map((workflow) => (
-            <li key={workflow.id} className="card p-4">
-              <div className="flex items-start gap-3">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={workflow.enabled}
-                  aria-label={t(
-                    workflow.enabled ? 'workflows.disableAria' : 'workflows.enableAria',
-                    { name: workflow.name },
-                  )}
-                  onClick={() => toggle.mutate(workflow)}
-                  disabled={toggle.isPending && toggle.variables?.id === workflow.id}
-                  className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40"
-                  style={{
-                    background: workflow.enabled ? 'var(--color-ok)' : 'var(--color-raised)',
-                  }}
-                >
-                  <span
-                    className="absolute top-0.5 size-4 rounded-full bg-white transition-all"
-                    style={{ left: workflow.enabled ? 'calc(100% - 1.125rem)' : '0.125rem' }}
-                    aria-hidden
-                  />
-                </button>
-
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{workflow.name}</p>
-                  {workflow.description && (
-                    <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                      {workflow.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex shrink-0 gap-1">
-                  {(() => {
-                    const workflowRunActive =
-                      liveRun?.workflowId === workflow.id &&
-                      (liveRun.status === 'running' || liveRun.status === 'waiting_for_user');
-                    // Which mode is actually running — only that button
-                    // becomes the stop control; the other stays a plain,
-                    // disabled start button (only one run per workflow at a
-                    // time).
-                    const chainIsActive = workflowRunActive && liveRun?.mode === 'chain';
-                    const stepIsActive = workflowRunActive && liveRun?.mode === 'single_step';
-                    const startDisabled =
-                      !workflow.enabled ||
-                      workflow.steps.length === 0 ||
-                      (startRun.isPending && startRun.variables?.workflowId === workflow.id);
-                    const idleClass =
-                      'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30';
-                    const activeClass =
-                      'rounded-lg p-1.5 text-[var(--color-accent)] disabled:opacity-40';
-                    const abortBusy = abortRun.isPending && abortRun.variables === liveRun?.runId;
-                    return (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (chainIsActive) {
-                              if (liveRun) abortRun.mutate(liveRun.runId);
-                            } else {
-                              startRun.mutate({ workflowId: workflow.id, mode: 'chain' });
-                            }
-                          }}
-                          disabled={chainIsActive ? abortBusy : workflowRunActive || startDisabled}
-                          className={chainIsActive ? activeClass : idleClass}
-                          aria-label={t(
-                            chainIsActive ? 'workflowRuns.stopAria' : 'workflowRuns.runChainAria',
-                            { name: workflow.name },
-                          )}
-                        >
-                          {chainIsActive ? (
-                            <Pause size={14} className="animate-pulse" aria-hidden />
-                          ) : (
-                            <Play size={14} aria-hidden />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (stepIsActive) {
-                              if (liveRun) abortRun.mutate(liveRun.runId);
-                            } else {
-                              startRun.mutate({ workflowId: workflow.id, mode: 'single_step' });
-                            }
-                          }}
-                          disabled={stepIsActive ? abortBusy : workflowRunActive || startDisabled}
-                          className={stepIsActive ? activeClass : idleClass}
-                          aria-label={t(
-                            stepIsActive
-                              ? 'workflowRuns.stopAria'
-                              : 'workflowRuns.runStepByStepAria',
-                            { name: workflow.name },
-                          )}
-                        >
-                          {stepIsActive ? (
-                            <Pause size={14} className="animate-pulse" aria-hidden />
-                          ) : (
-                            <StepForward size={14} aria-hidden />
-                          )}
-                        </button>
-                      </>
-                    );
-                  })()}
+          {workflows.map((workflow) => {
+            const run = liveRuns[workflow.id];
+            return (
+              <li key={workflow.id} className="card p-4">
+                <div className="flex items-start gap-3">
                   <button
                     type="button"
-                    onClick={() => setEditing(workflow)}
-                    className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
-                    aria-label={t('workflows.editAria', { name: workflow.name })}
-                  >
-                    <Pencil size={14} aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete(workflow.id)}
-                    className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
-                    aria-label={t('workflows.deleteAria', { name: workflow.name })}
-                  >
-                    <Trash2 size={14} aria-hidden />
-                  </button>
-                </div>
-              </div>
-
-              {workflow.steps.length > 0 && (
-                <ol className="mt-3 space-y-1">
-                  {workflow.steps.map((step, index) => {
-                    const Meta = STEP_META[step.kind];
-                    return (
-                      <li key={step.id} className="flex items-center gap-2 text-xs">
-                        <span className="font-mono text-[var(--color-ink-faint)]">{index + 1}</span>
-                        <Meta.icon size={12} style={{ color: Meta.color }} aria-hidden />
-                        <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
-                          {t(Meta.labelKey)}
-                        </span>
-                        <span className="truncate text-[var(--color-ink-muted)]">{step.label}</span>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-
-              {liveRun?.workflowId === workflow.id && (
-                <div className="mt-3 rounded-xl border border-[var(--color-hairline)] p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-medium">
-                    {liveRun.status === 'running' && (
-                      <Loader2
-                        size={12}
-                        className="animate-spin text-[var(--color-accent)]"
-                        aria-hidden
-                      />
+                    role="switch"
+                    aria-checked={workflow.enabled}
+                    aria-label={t(
+                      workflow.enabled ? 'workflows.disableAria' : 'workflows.enableAria',
+                      { name: workflow.name },
                     )}
-                    {t('workflowRuns.statusLabel', {
-                      status: t(`workflowRuns.status.${liveRun.status}`),
-                    })}
-                  </p>
-                  <ol className="mt-2 space-y-1">
-                    {workflow.steps.map((step) => {
-                      const live = liveRun.steps[step.id];
-                      if (!live) return null;
+                    onClick={() => toggle.mutate(workflow)}
+                    disabled={toggle.isPending && toggle.variables?.id === workflow.id}
+                    className="relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-40"
+                    style={{
+                      background: workflow.enabled ? 'var(--color-ok)' : 'var(--color-raised)',
+                    }}
+                  >
+                    <span
+                      className="absolute top-0.5 size-4 rounded-full bg-white transition-all"
+                      style={{ left: workflow.enabled ? 'calc(100% - 1.125rem)' : '0.125rem' }}
+                      aria-hidden
+                    />
+                  </button>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{workflow.name}</p>
+                    {workflow.description && (
+                      <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+                        {workflow.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex shrink-0 gap-1">
+                    {(() => {
+                      const workflowRunActive =
+                        run != null &&
+                        (run.status === 'running' || run.status === 'waiting_for_user');
+                      // Which mode is actually running — only that button
+                      // becomes the stop control; the other stays a plain,
+                      // disabled start button (only one run per workflow at a
+                      // time).
+                      const chainIsActive = workflowRunActive && run?.mode === 'chain';
+                      const stepIsActive = workflowRunActive && run?.mode === 'single_step';
+                      const startDisabled =
+                        !workflow.enabled ||
+                        workflow.steps.length === 0 ||
+                        (startRun.isPending && startRun.variables?.workflowId === workflow.id);
+                      const idleClass =
+                        'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30';
+                      const activeClass =
+                        'rounded-lg p-1.5 text-[var(--color-accent)] disabled:opacity-40';
+                      const abortBusy = abortRun.isPending && abortRun.variables === run?.runId;
                       return (
-                        <li key={step.id} className="text-xs">
-                          <div className="flex items-center gap-1.5">
-                            {live.status === 'running' && (
-                              <Loader2
-                                size={11}
-                                className="animate-spin text-[var(--color-accent)]"
-                                aria-hidden
-                              />
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (chainIsActive) {
+                                if (run) abortRun.mutate(run.runId);
+                              } else {
+                                startRun.mutate({ workflowId: workflow.id, mode: 'chain' });
+                              }
+                            }}
+                            disabled={
+                              chainIsActive ? abortBusy : workflowRunActive || startDisabled
+                            }
+                            className={chainIsActive ? activeClass : idleClass}
+                            aria-label={t(
+                              chainIsActive ? 'workflowRuns.stopAria' : 'workflowRuns.runChainAria',
+                              { name: workflow.name },
                             )}
-                            <span className="text-[var(--color-ink-muted)]">
-                              {t(`workflowRuns.stepStatus.${live.status}`)}
-                            </span>
-                            <span>{step.label}</span>
-                          </div>
-                          {live.status === 'running' && step.kind === 'cron' && (
-                            <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
-                              {t('workflowRuns.cronRunningHint')}
-                            </p>
-                          )}
-                          {live.status === 'running' && step.kind === 'prompt' && (
-                            <p className="mt-0.5 whitespace-pre-wrap text-[var(--color-ink-muted)]">
-                              {live.output || t('workflowRuns.promptRunningHint')}
-                            </p>
-                          )}
-                          {live.status === 'failed' && live.error && (
-                            <p className="mt-0.5 text-[var(--color-danger)]">{live.error}</p>
-                          )}
+                          >
+                            {chainIsActive ? (
+                              <Pause size={14} className="animate-pulse" aria-hidden />
+                            ) : (
+                              <Play size={14} aria-hidden />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (stepIsActive) {
+                                if (run) abortRun.mutate(run.runId);
+                              } else {
+                                startRun.mutate({ workflowId: workflow.id, mode: 'single_step' });
+                              }
+                            }}
+                            disabled={stepIsActive ? abortBusy : workflowRunActive || startDisabled}
+                            className={stepIsActive ? activeClass : idleClass}
+                            aria-label={t(
+                              stepIsActive
+                                ? 'workflowRuns.stopAria'
+                                : 'workflowRuns.runStepByStepAria',
+                              { name: workflow.name },
+                            )}
+                          >
+                            {stepIsActive ? (
+                              <Pause size={14} className="animate-pulse" aria-hidden />
+                            ) : (
+                              <StepForward size={14} aria-hidden />
+                            )}
+                          </button>
+                        </>
+                      );
+                    })()}
+                    <button
+                      type="button"
+                      onClick={() => setEditing(workflow)}
+                      className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-ink)]"
+                      aria-label={t('workflows.editAria', { name: workflow.name })}
+                    >
+                      <Pencil size={14} aria-hidden />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(workflow.id)}
+                      className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-danger)]"
+                      aria-label={t('workflows.deleteAria', { name: workflow.name })}
+                    >
+                      <Trash2 size={14} aria-hidden />
+                    </button>
+                  </div>
+                </div>
+
+                {workflow.steps.length > 0 && (
+                  <ol className="mt-3 space-y-1">
+                    {workflow.steps.map((step, index) => {
+                      const Meta = STEP_META[step.kind];
+                      return (
+                        <li key={step.id} className="flex items-center gap-2 text-xs">
+                          <span className="font-mono text-[var(--color-ink-faint)]">
+                            {index + 1}
+                          </span>
+                          <Meta.icon size={12} style={{ color: Meta.color }} aria-hidden />
+                          <span className="text-[0.65rem] text-[var(--color-ink-faint)]">
+                            {t(Meta.labelKey)}
+                          </span>
+                          <span className="truncate text-[var(--color-ink-muted)]">
+                            {step.label}
+                          </span>
                         </li>
                       );
                     })}
                   </ol>
+                )}
 
-                  {liveRun.status === 'waiting_for_user' &&
-                    (() => {
-                      const hasFailedStep = Object.values(liveRun.steps).some(
-                        (s) => s.status === 'failed',
-                      );
-                      const busy = advanceRun.isPending || resolveRun.isPending;
-                      return hasFailedStep ? (
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              resolveRun.mutate({ runId: liveRun.runId, action: 'continue' })
-                            }
-                            className="rounded-lg border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] disabled:opacity-40"
-                          >
-                            {t('workflowRuns.continue')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              resolveRun.mutate({ runId: liveRun.runId, action: 'stop' })
-                            }
-                            className="rounded-lg border border-[var(--color-danger)]/40 px-3 py-1 text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-40"
-                          >
-                            {t('workflowRuns.stop')}
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="mt-3">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => advanceRun.mutate(liveRun.runId)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
-                          >
-                            <StepForward size={12} aria-hidden />
-                            {t('workflowRuns.nextStep')}
-                          </button>
-                        </div>
-                      );
-                    })()}
-                </div>
-              )}
+                {run && (
+                  <div className="mt-3 rounded-xl border border-[var(--color-hairline)] p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium">
+                      {run.status === 'running' && (
+                        <Loader2
+                          size={12}
+                          className="animate-spin text-[var(--color-accent)]"
+                          aria-hidden
+                        />
+                      )}
+                      {t('workflowRuns.statusLabel', {
+                        status: t(`workflowRuns.status.${run.status}`),
+                      })}
+                    </p>
+                    <ol className="mt-2 space-y-1">
+                      {workflow.steps.map((step) => {
+                        const live = run.steps[step.id];
+                        if (!live) return null;
+                        return (
+                          <li key={step.id} className="text-xs">
+                            <div className="flex items-center gap-1.5">
+                              {live.status === 'running' && (
+                                <Loader2
+                                  size={11}
+                                  className="animate-spin text-[var(--color-accent)]"
+                                  aria-hidden
+                                />
+                              )}
+                              <span className="text-[var(--color-ink-muted)]">
+                                {t(`workflowRuns.stepStatus.${live.status}`)}
+                              </span>
+                              <span>{step.label}</span>
+                            </div>
+                            {live.status === 'running' && step.kind === 'cron' && (
+                              <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
+                                {t('workflowRuns.cronRunningHint')}
+                              </p>
+                            )}
+                            {live.status === 'running' && step.kind === 'prompt' && (
+                              <p className="mt-0.5 whitespace-pre-wrap text-[var(--color-ink-muted)]">
+                                {live.output || t('workflowRuns.promptRunningHint')}
+                              </p>
+                            )}
+                            {live.status === 'failed' && live.error && (
+                              <p className="mt-0.5 text-[var(--color-danger)]">{live.error}</p>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ol>
 
-              {confirmDelete === workflow.id && (
-                <ConfirmInline
-                  tone="danger"
-                  message={t('workflows.deleteConfirm', { name: workflow.name })}
-                  confirmLabel={t('common.delete')}
-                  pending={remove.isPending && remove.variables === workflow.id}
-                  onConfirm={() => remove.mutate(workflow.id)}
-                  onCancel={() => setConfirmDelete(null)}
-                />
-              )}
-            </li>
-          ))}
+                    {run.status === 'waiting_for_user' &&
+                      (() => {
+                        const hasFailedStep = Object.values(run.steps).some(
+                          (s) => s.status === 'failed',
+                        );
+                        const busy = advanceRun.isPending || resolveRun.isPending;
+                        return hasFailedStep ? (
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                resolveRun.mutate({ runId: run.runId, action: 'continue' })
+                              }
+                              className="rounded-lg border border-[var(--color-hairline)] px-3 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] disabled:opacity-40"
+                            >
+                              {t('workflowRuns.continue')}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() =>
+                                resolveRun.mutate({ runId: run.runId, action: 'stop' })
+                              }
+                              className="rounded-lg border border-[var(--color-danger)]/40 px-3 py-1 text-xs text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-40"
+                            >
+                              {t('workflowRuns.stop')}
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="mt-3">
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => advanceRun.mutate(run.runId)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1 text-xs text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+                            >
+                              <StepForward size={12} aria-hidden />
+                              {t('workflowRuns.nextStep')}
+                            </button>
+                          </div>
+                        );
+                      })()}
+                  </div>
+                )}
+
+                {confirmDelete === workflow.id && (
+                  <ConfirmInline
+                    tone="danger"
+                    message={t('workflows.deleteConfirm', { name: workflow.name })}
+                    confirmLabel={t('common.delete')}
+                    pending={remove.isPending && remove.variables === workflow.id}
+                    onConfirm={() => remove.mutate(workflow.id)}
+                    onCancel={() => setConfirmDelete(null)}
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
     </PageShell>
