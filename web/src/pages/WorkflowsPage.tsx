@@ -6,6 +6,7 @@ import {
   Check,
   ListChecks,
   Loader2,
+  Pause,
   Pencil,
   Play,
   Plus,
@@ -596,10 +597,23 @@ export function WorkflowsPage() {
                             runDisabled ||
                             (startRun.isPending && startRun.variables?.workflowId === workflow.id)
                           }
-                          className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
-                          aria-label={t('workflowRuns.runChainAria', { name: workflow.name })}
+                          className={
+                            workflowRunActive
+                              ? 'rounded-lg p-1.5 text-[var(--color-accent)]'
+                              : 'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30'
+                          }
+                          aria-label={t(
+                            workflowRunActive
+                              ? 'workflowRuns.runningAria'
+                              : 'workflowRuns.runChainAria',
+                            { name: workflow.name },
+                          )}
                         >
-                          <Play size={14} aria-hidden />
+                          {workflowRunActive ? (
+                            <Pause size={14} className="animate-pulse" aria-hidden />
+                          ) : (
+                            <Play size={14} aria-hidden />
+                          )}
                         </button>
                         <button
                           type="button"
@@ -610,10 +624,23 @@ export function WorkflowsPage() {
                             runDisabled ||
                             (startRun.isPending && startRun.variables?.workflowId === workflow.id)
                           }
-                          className="rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30"
-                          aria-label={t('workflowRuns.runStepByStepAria', { name: workflow.name })}
+                          className={
+                            workflowRunActive
+                              ? 'rounded-lg p-1.5 text-[var(--color-accent)]'
+                              : 'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30'
+                          }
+                          aria-label={t(
+                            workflowRunActive
+                              ? 'workflowRuns.runningAria'
+                              : 'workflowRuns.runStepByStepAria',
+                            { name: workflow.name },
+                          )}
                         >
-                          <StepForward size={14} aria-hidden />
+                          {workflowRunActive ? (
+                            <Pause size={14} className="animate-pulse" aria-hidden />
+                          ) : (
+                            <StepForward size={14} aria-hidden />
+                          )}
                         </button>
                       </>
                     );
