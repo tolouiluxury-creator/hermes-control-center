@@ -27,9 +27,10 @@
 
   /* Accents. `accent` is the product colour; `agent` marks anything the agent
      itself produced, so a user can always tell the two apart. */
-  --color-accent: #2dd4bf;
-  --color-accent-strong: #5eead4;
-  --color-accent-soft: #134e4a;
+  --color-accent: #F5B027;
+  --color-accent-strong: #FFC85C;
+  --color-accent-soft: #3A2A0D;
+  --color-accent-contrast: #2A1A00;
   --color-agent: #a78bfa;
   --color-agent-soft: #3b2f63;
 
@@ -94,9 +95,10 @@
        token is used at (timestamps, meta lines). This clears 6:1. */
     --color-ink-faint: #5b6b82;
 
-    --color-accent: #0d9488;
-    --color-accent-strong: #0f766e;
-    --color-accent-soft: #ccfbf1;
+    --color-accent: #F5B027;
+    --color-accent-strong: #FFC85C;
+    --color-accent-soft: #3A2A0D;
+    --color-accent-contrast: #2A1A00;
     --color-agent: #7c3aed;
     --color-agent-soft: #ede9fe;
 
@@ -125,9 +127,10 @@
   --color-ink-muted: #475569;
   --color-ink-faint: #64748b;
 
-  --color-accent: #0d9488;
-  --color-accent-strong: #0f766e;
-  --color-accent-soft: #ccfbf1;
+  --color-accent: #F5B027;
+  --color-accent-strong: #FFC85C;
+  --color-accent-soft: #3A2A0D;
+  --color-accent-contrast: #2A1A00;
   --color-agent: #7c3aed;
   --color-agent-soft: #ede9fe;
 
