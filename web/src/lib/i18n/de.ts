@@ -650,6 +650,8 @@ export const de: Dict = {
   'workflowRuns.runFinishedWithErrors': '„{name}“ ist fertig, aber ein Schritt ist fehlgeschlagen',
   'workflowRuns.runFailed': '„{name}“ ist fehlgeschlagen',
   'workflowRuns.runStopped': '„{name}“ wurde gestoppt',
+  'workflowRuns.runChain': 'Ausführen',
+  'workflowRuns.runSingleStep': 'Schrittweise',
   'workflowRuns.continue': 'Weiter',
   'workflowRuns.stop': 'Stopp',
   'workflowRuns.recentRuns': 'Letzte Läufe',

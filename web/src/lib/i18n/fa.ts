@@ -642,6 +642,8 @@ export const fa: Dict = {
   'workflowRuns.runFinishedWithErrors': '«{name}» تمام شد، اما یک مرحله ناموفق بود',
   'workflowRuns.runFailed': '«{name}» ناموفق بود',
   'workflowRuns.runStopped': '«{name}» متوقف شد',
+  'workflowRuns.runChain': 'اجرا',
+  'workflowRuns.runSingleStep': 'گام‌به‌گام',
   'workflowRuns.continue': 'ادامه',
   'workflowRuns.stop': 'توقف',
   'workflowRuns.recentRuns': 'اجراهای اخیر',

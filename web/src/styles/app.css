@@ -63,6 +63,7 @@
   --glass-bg: color-mix(in oklab, var(--color-surface) 82%, transparent);
   --glass-blur: 12px;
   --shadow-card: 0 1px 0 0 rgb(255 255 255 / 4%) inset, 0 8px 24px -12px rgb(0 0 0 / 60%);
+  --shadow-card-hover: 0 1px 0 0 rgb(255 255 255 / 6%) inset, 0 14px 34px -16px rgb(0 0 0 / 65%);
   --shadow-overlay: 0 24px 60px -20px rgb(0 0 0 / 70%);
   --focus-ring: 0 0 0 2px var(--color-base), 0 0 0 4px var(--color-accent);
 
@@ -202,6 +203,78 @@ body {
   backdrop-filter: blur(var(--glass-blur));
 }
 
+/*
+ * Card hover and focus language, shared by every interactive card in the app
+ * (bots, workflows, prompts, tasks). One definition instead of five
+ * near-identical copies, so the whole app lifts together.
+ */
+@utility card-hover {
+  transition:
+    border-color var(--duration-fast) var(--ease-ui),
+    box-shadow var(--duration-fast) var(--ease-ui),
+    transform var(--duration-slow) var(--ease-ui),
+    background-color var(--duration-fast) var(--ease-ui);
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-hairline));
+    box-shadow: var(--shadow-card), 0 12px 32px -16px color-mix(in oklab, var(--color-accent) 22%, transparent);
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-hairline));
+  }
+}
+
+/*
+ * Chat bubbles. The agent's replies are tinted with the `agent` token so the
+ * two sides are separable at a glance; the user's side sits on the elevated
+ * surface. Nothing here is a raw colour — every token swaps with the theme.
+ */
+@utility bubble-agent {
+  border: 1px solid color-mix(in oklab, var(--color-agent) 32%, var(--color-hairline));
+  background: color-mix(in oklab, var(--color-agent-soft) 45%, var(--color-raised));
+  box-shadow: 0 1px 0 0 rgb(255 255 255 / 3%) inset;
+}
+
+@utility bubble-user {
+  border: 1px solid color-mix(in oklab, var(--color-accent) 26%, var(--color-hairline));
+  background: var(--color-elevated);
+  box-shadow: 0 1px 0 0 rgb(255 255 255 / 4%) inset;
+}
+
+/* Message entrance: bubbles appear once, gently, never while reduced motion
+   is requested (the global reduced-motion block collapses animation-duration
+   to ~0 for everyone). */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * The "still composing" signal: three dots that swell and fade in turn. A
+ * pulse, not a bounce — and the global reduced-motion block already freezes it
+ * to a single ~0ms frame for users who asked for less motion.
+ */
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Placeholder shown while data loads. Conveys shape, never fake content. */
 @utility skeleton {
   background: linear-gradient(
@@ -244,6 +317,115 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/*
+ * Dashboard entrance language. One shot per page visit, staggered by card, and
+ * fully silenced by the global reduced-motion block below (which also kills
+ * the transition-delay cascade via transition-duration ~0, so nothing lingers).
+ */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dashboard-enter .dash-enter {
+  opacity: 0;
+  /* The per-card delay is a Tailwind class on the element, applied only when
+     motion is allowed; the media block re-reads the CSS variable, so the
+     same class also works under reduced motion. */
+  animation: rise-in var(--duration-slow) var(--ease-ui) forwards;
+  animation-delay: var(--dash-delay, 0ms);
+}
+
+/* The dashboard header fades in once, 240 ms, no replay on re-render. */
+.dashboard-enter .dash-enter-header {
+  --dash-delay: 0ms;
+}
+
+/* Grid widgets rise in one by one, 140 ms per card. The delay is applied on
+   the wrapper the grid puts the cards in, never on the positioned item. */
+.dashboard-enter .dash-enter-card:nth-child(1) {
+  --dash-delay: 0ms;
+}
+.dashboard-enter .dash-enter-card:nth-child(2) {
+  --dash-delay: var(--duration-fast);
+}
+.dashboard-enter .dash-enter-card:nth-child(3) {
+  --dash-delay: calc(var(--duration-fast) * 2);
+}
+.dashboard-enter .dash-enter-card:nth-child(4) {
+  --dash-delay: calc(var(--duration-fast) * 3);
+}
+.dashboard-enter .dash-enter-card:nth-child(5) {
+  --dash-delay: calc(var(--duration-fast) * 4);
+}
+.dashboard-enter .dash-enter-card:nth-child(6) {
+  --dash-delay: calc(var(--duration-fast) * 5);
+}
+
+/* Widget cards lift subtly on hover: accent edge, deeper shadow, no movement
+   of the grid item itself. `card` must win, so the hover definition comes
+   after the base utility and repeats the full border/shadow/shape. */
+.react-grid-item .card {
+  transition:
+    border-color var(--duration-fast) var(--ease-ui),
+    box-shadow var(--duration-fast) var(--ease-ui);
+}
+
+.react-grid-item .card:hover {
+  border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-hairline));
+  box-shadow:
+    var(--shadow-card),
+    0 12px 32px -16px color-mix(in oklab, var(--color-accent) 22%, transparent);
+}
+
+/*
+ * Quick-actions strip: compact cards that read as shortcuts to the "new"
+ * entry points of the four creation pages. Horizontal scroll on phones, a
+ * four-across grid from lg up. Purely left/right-free logical layout, so fa
+ * mirrors it without a single override. Reuses the shared `card-hover`
+ * language (accent edge + gentle lift) with a slight accent tint on top.
+ */
+.quick-action {
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-control);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(var(--glass-blur));
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-ink-muted);
+  text-align: start;
+  min-height: 2.75rem;
+  transition:
+    border-color var(--duration-fast) var(--ease-ui),
+    box-shadow var(--duration-fast) var(--ease-ui),
+    transform var(--duration-slow) var(--ease-ui),
+    color var(--duration-fast) var(--ease-ui),
+    background-color var(--duration-fast) var(--ease-ui);
+}
+
+.quick-action:hover {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-hairline));
+  box-shadow: var(--shadow-card), 0 12px 32px -16px color-mix(in oklab, var(--color-accent) 28%, transparent);
+  transform: translateY(-1px);
+  color: var(--color-ink);
+  background-color: color-mix(in oklab, var(--color-accent-soft) 16%, var(--color-surface));
+}
+
+.quick-action:focus-visible {
+  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-hairline));
 }
 
 /*
@@ -313,5 +495,12 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* The global block above collapses durations but NOT delays, which would
+     leave entrance-animated cards invisible for the full stagger. Rewrite
+     the delaying variable to zero for the whole dashboard subtree. */
+  .dashboard-enter .dash-enter {
+    --dash-delay: 0ms !important;
   }
 }

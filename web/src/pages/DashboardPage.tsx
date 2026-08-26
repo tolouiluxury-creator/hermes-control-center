@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, LayoutGrid, Plus, RotateCcw } from 'lucide-react';
+import { Bot, Check, LayoutGrid, Library, ListTodo, Plus, RotateCcw, Workflow } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router';
 import {
   getDashboardLayout,
   getStatus,
@@ -22,11 +23,39 @@ import type { MoveDirection } from '@/widgets/WidgetFrame';
 
 const SAVE_DEBOUNCE_MS = 700;
 
+/** One tile in the quick-actions strip under the page header. */
+interface QuickAction {
+  id: string;
+  path: string;
+  icon: typeof Workflow;
+}
+
+/** Keys must exist in en/de/fa under `dashboard.quickActions.<id>`. */
+const QUICK_ACTIONS: QuickAction[] = [
+  { id: 'workflow', path: '/workflows', icon: Workflow },
+  { id: 'task', path: '/aufgaben', icon: ListTodo },
+  { id: 'prompt', path: '/prompts', icon: Library },
+  { id: 'bot', path: '/bots', icon: Bot },
+];
+
 export function DashboardPage() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { data: snapshot, isPending: statusPending, isFetching } = useStatus();
+  // One-shot entrance animations: keyed by mount, so re-renders never replay
+  // them but a fresh visit to the page does.
+  const [mountRun] = useState(0);
+  const mountedKey = `dashboard-${pathname === '/' ? mountRun : -1}`;
+  const enterClass = `dashboard-enter key-${mountedKey}`;
+
+  // Entrance classes for the three zones. Each is `.dash-enter-*`; the delays
+  // are CSS variables on the parent, and all of it is no-ops for users who
+  // asked the OS for less motion.
+  const headerEnterClass = 'dash-enter dash-enter-header';
+  const cardEnterClass = 'dash-enter dash-enter-card';
 
   const stored = useQuery({
     queryKey: queryKeys.dashboardLayout,
@@ -194,8 +223,33 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-6 py-6">
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+    <div className={`mx-auto max-w-[1600px] px-6 py-6 ${enterClass}`}>
+      <div className="mb-5 grid auto-cols-[minmax(10rem,1fr)] grid-flow-col gap-3 overflow-x-auto pb-1 lg:grid-flow-row lg:grid-cols-4 lg:overflow-visible">
+        {QUICK_ACTIONS.map((action) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => navigate(action.path)}
+              className="quick-action group"
+              aria-label={t(`dashboard.quickActions.${action.id}.aria`)}
+            >
+              <Icon
+                size={16}
+                strokeWidth={2.25}
+                className="text-[var(--color-accent)]"
+                aria-hidden
+              />
+              <span>{t(`dashboard.quickActions.${action.id}.label`)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={`mb-4 flex flex-wrap items-center gap-2 ${headerEnterClass}`}>
+        {/* Header chrome: fades in once, 240 ms. The per-zone delays live in
+            app.css, driven by the parent's `.dashboard-enter` key. */}
         <button
           type="button"
           onClick={() => setEditing((value) => !value)}
@@ -238,20 +292,22 @@ export function DashboardPage() {
       </div>
 
       {layout.widgets.length === 0 ? (
-        <div className="card p-10 text-center">
+        <div className={`card p-10 text-center ${cardEnterClass}`}>
           <p className="text-sm font-medium">{t('dashboard.empty.title')}</p>
           <p className="mx-auto mt-1 max-w-sm text-xs text-[var(--color-ink-muted)]">
             {t('dashboard.empty.desc', { arrange: t('dashboard.arrange') })}
           </p>
         </div>
       ) : (
-        <WidgetGrid
-          layout={layout}
-          editing={editing}
-          onChange={applyLayout}
-          onRemove={handleRemove}
-          onMove={handleMove}
-        />
+        <div className={`grid gap-4 ${cardEnterClass}`}>
+          <WidgetGrid
+            layout={layout}
+            editing={editing}
+            onChange={applyLayout}
+            onRemove={handleRemove}
+            onMove={handleMove}
+          />
+        </div>
       )}
 
       {pickerOpen && (
