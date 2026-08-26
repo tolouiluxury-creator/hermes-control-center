@@ -6,6 +6,7 @@ export const de: Dict = {
   'nav.dashboard': 'Dashboard',
   'nav.chats': 'Chats',
   'nav.workflows': 'Workflows',
+    'nav.bots': 'Bots',
   'nav.aufgaben': 'Aufgaben',
   'nav.wissen': 'Wissen (RAG)',
   'nav.dokumente': 'Dokumente',
@@ -212,6 +213,8 @@ export const de: Dict = {
     'Wie dein Agent die Außenwelt erreicht: Messaging-Plattformen, eingehende Webhooks und die dafür freigegebenen Nutzer.',
   'page.analytics.desc': 'Nutzung deines Agenten.',
   'page.logs.desc': 'Ausgabe deines Hermes-Agenten.',
+  'page.bots.desc':
+    'Profile als eigene Hermes-Bots aufbauen und aus einer Flottenansicht betreiben.',
   'page.einstellungen.desc': 'Konfiguration, Schlüssel, Werkzeuge und Wartung deines Hermes.',
   'page.donation.desc':
     'Komplett optional — wer dieses Projekt nützlich findet, kann sich hier mit Krypto bedanken.',

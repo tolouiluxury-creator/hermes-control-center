@@ -176,9 +176,9 @@ export const DEFAULT_LAYOUT: DashboardLayout = {
     { i: 'analytics-1', widget: 'analytics', x: 6, y: 4, w: 6, h: 5 },
     { i: 'insights-1', widget: 'insights', x: 0, y: 9, w: 6, h: 5 },
     { i: 'logs-1', widget: 'logs', x: 6, y: 9, w: 6, h: 5 },
-    { i: 'scheduler-1', widget: 'scheduler', x: 0, y: 14, w: 4, h: 3 },
-    { i: 'agent-1', widget: 'agent', x: 4, y: 14, w: 4, h: 3 },
-    { i: 'skills-1', widget: 'skills', x: 8, y: 14, w: 4, h: 3 },
+    { i: 'scheduler-1', widget: 'scheduler', x: 6, y: 14, w: 4, h: 3 },
+    { i: 'agent-1', widget: 'agent', x: 10, y: 14, w: 4, h: 3 },
+    { i: 'skills-1', widget: 'skills', x: 8, y: 17, w: 4, h: 3 },
   ],
 };
 

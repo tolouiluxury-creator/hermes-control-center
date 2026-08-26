@@ -35,7 +35,7 @@
 
   /* Status. Never used alone — always paired with a label or icon, so the
      information survives for anyone who cannot separate these hues. */
-  --color-ok: #34d399;
+  --color-ok: #F5B027;
   --color-warn: #fbbf24;
   --color-danger: #f87171;
   --color-info: #60a5fa;
@@ -100,7 +100,7 @@
     --color-agent: #7c3aed;
     --color-agent-soft: #ede9fe;
 
-    --color-ok: #059669;
+    --color-ok: #F5B027;
     --color-warn: #b45309;
     --color-danger: #dc2626;
     --color-info: #2563eb;
@@ -131,7 +131,7 @@
   --color-agent: #7c3aed;
   --color-agent-soft: #ede9fe;
 
-  --color-ok: #059669;
+  --color-ok: #F5B027;
   --color-warn: #b45309;
   --color-danger: #dc2626;
   --color-info: #2563eb;
