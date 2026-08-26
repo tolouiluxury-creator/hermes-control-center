@@ -31,7 +31,7 @@ const components: Components = {
     </a>
   ),
   blockquote: ({ children }) => (
-    <blockquote className="mb-2 border-l-2 border-[var(--color-hairline)] pl-2.5 text-[var(--color-ink-muted)] last:mb-0">
+    <blockquote className="mb-2 border-s-2 border-[var(--color-hairline)] ps-2.5 text-[var(--color-ink-muted)] last:mb-0">
       {children}
     </blockquote>
   ),

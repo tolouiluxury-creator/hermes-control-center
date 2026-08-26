@@ -61,11 +61,34 @@ import type {
 
 const STEP_META: Record<
   WorkflowStepKind,
-  { labelKey: string; icon: typeof StickyNote; color: string }
+  { labelKey: string; icon: typeof StickyNote; color: string; chip: string }
 > = {
-  prompt: { labelKey: 'workflows.step.prompt', icon: ListChecks, color: 'var(--color-accent)' },
-  cron: { labelKey: 'workflows.step.cron', icon: WorkflowIcon, color: 'var(--color-ok)' },
-  note: { labelKey: 'workflows.step.note', icon: StickyNote, color: 'var(--color-ink-faint)' },
+  prompt: {
+    labelKey: 'workflows.step.prompt',
+    icon: ListChecks,
+    color: 'var(--color-accent)',
+    chip: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/25',
+  },
+  cron: {
+    labelKey: 'workflows.step.cron',
+    icon: WorkflowIcon,
+    color: 'var(--color-ok)',
+    chip: 'bg-[var(--color-ok)]/10 text-[var(--color-ok)] border-[var(--color-ok)]/25',
+  },
+  note: {
+    labelKey: 'workflows.step.note',
+    icon: StickyNote,
+    color: 'var(--color-ink-faint)',
+    chip: 'bg-[var(--color-ink-faint)]/10 text-[var(--color-ink-muted)] border-[var(--color-hairline)]',
+  },
+};
+
+const STEP_STATUS: Record<WorkflowRunStepStatus, string> = {
+  pending: 'bg-[var(--color-raised)] text-[var(--color-ink-faint)]',
+  running: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+  succeeded: 'bg-[var(--color-ok)]/10 text-[var(--color-ok)]',
+  failed: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]',
+  skipped: 'bg-[var(--color-raised)] text-[var(--color-ink-faint)]',
 };
 
 const STATUS_DOT: Record<WorkflowRunStatus, string> = {
@@ -102,13 +125,15 @@ function RunStepsList({
       {steps.map((step) => (
         <li key={step.id} className="text-xs">
           <div className="flex items-center gap-1.5">
-            {step.status === 'running' && (
-              <Loader2 size={11} className="animate-spin text-[var(--color-accent)]" aria-hidden />
-            )}
-            <span className="text-[var(--color-ink-muted)]">
+            <span
+              className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-1.5 py-0.5 text-[0.62rem] font-medium ${STEP_STATUS[step.status] ?? 'bg-[var(--color-raised)] text-[var(--color-ink-faint)]'}`}
+            >
+              {step.status === 'running' && (
+                <Loader2 size={9} className="animate-spin" aria-hidden />
+              )}
               {t(`workflowRuns.stepStatus.${step.status}`)}
             </span>
-            <span>{step.label}</span>
+            <span className="truncate text-[var(--color-ink-muted)]">{step.label}</span>
           </div>
           {step.status === 'running' && step.kind === 'cron' && (
             <p className="mt-0.5 text-[0.65rem] text-[var(--color-ink-faint)]">
@@ -265,7 +290,7 @@ function WorkflowEditor({
             return (
               <li
                 key={index}
-                className="flex items-center gap-2 rounded-xl border border-[var(--color-hairline)] p-2"
+                className="flex items-center gap-2 rounded-xl border border-[var(--color-hairline)] p-2 transition-colors focus-within:border-[var(--color-accent)]/50"
               >
                 <span className="font-mono text-xs text-[var(--color-ink-faint)]">{index + 1}</span>
                 <Meta.icon size={14} style={{ color: Meta.color }} aria-hidden />
@@ -440,10 +465,13 @@ function WorkflowCard({
     !workflow.enabled ||
     workflow.steps.length === 0 ||
     (startRun.isPending && startRun.variables?.workflowId === workflow.id);
-  const idleClass =
-    'rounded-lg p-1.5 text-[var(--color-ink-faint)] hover:text-[var(--color-accent)] disabled:opacity-30';
   const activeClass = 'rounded-lg p-1.5 text-[var(--color-accent)] disabled:opacity-40';
   const abortBusy = abortRun.isPending && abortRun.variables === run?.runId;
+
+  /* The run buttons get the accent treatment so starting a workflow is the
+     obvious next step; the edit/delete icons stay quiet until hovered. */
+  const runIdleClass =
+    'inline-flex items-center gap-1.5 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2 py-1.5 text-[var(--color-accent)] transition-colors hover:border-[var(--color-accent)]/60 hover:bg-[var(--color-accent)]/20 disabled:opacity-40';
 
   const liveSteps = workflow.steps
     .map((step) => {
@@ -461,7 +489,7 @@ function WorkflowCard({
     .filter((s): s is NonNullable<typeof s> => s !== null);
 
   return (
-    <li className="card p-4">
+    <li className="card card-hover p-4">
       <div className="flex items-start gap-3">
         <button
           type="button"
@@ -516,7 +544,7 @@ function WorkflowCard({
               }
             }}
             disabled={chainIsActive ? abortBusy : workflowRunActive || startDisabled}
-            className={chainIsActive ? activeClass : idleClass}
+            className={chainIsActive ? activeClass : runIdleClass}
             aria-label={t(chainIsActive ? 'workflowRuns.stopAria' : 'workflowRuns.runChainAria', {
               name: workflow.name,
             })}
@@ -526,6 +554,7 @@ function WorkflowCard({
             ) : (
               <Play size={14} aria-hidden />
             )}
+            {!chainIsActive && t('workflowRuns.runChain')}
           </button>
           <button
             type="button"
@@ -537,7 +566,7 @@ function WorkflowCard({
               }
             }}
             disabled={stepIsActive ? abortBusy : workflowRunActive || startDisabled}
-            className={stepIsActive ? activeClass : idleClass}
+            className={stepIsActive ? activeClass : runIdleClass}
             aria-label={t(
               stepIsActive ? 'workflowRuns.stopAria' : 'workflowRuns.runStepByStepAria',
               { name: workflow.name },
@@ -548,6 +577,7 @@ function WorkflowCard({
             ) : (
               <StepForward size={14} aria-hidden />
             )}
+            {!stepIsActive && t('workflowRuns.runSingleStep')}
           </button>
           <button
             type="button"

@@ -284,8 +284,22 @@ export const getModelOptions = (): Promise<ModelOptions> =>
 export const getMcpServers = (): Promise<McpServerSummary[]> =>
   apiRequest<McpServerSummary[]>('/hermes/mcp');
 
-export const getCronJobs = (): Promise<CronJobSummary[]> =>
-  apiRequest<CronJobSummary[]>('/hermes/cron');
+/*
+ * Overloads keep every call site typechecking: the 0-arg form is what
+ * useQuery({ queryFn: getCronJobs }) sees (QueryFunction wants no params),
+ * while BotsPage still passes a profile to fetch one bot's jobs.
+ */
+export const getCronJobs: {
+  (): Promise<CronJobSummary[]>;
+  (profile?: string): Promise<CronJobSummary[]>;
+} = (profile?: string): Promise<CronJobSummary[]> =>
+  apiRequest<CronJobSummary[]>(
+    `/hermes/cron${
+      profile && typeof profile === 'string' && profile !== 'undefined'
+        ? `?profile=${encodeURIComponent(profile)}`
+        : ''
+    }`,
+  );
 
 export const getCronDeliveryTargets = (): Promise<CronDeliveryTarget[]> =>
   apiRequest<CronDeliveryTarget[]>('/hermes/cron/delivery-targets');

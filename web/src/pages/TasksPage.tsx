@@ -4,6 +4,9 @@ import {
   AlertTriangle,
   CalendarClock,
   Check,
+  CircleAlert,
+  CircleCheck,
+  CirclePause,
   Pause,
   Pencil,
   Play,
@@ -72,6 +75,60 @@ function ActionButton({
  * profiles, since each profile keeps its own cron store. On edit the profile is
  * shown as a fact instead, so it is clear which store is being written to.
  */
+
+/** Visible state of one cron job, derived purely from what the API already sends. */
+export type TaskStatus = 'failed' | 'running' | 'paused';
+
+export function taskStatus(job: CronJobSummary): TaskStatus {
+  if (job.paused) return 'paused';
+  // A live job whose last run failed needs attention more than one that idles.
+  return job.lastStatus !== null && job.lastStatus !== 'ok' ? 'failed' : 'running';
+}
+
+const statusOrder: Record<TaskStatus, number> = { failed: 0, running: 1, paused: 2 };
+
+export function sortTasks(jobs: CronJobSummary[]): CronJobSummary[] {
+  return [...jobs].sort((a, b) => {
+    const byStatus = statusOrder[taskStatus(a)] - statusOrder[taskStatus(b)];
+    if (byStatus !== 0) return byStatus;
+    return (a.name ?? '').localeCompare(b.name ?? '');
+  });
+}
+
+function StatusBadge({ job }: { job: CronJobSummary }) {
+  const { t } = useI18n();
+  const status = taskStatus(job);
+  const config = {
+    failed: {
+      icon: CircleAlert,
+      label: t('status.error'),
+      className: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]',
+    },
+    running: {
+      icon: CircleCheck,
+      label: t('status.running'),
+      className: 'bg-[var(--color-ok)]/10 text-[var(--color-ok)]',
+    },
+    paused: {
+      icon: CirclePause,
+      label: t('status.paused'),
+      className: 'bg-[var(--color-warn)]/10 text-[var(--color-warn)]',
+    },
+  }[status];
+  const Icon = config.icon;
+  return (
+    <span
+      role="status"
+      aria-label={t('status.aria', { status: config.label, name: job.name ?? t('tasks.unnamed') })}
+      title={config.label}
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[0.65rem] font-medium ${config.className}`}
+    >
+      <Icon size={11} aria-hidden />
+      {config.label}
+    </span>
+  );
+}
+
 function JobEditor({
   job,
   onCancel,
@@ -262,9 +319,9 @@ export function TasksPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [editing, setEditing] = useState<CronJobSummary | null | undefined>(undefined);
 
-  const { data, isPending, error, dataUpdatedAt } = useQuery({
+  const { data, isPending, error, dataUpdatedAt } = useQuery<CronJobSummary[]>({
     queryKey: queryKeys.cron,
-    queryFn: getCronJobs,
+    queryFn: () => getCronJobs(),
     staleTime: 30_000,
   });
 
@@ -331,6 +388,7 @@ export function TasksPage() {
 
   const save = useMutation({
     mutationFn: (input: CronJobInput & { profile: string }) => {
+      void editing;
       if (!editing) return createCronJob(input);
       const { profile, ...updates } = input;
       return updateCronJob(editing.id, profile, updates);
@@ -353,7 +411,7 @@ export function TasksPage() {
     (runAction.isPending && runAction.variables?.id === id) ||
     (remove.isPending && remove.variables?.id === id);
 
-  const jobs = data ?? [];
+  const jobs = sortTasks(data ?? []);
   const active = jobs.filter((job: CronJobSummary) => !job.paused).length;
 
   return (
@@ -424,15 +482,9 @@ export function TasksPage() {
               const jobName = job.name ?? t('tasks.unnamed');
 
               return (
-                <li key={job.id} className="card p-4">
+                <li key={job.id} className="card card-hover p-4">
                   <div className="flex items-start gap-3">
-                    <span
-                      className="mt-0.5 shrink-0"
-                      style={{ color: job.paused ? 'var(--color-ink-faint)' : 'var(--color-ok)' }}
-                      aria-hidden
-                    >
-                      {job.paused ? <Pause size={14} /> : <Play size={14} />}
-                    </span>
+                    <StatusBadge job={job} />
 
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
@@ -451,7 +503,6 @@ export function TasksPage() {
                         )}
                       </p>
                       <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-                        {job.paused ? `${t('tasks.paused')} · ` : ''}
                         {described ?? t('tasks.scheduleUnknown')}
                         {described && described !== job.schedule && job.schedule && (
                           <span className="ml-2 font-mono text-[var(--color-ink-faint)]">

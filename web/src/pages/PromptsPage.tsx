@@ -298,7 +298,7 @@ export function PromptsPage() {
       ) : (
         <ul className="space-y-3">
           {visible.map((prompt) => (
-            <li key={prompt.id} className="card p-4">
+            <li key={prompt.id} className="card card-hover p-4">
               <div className="flex flex-wrap items-start gap-2">
                 <div className="min-w-0 flex-1">
                   <h3 className="text-sm font-medium">{prompt.title}</h3>
@@ -358,10 +358,16 @@ export function PromptsPage() {
 
               {(prompt.tags.length > 0 || prompt.variables.length > 0) && (
                 <div className="mt-2 flex flex-wrap gap-1">
-                  {prompt.tags.map((tag) => (
+                  {prompt.tags.map((tag, tagIndex) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-[var(--color-hairline)] px-2 py-0.5 text-[0.65rem] text-[var(--color-ink-muted)]"
+                      className={`rounded-full border px-2 py-0.5 text-[0.65rem] ${
+                        tagIndex % 3 === 0
+                          ? 'border-[var(--color-accent)]/25 bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                          : tagIndex % 3 === 1
+                            ? 'border-[var(--color-info)]/25 bg-[var(--color-info)]/10 text-[var(--color-info)]'
+                            : 'border-[var(--color-warn)]/25 bg-[var(--color-warn)]/10 text-[var(--color-warn)]'
+                      }`}
                     >
                       {tag}
                     </span>
@@ -369,7 +375,7 @@ export function PromptsPage() {
                   {prompt.variables.map((variable) => (
                     <span
                       key={variable}
-                      className="rounded-full bg-[var(--color-agent)]/10 px-2 py-0.5 font-mono text-[0.65rem] text-[var(--color-agent)]"
+                      className="rounded-full bg-[var(--color-agent)]/10 px-2 py-0.5 font-mono text-[0.65rem] border border-[var(--color-agent)]/25 text-[var(--color-agent)]"
                       title={t('prompts.variableTitle')}
                     >
                       {variable}

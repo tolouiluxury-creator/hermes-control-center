@@ -423,8 +423,17 @@ export function ChatsPage() {
     // State is only touched after the await, so this is not the synchronous
     // set-state-in-effect the rule is guarding against.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadSessions();
-  }, [loadSessions]);
+    void (async () => {
+      const list = await loadSessions();
+      // No handover landed and nothing is open yet: land on the most recent
+      // conversation instead of an empty "start a conversation" canvas, so a
+      // bot's chat area is never a dead end. `sessionId` (state, not the ref)
+      // tells us whether a conversation actually became active.
+      if (list.length > 0 && sessionId === null) {
+        void openExisting(list[0]!.id);
+      }
+    })();
+  }, [loadSessions, openExisting, sessionId]);
 
   // One SSE stream for the page; events are filtered by the active session.
   useEffect(() => {
@@ -612,6 +621,76 @@ export function ChatsPage() {
     }
   };
 
+  // Bot↔Bot DM replies the parent page wants surfaced in this transcript.
+  useEffect(() => {
+    if (!injectedMessages?.length) return;
+    setMessages((current) => [
+      ...current,
+      ...injectedMessages.map((m) => ({
+        role: 'assistant' as const,
+        text: `[DM von ${m.sender}]: ${m.text}`,
+      })),
+    ]);
+  }, [injectedMessages]);
+
+  /**
+   * @mention support. `@Name` in the composer targets another bot: the picker
+   * autocompletes known bots, and on send the mention is fanned out as a DM
+   * whose reply appears in this same transcript (see `dmReplies` state).
+   */
+  const [dmReplies, setDmReplies] = useState<{ sender: string; text: string }[]>([]);
+  const mentionRoster = allMentionBots;
+
+  // Own @mention fan-out replies surface the same way.
+  useEffect(() => {
+    if (!dmReplies.length) return;
+    setMessages((current) => [
+      ...current,
+      ...dmReplies.map((m) => ({
+        role: 'assistant' as const,
+        text: `[DM von ${m.sender}]: ${m.text}`,
+      })),
+    ]);
+  }, [dmReplies]);
+
+  const updateMentionPicker = (value: string, caret: number) => {
+    // Find the "@" start of the token the caret sits in (word boundary).
+    const before = value.slice(0, caret);
+    const at = before.lastIndexOf('@');
+    if (at >= 0 && !/[\w@]/.test(before[at - 1] ?? '') && !before.slice(at + 1).includes(' ')) {
+      const query = before.slice(at + 1).toLowerCase();
+      const matches = mentionRoster
+        .filter((b) => b.name.toLowerCase().includes(query))
+        .slice(0, 6);
+      if (matches.length > 0) {
+        setMentionPicker({ query, matches, caret: at });
+        return;
+      }
+    }
+    setMentionPicker(null);
+  };
+  const applyMention = (name: string) => {
+    if (!mentionPicker) return;
+    const value = input;
+    // `caret` is the position of the "@" itself (set in updateMentionPicker).
+    // Keep everything before it, replace the "@…" token with "@Name ", and
+    // drop any partial query typed after the "@".
+    const at = mentionPicker.caret;
+    const rest = value.slice(at + 1).replace(/^\S*/, '');
+    const next = `${value.slice(0, at)}@${name} ${rest.replace(/^\s+/, '')}`;
+    setInput(next);
+    setMentionPicker(null);
+  };
+  const extractMentions = (text: string): string[] => {
+    const names = new Set<string>();
+    for (const match of text.matchAll(/@([A-Za-z0-9_.-]+)/g)) {
+      const candidate = match[1] ?? '';
+      const found = mentionRoster.find((b) => b.name.toLowerCase() === candidate.toLowerCase());
+      if (found) names.add(found.name);
+    }
+    return [...names];
+  };
+
   const sendToTodos = (text: string) => {
     // The panel only mounts its ToDos tab content once open. flushSync forces
     // React to commit that state change before this function continues, so
@@ -658,7 +737,7 @@ export function ChatsPage() {
             type="button"
             onClick={startNew}
             disabled={connecting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-2 text-sm text-[var(--color-accent)] transition-colors hover:border-[var(--color-accent)]/60 hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
           >
             <Plus size={14} aria-hidden />
             {t('chat.newConversation')}
@@ -800,7 +879,7 @@ export function ChatsPage() {
                                   // whole row and pushed the pin and trash out of sight.
                                   className={`flex min-w-0 flex-1 items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors ${
                                     active && !selecting
-                                      ? 'bg-[var(--color-accent)]/10 text-[var(--color-ink)]'
+                                      ? 'border-s-2 border-[var(--color-accent)] bg-[var(--color-accent)]/10 ps-2 text-[var(--color-ink)]'
                                       : 'text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
                                   }`}
                                 >
@@ -1041,7 +1120,11 @@ export function ChatsPage() {
                     return (
                       <div
                         key={index}
+                        // Entrance only for freshly rendered bubbles; the global
+                        // reduced-motion block collapses the animation to a
+                        // single frame, so this costs nothing there.
                         className={`group flex flex-col ${isUser ? 'items-end' : 'items-start'}`}
+                        style={{ animation: 'message-in var(--duration-slow) var(--ease-ui) both' }}
                       >
                         <div className="flex max-w-[80%] items-end gap-1.5">
                           {!isUser && message.text && (
@@ -1058,8 +1141,8 @@ export function ChatsPage() {
                           <div
                             className={`rounded-2xl px-3.5 py-2 text-sm ${
                               isUser
-                                ? 'rounded-br-md bg-[var(--color-accent)]/15 text-[var(--color-ink)] whitespace-pre-wrap'
-                                : 'rounded-bl-md border border-[var(--color-hairline)] bg-[var(--color-raised)] text-[var(--color-ink)]'
+                                ? 'bubble-user rounded-br-md whitespace-pre-wrap text-[var(--color-ink)]'
+                                : 'bubble-agent rounded-bl-md text-[var(--color-ink)]'
                             }`}
                           >
                             {attachmentRefs.length > 0 && (
@@ -1185,7 +1268,7 @@ export function ChatsPage() {
                   // field drops the caret, and the next thought should not have to
                   // wait for the agent. Only sending waits — see the button.
                   disabled={connecting}
-                  className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm outline-none focus-visible:border-[var(--color-accent)] disabled:opacity-60"
+                  className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm shadow-[var(--shadow-card)] transition-colors outline-none placeholder:text-[var(--color-ink-faint)] hover:border-[var(--color-hairline-strong)] focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
                 {streaming ? (
                   // Some turns run several tool calls and model requests back
@@ -1208,7 +1291,7 @@ export function ChatsPage() {
                       (input.trim() === '' && attachments.every((a) => a.dataUrl === null)) ||
                       attachments.some((a) => a.dataUrl === null)
                     }
-                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+                    className="inline-flex h-11 items-center gap-2 rounded-xl border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-4 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 hover:border-[var(--color-accent)]/60 disabled:opacity-40"
                   >
                     <Send size={15} aria-hidden />
                     {t('chat.send')}
