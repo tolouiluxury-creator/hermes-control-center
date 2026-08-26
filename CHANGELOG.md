@@ -4,7 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
-## [1.0.0] — 2026-08-26
+## [1.1.0] — 2026-08-26
+
+### Added
+
+- **Bot suite**: manage multiple Hermes bots with their own profiles.
+  - **Bots page**: create / edit / archive bots, toggle active state, pick avatar + accent.
+  - **Group rooms**: gather bots in a room and broadcast to all members at once.
+  - **Bot chat center** (`/bots/chats`): dedicated chat per bot, profile locked to the bot.
+  - **@mentions**: `@BotName` in a bot chat fans the message out as a DM to that bot,
+    with its reply surfaced back in the conversation.
+- **Server wiring**: bot + group-room REST routes registered in the control-center
+  server (previously present in the UI code but never mounted).
+
+### Fixed
+
+- Type errors in the bot-suite frontend wiring (missing types, query keys, props).
+- `nav.ts` imports and `BotChatsPage` route registration after the v1.0.0 rebase.
 
 Stable release — the first non-beta version.
 
