@@ -170,6 +170,90 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE workflows ADD COLUMN next_run_at INTEGER;
     `,
   },
+
+  {
+    version: 5,
+    name: 'add profile-backed bots',
+    sql: `
+      CREATE TABLE bots (
+        id           TEXT PRIMARY KEY,
+        profile_name TEXT NOT NULL UNIQUE,
+        name         TEXT NOT NULL,
+        description  TEXT NOT NULL DEFAULT '',
+        avatar_key   TEXT,
+        accent       TEXT,
+        state        TEXT NOT NULL DEFAULT 'active',
+        hidden       INTEGER NOT NULL DEFAULT 0,
+        created_at   INTEGER NOT NULL,
+        updated_at   INTEGER NOT NULL,
+        last_seen_at INTEGER
+      );
+      CREATE INDEX bots_visibility_updated_idx ON bots (hidden, updated_at DESC);
+      CREATE INDEX bots_state_updated_idx ON bots (state, updated_at DESC);
+
+      CREATE TABLE bot_routines (
+        bot_id      TEXT NOT NULL REFERENCES bots (id) ON DELETE CASCADE,
+        type        TEXT NOT NULL,
+        routine_id  TEXT NOT NULL,
+        enabled     INTEGER NOT NULL DEFAULT 1,
+        created_at  INTEGER NOT NULL,
+        PRIMARY KEY (bot_id, type, routine_id)
+      );
+      CREATE INDEX bot_routines_bot_idx ON bot_routines (bot_id, enabled);
+    `,
+  },
+  {
+    version: 6,
+    name: 'add bot pause channel snapshots',
+    sql: `
+      CREATE TABLE bot_pause_channels (
+        bot_id          TEXT NOT NULL REFERENCES bots (id) ON DELETE CASCADE,
+        platform_id     TEXT NOT NULL,
+        was_enabled     INTEGER NOT NULL DEFAULT 1,
+        paused_at       INTEGER NOT NULL,
+        PRIMARY KEY (bot_id, platform_id)
+      );
+    `,
+  },
+  {
+    version: 7,
+    name: 'add canonical bot chat sessions',
+    sql: `
+      ALTER TABLE bots ADD COLUMN canonical_chat_session_id TEXT;
+      CREATE UNIQUE INDEX bots_canonical_chat_session_idx
+        ON bots (canonical_chat_session_id)
+        WHERE canonical_chat_session_id IS NOT NULL;
+    `,
+  },
+  {
+    version: 8,
+    name: 'add group chat rooms',
+    sql: `
+      CREATE TABLE group_rooms (
+        id         TEXT PRIMARY KEY,
+        name       TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE group_room_members (
+        room_id TEXT NOT NULL REFERENCES group_rooms (id) ON DELETE CASCADE,
+        bot_id  TEXT NOT NULL REFERENCES bots (id) ON DELETE CASCADE,
+        PRIMARY KEY (room_id, bot_id)
+      );
+
+      CREATE TABLE group_room_messages (
+        id            TEXT PRIMARY KEY,
+        room_id       TEXT NOT NULL REFERENCES group_rooms (id) ON DELETE CASCADE,
+        sender_bot_id TEXT REFERENCES bots (id) ON DELETE SET NULL,
+        kind          TEXT NOT NULL DEFAULT 'user',
+        text          TEXT NOT NULL,
+        created_at    INTEGER NOT NULL
+      );
+      CREATE INDEX group_room_messages_room_created_idx
+        ON group_room_messages (room_id, created_at);
+    `,
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS.reduce(

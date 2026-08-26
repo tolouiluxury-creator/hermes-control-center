@@ -18,6 +18,7 @@ import { ChatsPage } from '@/pages/ChatsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TelegramPage } from '@/pages/TelegramPage';
 import { WorkspacePage } from '@/pages/WorkspacePage';
+import { BotChatsPage } from '@/pages/BotChatsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
@@ -52,6 +53,10 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppShell />}>
         <Route index element={<DashboardPage />} />
+
+        {/* Bot chat center: a specific path under /bots, matched before the
+            generic /bots/* route below. */}
+        <Route path="bots/chats" element={<BotChatsPage />} />
 
         {NAV_ITEMS.filter((item) => item.path !== '/').map((item) => {
           const Page = PAGES[item.id];

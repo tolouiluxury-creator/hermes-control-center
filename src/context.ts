@@ -9,6 +9,9 @@ import { ApiServerClient } from './hermes/apiServer.js';
 import { DashboardClient } from './hermes/dashboard.js';
 import { GatewayClient } from './hermes/gateway.js';
 import { Store } from './store/db.js';
+import { BotsRepo } from './store/bots.js';
+import { GroupRoomsRepo } from './store/groupRooms.js';
+import { BotService } from './hermes/bots.js';
 import { WorkflowsRepo } from './store/workflows.js';
 import { WorkflowRunsRepo } from './store/workflowRuns.js';
 import { WorkflowRunner } from './hermes/workflowRunner.js';
@@ -36,6 +39,9 @@ export interface AppContext {
   /** Chat with the agent over the dashboard's tui_gateway WebSocket. */
   gateway: GatewayClient;
   store: Store;
+  botsRepo: BotsRepo;
+  groupRoomsRepo: GroupRoomsRepo;
+  botService: BotService;
   workflowRuns: WorkflowRunsRepo;
   workflowRunner: WorkflowRunner;
   workflowScheduler: WorkflowScheduler;
@@ -122,6 +128,13 @@ export function createContext(
   const gateway = new GatewayClient(connection.dashboard.url, dashboardToken, connection.profile);
 
   const store = Store.open(controlCenterDatabasePath(env));
+  const botsRepo = new BotsRepo(store);
+  const groupRoomsRepo = new GroupRoomsRepo(store);
+  const botService = new BotService({
+    bots: botsRepo,
+    dashboard,
+    launchProfile: connection.profile,
+  });
   const workflows = new WorkflowsRepo(store);
   const workflowRuns = new WorkflowRunsRepo(store);
   workflowRuns.reconcileInterrupted();
@@ -166,6 +179,9 @@ export function createContext(
     dashboard,
     gateway,
     store,
+    botsRepo,
+    groupRoomsRepo,
+    botService,
     workflowRuns,
     workflowRunner,
     workflowScheduler,
