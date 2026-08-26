@@ -53,16 +53,6 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Workflow,
   },
   {
-    id: 'bots',
-    path: '/bots',
-    icon: Bot,
-  },
-  {
-    id: 'rooms',
-    path: '/rooms',
-    icon: MessageSquare,
-  },
-  {
     id: 'aufgaben',
     path: '/aufgaben',
     icon: ListTodo,

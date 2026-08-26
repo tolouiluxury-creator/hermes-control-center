@@ -18,9 +18,6 @@ import { ChatsPage } from '@/pages/ChatsPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { TelegramPage } from '@/pages/TelegramPage';
 import { WorkspacePage } from '@/pages/WorkspacePage';
-import { BotsPage } from '@/pages/BotsPage';
-import { BotChatsPage } from '@/pages/BotChatsPage';
-import { GroupRoomsPage } from '@/pages/GroupRoomsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
@@ -29,8 +26,6 @@ import type { ComponentType } from 'react';
 const PAGES: Record<string, ComponentType> = {
   chats: ChatsPage,
   workflows: WorkflowsPage,
-  bots: BotsPage,
-  rooms: GroupRoomsPage,
   aufgaben: TasksPage,
   wissen: WissenPage,
   skills: SkillsPage,
