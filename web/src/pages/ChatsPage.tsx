@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { flushSync } from 'react-dom';
 import { useSearchParams } from 'react-router';
 import {
@@ -19,13 +20,17 @@ import {
   attachChatFile,
   createChatSession,
   deleteChatSessions,
+  getBots,
   getChatHistory,
   getChatSessions,
   interruptChatSession,
+  queryKeys,
   resumeChatSession,
+  sendBotDM,
   sendChatPrompt,
   setSessionPinned,
   switchChatModel,
+  type BotDetails,
   type ChatMessage,
   type ChatSessionSummary,
 } from '@/lib/api';
@@ -57,7 +62,36 @@ interface GatewayEventData {
 
 const MAX_ATTACHMENT_MB = 10;
 
-export function ChatsPage() {
+/** ChatsPage lets BotChatsPage hand it a bot context: a fixed profile, a
+ * canonical session and a rosters of bots for the @mention picker. */
+export interface ChatsPageProps {
+  /** Page header when embedded (BotChatsPage); defaults to the nav label. */
+  title?: string;
+  description?: string;
+  actions?: React.ReactNode;
+  /** Lock the chat to one profile (bot chats are scoped to the bot's own). */
+  profileOverride?: string;
+  profileSelectable?: boolean;
+  /** The bot this transcript belongs to; enables the DM fan-out on @mention. */
+  botId?: string;
+  initialSessionId?: string | null;
+  /** Bot↔Bot DM replies the parent page wants surfaced in this transcript. */
+  injectedMessages?: { sender: string; text: string }[];
+  /** Roster for the @mention picker; defaults to all bots. */
+  botRoster?: { bots: BotDetails[]; selectedId: string; onSelect: (id: string) => void };
+}
+
+export function ChatsPage({
+  title,
+  description,
+  actions,
+  profileOverride,
+  profileSelectable = true,
+  botId,
+  initialSessionId,
+  injectedMessages,
+  botRoster,
+}: ChatsPageProps) {
   const toast = useToast();
   const { t, lang } = useI18n();
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
@@ -68,7 +102,7 @@ export function ChatsPage() {
    * and a delete are asked for. See {@link ChatSessionIds} — the gateway wants a
    * different id, held in `liveRef`.
    */
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(() => initialSessionId ?? null);
   const [connecting, setConnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -111,7 +145,10 @@ export function ChatsPage() {
    * a later profile switch is not fought by the URL.
    */
   const [searchParams] = useSearchParams();
-  const [profile, setProfile] = useState<string | null>(() => searchParams.get('profile'));
+  // A bot chat locks the profile; the URL query only applies when free-standing.
+  const [profile, setProfile] = useState<string | null>(() =>
+    profileOverride ?? searchParams.get('profile'),
+  );
   /**
    * The model a conversation started here was created with.
    *
@@ -265,6 +302,9 @@ export function ChatsPage() {
     leaveSelection();
     startNew();
   };
+  // A bot chat pins the profile — the picker has no business switching it.
+  const effectiveProfile = profileOverride ?? profile;
+  const profileLocked = profileOverride !== undefined;
 
   const openSession = sessions.find((session) => session.id === sessionId) ?? null;
 
@@ -588,6 +628,11 @@ export function ChatsPage() {
       ]);
       pushed = true;
       await sendChatPrompt(live, outgoing);
+      // Bot-to-bot fan-out for any @Name in the message (runs parallel; its
+      // replies surface as assistant bubbles via dmReplies). Never blocks the
+      // chat's own turn.
+      const outgoingText = outgoing;
+      if (botId && outgoingText) void fanOutMentions(outgoingText);
     } catch (error) {
       setStreaming(false);
       if (pushed) setMessages((current) => current.slice(0, -1));
@@ -618,6 +663,129 @@ export function ChatsPage() {
       void interruptChatSession(live).catch(() => {
         // Nothing left to reconcile here — see the comment above.
       });
+    }
+  };
+
+  // Bot↔Bot DM replies the parent page wants surfaced in this transcript.
+  useEffect(() => {
+    if (!injectedMessages?.length) return;
+    setMessages((current) => [
+      ...current,
+      ...injectedMessages.map((m) => ({
+        role: 'assistant' as const,
+        text: `[DM von ${m.sender}]: ${m.text}`,
+      })),
+    ]);
+  }, [injectedMessages]);
+
+  // ─── @mention picker: `@Name` in the composer targets another bot ──────────
+  const mentionRoster = useQuery({
+    queryKey: queryKeys.bots(true),
+    queryFn: () => getBots(true),
+    staleTime: 15_000,
+    enabled: botRoster === undefined,
+  });
+  const rosterBots = (botRoster?.bots ?? mentionRoster.data?.bots ?? [])
+    .filter((entry) => entry.bot.id !== botId)
+    .map((entry) => entry.bot);
+  const [mentionPicker, setMentionPicker] = useState<{
+    query: string;
+    matches: { id: string; name: string }[];
+    caret: number;
+  } | null>(null);
+  const mentionRef = useRef<HTMLDivElement | null>(null);
+  const [dmReplies, setDmReplies] = useState<{ sender: string; text: string }[]>([]);
+  const [dmSending, setDmSending] = useState(false);
+
+  // Own @mention fan-out replies surface the same way.
+  useEffect(() => {
+    if (!dmReplies.length) return;
+    setMessages((current) => [
+      ...current,
+      ...dmReplies.map((m) => ({
+        role: 'assistant' as const,
+        text: `[DM von ${m.sender}]: ${m.text}`,
+      })),
+    ]);
+  }, [dmReplies]);
+
+  const updateMentionPicker = (value: string, caret: number) => {
+    // Find the "@" start of the token the caret sits in (word boundary).
+    const before = value.slice(0, caret);
+    const at = before.lastIndexOf('@');
+    if (at >= 0 && !/[\w@]/.test(before[at - 1] ?? '') && !before.slice(at + 1).includes(' ')) {
+      const query = before.slice(at + 1).toLowerCase();
+      const matches = rosterBots
+        .filter((b) => b.name.toLowerCase().includes(query))
+        .slice(0, 6)
+        .map((b) => ({ id: b.id, name: b.name }));
+      if (matches.length > 0) {
+        setMentionPicker({ query, matches, caret: at });
+        return;
+      }
+    }
+    setMentionPicker(null);
+  };
+  const applyMention = (name: string) => {
+    if (!mentionPicker) return;
+    const value = input;
+    // `caret` is the position of the "@" itself (set in updateMentionPicker).
+    // Keep everything before it, replace the "@…" token with "@Name ", and
+    // drop any partial query typed after the "@".
+    const at = mentionPicker.caret;
+    const rest = value.slice(at + 1).replace(/^\S*/, '');
+    const next = `${value.slice(0, at)}@${name} ${rest.replace(/^\s+/, '')}`;
+    setInput(next);
+    setMentionPicker(null);
+    inputRef.current?.focus();
+  };
+  const extractMentions = (text: string): string[] => {
+    const names = new Set<string>();
+    for (const match of text.matchAll(/@([A-Za-z0-9_.-]+)/g)) {
+      const candidate = match[1] ?? '';
+      const found = rosterBots.find((b) => b.name.toLowerCase() === candidate.toLowerCase());
+      if (found) names.add(found.name);
+    }
+    return [...names];
+  };
+  // The picker closes on an outside click; the composer's tab/enter keys use
+  // the chosen mention instead of their usual meaning while it is open.
+  useEffect(() => {
+    if (!mentionPicker) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!mentionRef.current?.contains(event.target as Node)) setMentionPicker(null);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMentionPicker(null);
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [mentionPicker]);
+
+  // Commit-on-send: any @Name in the outgoing text becomes a DM fan-out that
+  // runs in parallel to the normal prompt; its replies land in the transcript.
+  const fanOutMentions = async (text: string) => {
+    const names = extractMentions(text);
+    if (names.length === 0 || !botId) return;
+    const targets = rosterBots.filter((b) => names.includes(b.name)).map((b) => b.id);
+    if (targets.length === 0 || dmSending) return;
+    setDmSending(true);
+    try {
+      const res = await sendBotDM(botId, targets, text);
+      const replies = res.results.filter((r) => r.ok && r.reply).map((r) => ({
+        sender: r.botName ?? '?',
+        text: r.reply ?? '',
+      }));
+      setDmReplies((current) => [...current, ...replies]);
+    } catch {
+      // A failed fan-out must not break the chat itself — the toast from the
+      // page-level catch covers it, and the prompt still went through.
+    } finally {
+      setDmSending(false);
     }
   };
 
@@ -659,7 +827,12 @@ export function ChatsPage() {
     });
 
   return (
-    <PageShell title={t('nav.chats')} description={t('page.chats.desc')} wide>
+    <PageShell
+      title={title ?? t('nav.chats')}
+      description={description ?? t('page.chats.desc')}
+      actions={actions}
+      wide
+    >
       <div className="flex h-[calc(100vh-11rem)] gap-4">
         {/* Session list */}
         <aside className="hidden w-64 shrink-0 flex-col sm:flex">
@@ -995,8 +1168,9 @@ export function ChatsPage() {
                 <ChatToolbar
                   modelPick={modelPick}
                   onModelPick={setModelPick}
-                  profile={profile}
+                  profile={effectiveProfile}
                   onProfile={switchProfile}
+                  profileSelectable={profileSelectable && !profileLocked}
                   openConversationModel={startedWithModel ?? openSession?.model ?? null}
                   conversationOpen={liveId !== null}
                   onLiveModelPick={(pick) => void applyLiveModel(pick)}
@@ -1149,7 +1323,7 @@ export function ChatsPage() {
               )}
 
               <form
-                className="mt-3 flex items-end gap-2"
+                className="relative mt-3 flex items-end gap-2"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
                   event.preventDefault();
@@ -1185,8 +1359,26 @@ export function ChatsPage() {
                 <textarea
                   ref={inputRef}
                   value={input}
-                  onChange={(event) => setInput(event.target.value)}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setInput(value);
+                    updateMentionPicker(value, event.target.selectionStart ?? value.length);
+                  }}
                   onKeyDown={(event) => {
+                    // While the picker is open, Tab and Enter choose the active
+                    // mention; Escape already closes it via the window listener.
+                    if (mentionPicker && event.key === 'Tab') {
+                      event.preventDefault();
+                      const [first] = mentionPicker.matches;
+                      if (first) applyMention(first.name);
+                    } else if (mentionPicker && event.key === 'Enter' && !event.shiftKey) {
+                      const [first] = mentionPicker.matches;
+                      if (first) {
+                        event.preventDefault();
+                        applyMention(first.name);
+                        return;
+                      }
+                    }
                     if (event.key === 'Enter' && !event.shiftKey) {
                       event.preventDefault();
                       void send();
@@ -1200,6 +1392,30 @@ export function ChatsPage() {
                   disabled={connecting}
                   className="min-h-[2.75rem] flex-1 resize-y rounded-xl border border-[var(--color-hairline)] bg-[var(--color-base)] px-3 py-2.5 text-sm shadow-[var(--shadow-card)] transition-colors outline-none placeholder:text-[var(--color-ink-faint)] hover:border-[var(--color-hairline-strong)] focus-visible:border-[var(--color-accent)] disabled:opacity-60"
                 />
+                {mentionPicker && mentionPicker.matches.length > 0 && (
+                  <div
+                    ref={mentionRef}
+                    role="listbox"
+                    aria-label={t('chat.mentionLabel')}
+                    className="absolute bottom-full left-3 z-20 mb-2 w-64 overflow-hidden rounded-xl border border-[var(--color-hairline)] bg-[var(--color-raised)] shadow-[var(--shadow-card)]"
+                  >
+                    {mentionPicker.matches.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        role="option"
+                        aria-selected={false}
+                        onClick={() => applyMention(m.name)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-[var(--color-ink)] transition-colors hover:bg-[var(--color-accent)]/10"
+                      >
+                        <span className="text-sm leading-none" aria-hidden>
+                          {rosterBots.find((b) => b.id === m.id)?.avatarKey ?? '🤖'}
+                        </span>
+                        {m.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {streaming ? (
                   // Some turns run several tool calls and model requests back
                   // to back and can legitimately take minutes — this is the

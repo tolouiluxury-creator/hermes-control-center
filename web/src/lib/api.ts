@@ -60,6 +60,47 @@ interface ErrorBody {
   message?: string;
 }
 
+// ─── Bot suite types (mirror of src/hermes/bots.ts + src/store/bots.ts) ──────
+
+export type BotState = 'active' | 'paused';
+export type BotRoutineType = 'workflow' | 'cron';
+
+export interface BotRecord {
+  id: string;
+  profileName: string;
+  name: string;
+  description: string;
+  avatarKey: string | null;
+  accent: string | null;
+  state: BotState;
+  hidden: boolean;
+  createdAt: number;
+  updatedAt: number;
+  lastSeenAt: number | null;
+  canonicalChatSessionId: string | null;
+}
+
+export interface BotRoutineRecord {
+  type: BotRoutineType;
+  routineId: string;
+  enabled: boolean;
+}
+
+export interface BotDetails {
+  bot: BotRecord;
+  profile: {
+    name: string;
+    model?: string | null;
+    provider?: string | null;
+    skillCount?: number;
+    gatewayRunning?: boolean;
+  } | null;
+  messaging: MessagingOverview | null;
+  routines: BotRoutineRecord[];
+}
+
+export type Bot = BotRecord;
+
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...init,
@@ -744,6 +785,154 @@ export const setAuxiliaryModel = (
     ...jsonBody({ task, provider, model }),
   });
 
+export const getBots = (includeHidden = false): Promise<{ bots: BotDetails[] }> =>
+  apiRequest<{ bots: BotDetails[] }>(`/bots${includeHidden ? '?includeHidden=1' : ''}`);
+
+export const getBot = (id: string): Promise<BotDetails> =>
+  apiRequest<BotDetails>(`/bots/${encodeURIComponent(id)}`);
+
+export const createBot = (input: {
+  profileName?: string;
+  name: string;
+  description?: string;
+  cloneFrom?: string;
+  cloneAll?: boolean;
+  noSkills?: boolean;
+  avatarKey?: string | null;
+  accent?: string | null;
+  model?: string;
+  provider?: string;
+}): Promise<Bot> => apiRequest<Bot>('/bots', { method: 'POST', ...jsonBody(input) });
+
+export const updateBot = (
+  id: string,
+  patch: Partial<Pick<Bot, 'name' | 'description' | 'avatarKey' | 'accent'>> & {
+    model?: string;
+    provider?: string;
+  },
+): Promise<Bot> =>
+  apiRequest<Bot>(`/bots/${encodeURIComponent(id)}`, { method: 'PATCH', ...jsonBody(patch) });
+
+export const archiveBot = (id: string): Promise<Bot> =>
+  apiRequest<Bot>(`/bots/${encodeURIComponent(id)}/archive`, { method: 'POST' });
+
+export const deleteBot = (id: string): Promise<Bot> =>
+  apiRequest<Bot>(`/bots/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const setBotChatSession = (id: string, sessionId: string): Promise<Bot> =>
+  apiRequest<Bot>(`/bots/${encodeURIComponent(id)}/chat-session`, {
+    method: 'POST',
+    ...jsonBody({ sessionId }),
+  });
+
+export const pauseBot = (id: string): Promise<{ bot: Bot; warnings: string[] }> =>
+  apiRequest<{ bot: Bot; warnings: string[] }>(`/bots/${encodeURIComponent(id)}/pause`, {
+    method: 'POST',
+  });
+
+export const resumeBot = (id: string): Promise<{ bot: Bot; warnings: string[] }> =>
+  apiRequest<{ bot: Bot; warnings: string[] }>(`/bots/${encodeURIComponent(id)}/resume`, {
+    method: 'POST',
+  });
+
+export const setBotHidden = (id: string, hidden: boolean): Promise<Bot> =>
+  apiRequest<Bot>(`/bots/${encodeURIComponent(id)}/${hidden ? 'hide' : 'unhide'}`, {
+    method: 'POST',
+  });
+
+export const setBotRoutine = (
+  id: string,
+  routine: { type: BotRoutineType; routineId: string; enabled: boolean },
+): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/bots/${encodeURIComponent(id)}/routines`, {
+    method: 'PUT',
+    ...jsonBody(routine),
+  });
+
+/** Send a bot-to-bot DM (or fan-out to several bots); replies are collected. */
+export const sendBotDM = (
+  id: string,
+  toBotIds: string[],
+  text: string,
+): Promise<{ ok: boolean; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[] }> =>
+  apiRequest<{ ok: boolean; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[] }>(
+    `/bots/${encodeURIComponent(id)}/dm`,
+    { method: 'POST', ...jsonBody({ text, toBotIds }) },
+  );
+
+/** Remove a bot–routine link entirely (distinct from disabling it). */
+export const unlinkBotRoutine = (
+  id: string,
+  routine: { type: BotRoutineType; routineId: string },
+): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/bots/${encodeURIComponent(id)}/routines`, {
+    method: 'DELETE',
+    ...jsonBody(routine),
+  });
+
+// ─── Group chat rooms ────────────────────────────────────────────────────────
+
+export interface GroupRoomSummary {
+  room: { id: string; name: string; createdAt: number; updatedAt: number; memberBotIds: string[] };
+  members: { botId: string; name: string }[];
+}
+
+export interface GroupMessage {
+  id: string;
+  roomId: string;
+  senderBotId: string | null;
+  senderBotName: string | null;
+  kind: 'user' | 'assistant';
+  text: string;
+  createdAt: number;
+}
+
+export const getGroupRooms = (): Promise<{ rooms: GroupRoomSummary[] }> =>
+  apiRequest<{ rooms: GroupRoomSummary[] }>('/rooms');
+
+export const getGroupRoom = (
+  id: string,
+): Promise<{ room: GroupRoomSummary; messages: GroupMessage[] }> =>
+  apiRequest<{ room: GroupRoomSummary; messages: GroupMessage[] }>(`/rooms/${encodeURIComponent(id)}`);
+
+export const createGroupRoom = (
+  name: string,
+  memberBotIds: string[],
+): Promise<GroupRoomSummary> =>
+  apiRequest<GroupRoomSummary>('/rooms', {
+    method: 'POST',
+    ...jsonBody({ name, memberBotIds }),
+  });
+
+export const deleteGroupRoom = (id: string): Promise<{ ok: boolean }> =>
+  apiRequest<{ ok: boolean }>(`/rooms/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const setGroupRoomMembers = (
+  id: string,
+  memberBotIds: string[],
+): Promise<GroupRoomSummary> =>
+  apiRequest<GroupRoomSummary>(`/rooms/${encodeURIComponent(id)}/members`, {
+    method: 'PUT',
+    ...jsonBody({ memberBotIds }),
+  });
+
+export const sendGroupRoomMessage = (
+  id: string,
+  text: string,
+): Promise<{ userMessage: GroupMessage; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }> =>
+  apiRequest<{ userMessage: GroupMessage; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }>(
+    `/rooms/${encodeURIComponent(id)}/messages`,
+    { method: 'POST', ...jsonBody({ text }) },
+  );
+
+export const deliberateGroupRoom = (
+  id: string,
+): Promise<{ results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }> =>
+  apiRequest<{ results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }>(
+    `/rooms/${encodeURIComponent(id)}/deliberate`,
+    { method: 'POST' },
+  );
+
 export const getProfiles = (): Promise<ProfileOverview> =>
   apiRequest<ProfileOverview>('/hermes/profiles');
 
@@ -902,6 +1091,10 @@ export const queryKeys = {
   logs: (lines: number) => ['hermes', 'logs', lines] as const,
   sessions: (limit: number) => ['hermes', 'sessions', limit] as const,
   status: ['status'] as const,
+  bots: (includeHidden?: boolean) => ['bots', includeHidden ? 'hidden' : 'all'] as const,
+  bot: (id: string) => ['bots', id] as const,
+  rooms: ['rooms'] as const,
+  room: (id: string) => ['rooms', id] as const,
   connection: ['connection'] as const,
   metricSeries: (metric: string) => ['metrics', 'series', metric] as const,
 };

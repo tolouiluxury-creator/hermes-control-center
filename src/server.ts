@@ -7,6 +7,8 @@ import { registerAuthGuard, registerAuthRoutes } from './routes/auth.js';
 import { registerDashboardRoutes } from './routes/dashboard.js';
 import { registerInventoryRoutes } from './routes/inventory.js';
 import { registerActionRoutes } from './routes/actions.js';
+import { registerBotRoutes } from './routes/bots.js';
+import { registerGroupRoomsRoutes } from './routes/groupRooms.js';
 import { ResponseCache, CACHE_TTL_MS } from './routes/cache.js';
 import { registerWorkspaceRoutes } from './routes/workspace.js';
 import { registerWorkflowRunRoutes } from './routes/workflowRuns.js';
@@ -93,6 +95,11 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   await registerWorkflowEventRoutes(app, ctx);
   await registerFileRoutes(app, ctx);
   await registerChatRoutes(app, ctx, cache);
+  await registerBotRoutes(app, ctx.botService);
+  await registerGroupRoomsRoutes(app, {
+    rooms: ctx.groupRoomsRepo,
+    bots: ctx.botService,
+  });
   await registerStreamRoutes(app, ctx);
 
   const webRoot = resolveWebRoot();

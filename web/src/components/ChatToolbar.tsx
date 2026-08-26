@@ -24,6 +24,8 @@ interface ChatToolbarProps {
   /** Null means the profile the running dashboard was launched with. */
   profile: string | null;
   onProfile: (profile: string | null) => void;
+  /** Hide the profile switcher (bot chats are pinned to the bot's profile). */
+  profileSelectable?: boolean;
   /** The model the open conversation runs on, read back from its stored row. */
   openConversationModel?: string | null;
   conversationOpen: boolean;
@@ -51,6 +53,7 @@ export function ChatToolbar({
   onModelPick,
   profile,
   onProfile,
+  profileSelectable = true,
   openConversationModel,
   conversationOpen,
   onLiveModelPick,
@@ -236,16 +239,18 @@ export function ChatToolbar({
           disabledHint={t('chat.toolbar.cwdFixed')}
         />
       )}
-      <ChipMenu
-        icon={<UserRound size={12} />}
-        label={profile ?? launchProfile ?? t('chat.toolbar.profileTitle')}
-        title={t('chat.toolbar.profileTitle')}
-        options={profileOptions}
-        value={profile ?? ''}
-        onChange={(value) => onProfile(value === '' ? null : value)}
-        disabled={profileOptions.length <= 1}
-        disabledHint={t('chat.toolbar.profileSingle')}
-      />
+      {profileSelectable !== false && (
+        <ChipMenu
+          icon={<UserRound size={12} />}
+          label={profile ?? launchProfile ?? t('chat.toolbar.profileTitle')}
+          title={t('chat.toolbar.profileTitle')}
+          options={profileOptions}
+          value={profile ?? ''}
+          onChange={(value) => onProfile(value === '' ? null : value)}
+          disabled={profileOptions.length <= 1}
+          disabledHint={t('chat.toolbar.profileSingle')}
+        />
+      )}
     </div>
   );
 }
