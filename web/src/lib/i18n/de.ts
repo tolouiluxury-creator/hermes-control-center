@@ -438,6 +438,10 @@ export const de: Dict = {
   'tasks.empty.title': 'Keine geplanten Aufgaben',
   'tasks.empty.desc': 'Über {command} angelegte Jobs erscheinen hier.',
   'tasks.paused': 'pausiert',
+  'status.running': 'Läuft',
+  'status.paused': 'Pausiert',
+  'status.error': 'Fehler',
+  'status.aria': '{name}: {status}',
   'tasks.nextRun': 'Nächster Lauf',
   'tasks.lastRun': 'Letzter Lauf',
   'tasks.never': 'nie',
@@ -794,6 +798,14 @@ export const de: Dict = {
   'dashboard.droppedWidgets': 'Unbekannte Widgets entfernt',
   'dashboard.droppedWidgets.desc':
     'Dein gespeichertes Layout nennt {count} Widget(s), die diese Version nicht kennt: {names}.',
+  'dashboard.quickActions.workflow.label': 'Neuer Workflow',
+  'dashboard.quickActions.workflow.aria': 'Einen neuen Workflow anlegen',
+  'dashboard.quickActions.task.label': 'Neue Aufgabe',
+  'dashboard.quickActions.task.aria': 'Eine neue geplante Aufgabe anlegen',
+  'dashboard.quickActions.prompt.label': 'Neuer Prompt',
+  'dashboard.quickActions.prompt.aria': 'Eine neue Prompt-Vorlage anlegen',
+  'dashboard.quickActions.bot.label': 'Neuer Bot',
+  'dashboard.quickActions.bot.aria': 'Einen neuen Bot anlegen',
 
   // Widget frame and shared widget states
   'widget.options': 'Optionen für {name}',

@@ -435,6 +435,10 @@ export const en: Dict = {
   'tasks.empty.title': 'No scheduled tasks',
   'tasks.empty.desc': 'Jobs created via {command} appear here.',
   'tasks.paused': 'paused',
+  'status.running': 'Running',
+  'status.paused': 'Paused',
+  'status.error': 'Error',
+  'status.aria': '{name}: {status}',
   'tasks.scheduleUnknown': 'Schedule unknown',
   'tasks.nextRun': 'Next run',
   'tasks.lastRun': 'Last run',
@@ -786,6 +790,14 @@ export const en: Dict = {
   'dashboard.droppedWidgets': 'Unknown widgets removed',
   'dashboard.droppedWidgets.desc':
     'Your saved layout names {count} widget(s) this version does not know: {names}.',
+  'dashboard.quickActions.workflow.label': 'New workflow',
+  'dashboard.quickActions.workflow.aria': 'Create a new workflow',
+  'dashboard.quickActions.task.label': 'New task',
+  'dashboard.quickActions.task.aria': 'Create a new scheduled task',
+  'dashboard.quickActions.prompt.label': 'New prompt',
+  'dashboard.quickActions.prompt.aria': 'Create a new prompt template',
+  'dashboard.quickActions.bot.label': 'New bot',
+  'dashboard.quickActions.bot.aria': 'Create a new bot',
 
   // Widget frame and shared widget states
   'widget.options': 'Options for {name}',

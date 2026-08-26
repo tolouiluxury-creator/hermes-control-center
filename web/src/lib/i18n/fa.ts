@@ -433,6 +433,10 @@ export const fa: Dict = {
   'tasks.empty.title': 'هیچ کار زمان‌بندی‌شده‌ای نیست',
   'tasks.empty.desc': 'کارهای ساخته‌شده با {command} این‌جا نمایان می‌شوند.',
   'tasks.paused': 'متوقف',
+  'status.running': 'در حال اجرا',
+  'status.paused': 'متوقف',
+  'status.error': 'خطا',
+  'status.aria': '{name}: {status}',
   'tasks.nextRun': 'اجرای بعدی',
   'tasks.lastRun': 'آخرین اجرا',
   'tasks.never': 'هرگز',
@@ -783,6 +787,14 @@ export const fa: Dict = {
   'dashboard.droppedWidgets': 'ویجت‌های ناشناخته حذف شدند',
   'dashboard.droppedWidgets.desc':
     'چیدمان ذخیره‌شده شما {count} ویجت را نام می‌برد که این نسخه نمی‌شناسد: {names}.',
+  'dashboard.quickActions.workflow.label': 'گردش‌کار جدید',
+  'dashboard.quickActions.workflow.aria': 'ساخت گردش‌کار جدید',
+  'dashboard.quickActions.task.label': 'وظیفه جدید',
+  'dashboard.quickActions.task.aria': 'ساخت وظیفه زمان‌بندی‌شده جدید',
+  'dashboard.quickActions.prompt.label': 'پرامپت جدید',
+  'dashboard.quickActions.prompt.aria': 'ساخت الگوی پرامپت جدید',
+  'dashboard.quickActions.bot.label': 'بات جدید',
+  'dashboard.quickActions.bot.aria': 'ساخت بات جدید',
 
   // Widget frame and shared widget states
   'widget.options': 'گزینه‌های {name}',
