@@ -4,6 +4,40 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
+## [1.0.0] — 2026-08-26
+
+Stable release — the first non-beta version.
+
+### Added
+
+- **Dashboard quick actions**: one-click entry points to create a workflow, task, prompt or bot.
+- **Task status badges**: running / paused / error are now visibly tagged, with running tasks
+  sorted to the top.
+
+### Changed
+
+- **Design polish** across chat, bots, tasks, workflows and prompts: unified hover/focus/status
+  colours, softer entrance effects — all `prefers-reduced-motion` safe.
+- **Brand palette**: teal/green replaced by the amber #F5B027 brand colour with orange warnings;
+  contrast cleaned up in both dark and light themes.
+- **Runs section removed** (sidebar entry, detail page and dashboard widget) — the area was
+  redundant next to the workflows run history.
+
+### Fixed
+
+- **i18n**: exact en/de/fa key parity (1017 keys); dead `runs.*` keys removed from all three dicts.
+- Removed the stale `dist.bak` build artifact from the repository.
+
+## [0.1.0] â€” 2026-08-22
+
+### Added
+
+- **Operations → Runs**, a shared run center with persistent workflow history, known Hermes run
+  details, live step/event streaming, saved-state reconnect behavior, and capability-aware Stop,
+  Continue/Retry and approval actions.
+- **Bot Center v1**, a profile-backed fleet roster with create/clone, channel/gateway health,
+  profile-scoped direct chat, hidden Bots and channel-aware pause/resume.
+
 ## [0.1.0-beta.3] — 2026-08-09
 
 ### Added

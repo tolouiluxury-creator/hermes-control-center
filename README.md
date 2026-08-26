@@ -22,11 +22,10 @@ browser.
 > Not on npm yet. Until the first release is published, install from a clone — see
 > [Development](#development).
 
-> **Status: beta.** Every navigation entry is a real page on real data, verified against a live
-> Hermes 0.19.0. Nothing here fakes data: a panel with no real source shows an explicit empty state
-> instead of a plausible-looking number. Still beta because it has one real installation behind it
-> so far — please [open an issue](../../issues/new/choose) for anything that doesn't hold up on
-> yours.
+> **Status: stable (v1.0.0).** Every navigation entry is a real page on real data, verified against a live
+> Hermes Agent. Nothing here fakes data: a panel with no real source shows an explicit empty state
+> instead of a plausible-looking number. Please [open an issue](../../issues/new/choose) for anything
+> that doesn't hold up on yours.
 
 ![Hermes Control Center](docs/screenshots/banner.png)
 
