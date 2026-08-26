@@ -37,7 +37,7 @@
   /* Status. Never used alone — always paired with a label or icon, so the
      information survives for anyone who cannot separate these hues. */
   --color-ok: #F5B027;
-  --color-warn: #fbbf24;
+  --color-warn: #F97316;
   --color-danger: #f87171;
   --color-info: #60a5fa;
 
@@ -95,15 +95,15 @@
        token is used at (timestamps, meta lines). This clears 6:1. */
     --color-ink-faint: #5b6b82;
 
-    --color-accent: #F5B027;
-    --color-accent-strong: #FFC85C;
+    --color-accent: #B45309;
+    --color-accent-strong: #D97706;
     --color-accent-soft: #3A2A0D;
     --color-accent-contrast: #2A1A00;
     --color-agent: #7c3aed;
     --color-agent-soft: #ede9fe;
 
     --color-ok: #F5B027;
-    --color-warn: #b45309;
+    --color-warn: #F97316;
     --color-danger: #dc2626;
     --color-info: #2563eb;
 
@@ -127,15 +127,15 @@
   --color-ink-muted: #475569;
   --color-ink-faint: #64748b;
 
-  --color-accent: #F5B027;
-  --color-accent-strong: #FFC85C;
+  --color-accent: #B45309;
+  --color-accent-strong: #D97706;
   --color-accent-soft: #3A2A0D;
   --color-accent-contrast: #2A1A00;
   --color-agent: #7c3aed;
   --color-agent-soft: #ede9fe;
 
   --color-ok: #F5B027;
-  --color-warn: #b45309;
+  --color-warn: #F97316;
   --color-danger: #dc2626;
   --color-info: #2563eb;
 
@@ -219,8 +219,8 @@ body {
     background-color var(--duration-fast) var(--ease-ui);
 
   &:hover {
-    border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-hairline));
-    box-shadow: var(--shadow-card), 0 12px 32px -16px color-mix(in oklab, var(--color-accent) 22%, transparent);
+    border-color: color-mix(in oklab, var(--color-accent) 28%, var(--color-hairline));
+    box-shadow: var(--shadow-card), 0 12px 32px -20px color-mix(in oklab, var(--color-accent) 12%, transparent);
     transform: translateY(-1px);
   }
 
@@ -383,10 +383,10 @@ body {
 }
 
 .react-grid-item .card:hover {
-  border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-hairline));
+  border-color: color-mix(in oklab, var(--color-accent) 28%, var(--color-hairline));
   box-shadow:
     var(--shadow-card),
-    0 12px 32px -16px color-mix(in oklab, var(--color-accent) 22%, transparent);
+    0 12px 32px -20px color-mix(in oklab, var(--color-accent) 12%, transparent);
 }
 
 /*
@@ -420,11 +420,11 @@ body {
 }
 
 .quick-action:hover {
-  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-hairline));
-  box-shadow: var(--shadow-card), 0 12px 32px -16px color-mix(in oklab, var(--color-accent) 28%, transparent);
+  border-color: color-mix(in oklab, var(--color-accent) 32%, var(--color-hairline));
+  box-shadow: var(--shadow-card), 0 12px 32px -20px color-mix(in oklab, var(--color-accent) 14%, transparent);
   transform: translateY(-1px);
   color: var(--color-ink);
-  background-color: color-mix(in oklab, var(--color-accent-soft) 16%, var(--color-surface));
+  background-color: color-mix(in oklab, var(--color-accent-soft) 12%, var(--color-surface));
 }
 
 .quick-action:focus-visible {
