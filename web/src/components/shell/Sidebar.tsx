@@ -12,7 +12,7 @@ interface SidebarProps {
   onNavigate?: () => void;
 }
 
-/** Tiny version pill in the sidebar header, fed by /api/meta. */
+/** Versions-Kapsel unter dem Sidebar-Logo, fed by /api/meta. */
 function VersionBadge() {
   const { data } = useQuery({
     queryKey: queryKeys.meta,
@@ -22,9 +22,15 @@ function VersionBadge() {
   });
   if (!data?.version) return null;
   return (
-    <span className="rounded-full border border-[var(--color-hairline)] bg-[var(--color-raised)] px-1.5 py-px text-[0.6rem] font-medium leading-tight text-[var(--color-ink-faint)]">
-      v{data.version}
-    </span>
+    <div className="border-b border-[var(--color-hairline)] px-4 pb-3">
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-[var(--color-accent)]/20 bg-[var(--color-accent)]/8 px-2 py-1 text-[0.65rem] font-semibold tracking-wide text-[var(--color-accent)]">
+        <span
+          className="size-1.5 rounded-full bg-[var(--color-accent)] shadow-[0_0_6px_var(--color-accent)]"
+          aria-hidden
+        />
+        v{data.version}
+      </span>
+    </div>
   );
 }
 
@@ -137,15 +143,14 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
         {!collapsed && (
           <span className="min-w-0">
             <span className="block text-sm leading-tight font-semibold tracking-tight">Hermes</span>
-            <span className="flex items-center gap-1.5">
-              <span className="block text-[0.65rem] leading-tight tracking-[0.14em] text-[var(--color-ink-faint)] uppercase">
-                Control Center
-              </span>
-              <VersionBadge />
+            <span className="block text-[0.65rem] leading-tight tracking-[0.14em] text-[var(--color-ink-faint)] uppercase">
+              Control Center
             </span>
           </span>
         )}
       </NavLink>
+
+      {!collapsed && <VersionBadge />}
 
       <nav
         aria-label={t('shell.mainNavigation')}
