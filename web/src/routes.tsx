@@ -19,12 +19,14 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { TelegramPage } from '@/pages/TelegramPage';
 import { WorkspacePage } from '@/pages/WorkspacePage';
 import { BotChatsPage } from '@/pages/BotChatsPage';
+import { BotsPage } from '@/pages/BotsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
 
 /** Every nav item now maps to a real page. */
 const PAGES: Record<string, ComponentType> = {
+  bots: BotsPage,
   chats: ChatsPage,
   workflows: WorkflowsPage,
   aufgaben: TasksPage,

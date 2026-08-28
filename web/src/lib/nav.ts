@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpen,
+  Bot,
   Cpu,
   HandCoins,
   Layers,
@@ -40,6 +41,12 @@ export const NAV_ITEMS: NavItem[] = [
     id: 'dashboard',
     path: '/',
     icon: LayoutDashboard,
+  },
+  {
+    id: 'bots',
+    path: '/bots',
+    icon: Bot,
+    badge: 'live',
   },
   {
     id: 'chats',
