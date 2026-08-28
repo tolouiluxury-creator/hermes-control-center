@@ -21,10 +21,21 @@ export interface UpdateState {
   startedAt: string | null;
   finishedAt: string | null;
   ok: boolean | null;
+  /** 'idle' | 'running' | 'uptodate' | 'installed' | 'failed' — für klare UI-Badges. */
+  status: 'idle' | 'running' | 'uptodate' | 'installed' | 'failed';
+  message: string;
   log: string;
 }
 
-let state: UpdateState = { running: false, startedAt: null, finishedAt: null, ok: null, log: '' };
+let state: UpdateState = {
+  running: false,
+  startedAt: null,
+  finishedAt: null,
+  ok: null,
+  status: 'idle',
+  message: '',
+  log: '',
+};
 
 export function getSelfUpdateState(): UpdateState {
   return state;
@@ -40,7 +51,15 @@ export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
     return reply.code(409).send({ error: 'update_running', message: 'An update is already running.' });
   }
 
-  state = { running: true, startedAt: new Date().toISOString(), finishedAt: null, ok: null, log: '' };
+  state = {
+    running: true,
+    startedAt: new Date().toISOString(),
+    finishedAt: null,
+    ok: null,
+    status: 'running',
+    message: 'Update läuft…',
+    log: '',
+  };
   reply.send({ ok: true, started: true });
 
   const append = (line: string) => {
@@ -82,6 +101,8 @@ export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
         state.ok = true;
         state.finishedAt = new Date().toISOString();
         state.running = false;
+        state.status = 'uptodate';
+        state.message = 'Bereits auf dem neuesten Stand. Keine Änderungen installiert.';
         return;
       }
       await run('git', ['pull', '--ff-only', GIT_REMOTE, GIT_BRANCH]);
@@ -95,6 +116,8 @@ export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
       state.ok = true;
       state.finishedAt = new Date().toISOString();
       state.running = false;
+      state.status = 'installed';
+      state.message = 'Update installiert. Dienst wird neu gestartet…';
       // Neustart mit Verzögerung, damit der HTTP-Response zuerst raus ist.
       setTimeout(() => {
         execFile('systemctl', ['restart', SYSTEMD_SERVICE], { timeout: 30_000 }, (error) => {
@@ -106,6 +129,8 @@ export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
       state.ok = false;
       state.finishedAt = new Date().toISOString();
       state.running = false;
+      state.status = 'failed';
+      state.message = 'Update fehlgeschlagen. Details siehe Log.';
       log.warn(`Self-update failed: ${String(error)}`);
     }
   })();

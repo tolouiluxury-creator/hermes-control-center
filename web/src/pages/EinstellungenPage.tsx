@@ -447,15 +447,34 @@ function MaintenanceSection() {
                 Update verfügbar ({ccUpdate.data.latestVersion})
               </span>
             )}
-            {su?.ok === true && (
-              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
-                ✅ Update installiert
+            {!ccUpdate.data?.updateAvailable && su?.status !== 'running' && su?.status !== 'installed' && (
+              <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
+                ✓ Aktuell (v{ccUpdate.data?.currentVersion ?? ''})
               </span>
             )}
-            {su?.ok === false && (
+            {su?.status === 'running' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
+                <span className="size-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
+                Update läuft…
+              </span>
+            )}
+            {su?.status === 'uptodate' && (
+              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+                ✅ Bereits aktuell — nichts zu installieren
+              </span>
+            )}
+            {su?.status === 'installed' && (
+              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+                ✅ Update installiert — Dienst startet neu
+              </span>
+            )}
+            {su?.status === 'failed' && (
               <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
                 ❌ Update fehlgeschlagen
               </span>
+            )}
+            {su?.message && su?.status !== 'running' && (
+              <span className="text-xs text-[var(--color-ink-muted)]">{su.message}</span>
             )}
             <button
               type="button"
@@ -467,6 +486,11 @@ function MaintenanceSection() {
               {suRunning ? 'Update läuft…' : 'Jetzt updaten'}
             </button>
           </div>
+          {su?.log && su.status !== 'idle' && (
+            <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-[0.65rem] leading-relaxed text-[var(--color-ink-muted)]">
+              {su.log}
+            </pre>
+          )}
         </div>
 
         <div className="card p-4">

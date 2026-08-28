@@ -295,6 +295,8 @@ export interface SelfUpdateState {
   startedAt: string | null;
   finishedAt: string | null;
   ok: boolean | null;
+  status: 'idle' | 'running' | 'uptodate' | 'installed' | 'failed';
+  message: string;
   log: string;
 }
 
