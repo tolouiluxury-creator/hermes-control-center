@@ -20,6 +20,7 @@ import { TelegramPage } from '@/pages/TelegramPage';
 import { WorkspacePage } from '@/pages/WorkspacePage';
 import { BotChatsPage } from '@/pages/BotChatsPage';
 import { BotsPage } from '@/pages/BotsPage';
+import { GroupRoomsPage } from '@/pages/GroupRoomsPage';
 import { NAV_ITEMS } from '@/lib/nav';
 import { useI18n } from '@/lib/i18n';
 import type { ComponentType } from 'react';
@@ -27,6 +28,7 @@ import type { ComponentType } from 'react';
 /** Every nav item now maps to a real page. */
 const PAGES: Record<string, ComponentType> = {
   bots: BotsPage,
+  rooms: GroupRoomsPage,
   chats: ChatsPage,
   workflows: WorkflowsPage,
   aufgaben: TasksPage,

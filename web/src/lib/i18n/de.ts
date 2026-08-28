@@ -7,6 +7,7 @@ export const de: Dict = {
   'nav.chats': 'Chats',
   'nav.workflows': 'Workflows',
     'nav.bots': 'Bots',
+  'nav.rooms': 'Räume',
   'nav.aufgaben': 'Aufgaben',
   'nav.wissen': 'Wissen (RAG)',
   'nav.dokumente': 'Dokumente',

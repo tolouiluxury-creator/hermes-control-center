@@ -49,6 +49,12 @@ export const NAV_ITEMS: NavItem[] = [
     badge: 'live',
   },
   {
+    id: 'rooms',
+    path: '/rooms',
+    icon: MessagesSquare,
+    badge: 'live',
+  },
+  {
     id: 'chats',
     path: '/chats',
     icon: MessagesSquare,
