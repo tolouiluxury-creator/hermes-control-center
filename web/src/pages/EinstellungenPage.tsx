@@ -29,6 +29,8 @@ import {
   getMeta,
   getSelfUpdateState,
   triggerSelfUpdate,
+  getHermesUpdateState,
+  triggerHermesUpdate,
   queryKeys,
   runCurator,
   setCuratorPaused,
@@ -399,6 +401,25 @@ function MaintenanceSection() {
   const su = selfUpdate.data?.state;
   const suRunning = su?.running ?? false;
 
+  // --- Hermes-Agent-Update -------------------------------------------------
+  const hermesUpdate = useQuery({
+    queryKey: queryKeys.hermesUpdate,
+    queryFn: getHermesUpdateState,
+    staleTime: 5_000,
+    refetchInterval: (query) => (query.state.data?.state.running ? 3_000 : false),
+  });
+  const triggerHermes = useMutation({
+    mutationFn: triggerHermesUpdate,
+    onSuccess: () => {
+      toast.push({ tone: 'success', title: 'Hermes-Update gestartet' });
+    },
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: 'Hermes-Update fehlgeschlagen', description: e.message }),
+  });
+
+  const hu = hermesUpdate.data?.state;
+  const huRunning = hu?.running ?? false;
+
   return (
     <Section
       id="maintenance"
@@ -412,26 +433,56 @@ function MaintenanceSection() {
           <MetaVersionRow />
         </div>
 
-        {/* Hermes Agent Update-Status */}
-        <div className="card p-4">
-          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.version')}</p>
-          {update.isPending ? (
-            <SkeletonText lines={2} />
-          ) : update.error ? (
-            <p className="text-sm text-[var(--color-danger)]">{update.error.message}</p>
-          ) : (
-            <>
-              <p className="mt-1 font-mono text-lg">{update.data?.currentVersion ?? '—'}</p>
-              <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-                {update.data?.message ?? ''}
-              </p>
-              {update.data?.updateAvailable && update.data.updateCommand && (
-                <p className="mt-2 text-xs text-[var(--color-warn)]">
-                  {t('settings.updateAvailable', { command: '' })}
-                  <code className="font-mono">{update.data.updateCommand}</code>
-                </p>
-              )}
-            </>
+        {/* Hermes Agent Update + Button */}
+        <div className="card p-4 col-span-full">
+          <p className="text-xs text-[var(--color-ink-faint)]">Hermes Agent Update</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="font-mono text-sm text-[var(--color-ink)]">
+              {update.data?.currentVersion ?? '—'}
+            </span>
+            {update.data?.updateAvailable && (
+              <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
+                Update verfügbar
+              </span>
+            )}
+            {hu?.status === 'running' && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
+                <span className="size-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
+                Update läuft…
+              </span>
+            )}
+            {hu?.status === 'uptodate' && (
+              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+                ✅ Bereits aktuell — nichts zu installieren
+              </span>
+            )}
+            {hu?.status === 'installed' && (
+              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+                ✅ Update installiert — Gateway startet neu
+              </span>
+            )}
+            {hu?.status === 'failed' && (
+              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
+                ❌ Update fehlgeschlagen
+              </span>
+            )}
+            {hu?.message && hu?.status !== 'running' && (
+              <span className="text-xs text-[var(--color-ink-muted)]">{hu.message}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => triggerHermes.mutate()}
+              disabled={huRunning || triggerHermes.isPending}
+              className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+            >
+              <RefreshCw size={13} className={huRunning ? 'animate-spin' : ''} />
+              {huRunning ? 'Update läuft…' : 'Hermes updaten'}
+            </button>
+          </div>
+          {hu?.log && hu.status !== 'idle' && (
+            <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-[0.65rem] leading-relaxed text-[var(--color-ink-muted)]">
+              {hu.log}
+            </pre>
           )}
         </div>
 
