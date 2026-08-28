@@ -296,6 +296,7 @@ function ToolsetsSection() {
 
 /** Control Center eigene Version + Update-Status (aus /api/meta + /api/meta/update). */
 function MetaVersionRow() {
+  const { t } = useI18n();
   const meta = useQuery({
     queryKey: queryKeys.meta,
     queryFn: getMeta,
@@ -315,11 +316,11 @@ function MetaVersionRow() {
       <div className="mt-1.5">
         {available ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
-            Update verfügbar (v{updateCheck.data?.latestVersion})
+            {t('settings.update.latest', { version: updateCheck.data?.latestVersion ?? '' })}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
-            ✓ Aktuell (v{meta.data?.version ?? ''})
+            {t('settings.update.current', { version: meta.data?.version ?? '' })}
           </span>
         )}
       </div>
@@ -396,10 +397,14 @@ function MaintenanceSection() {
   const trigger = useMutation({
     mutationFn: triggerSelfUpdate,
     onSuccess: () => {
-      toast.push({ tone: 'success', title: 'Update gestartet' });
+      toast.push({ tone: 'success', title: t('settings.update.startedToast') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Update fehlgeschlagen', description: e.message }),
+      toast.push({
+        tone: 'error',
+        title: t('settings.update.failedToast'),
+        description: e.message,
+      }),
   });
 
   const su = selfUpdate.data?.state;
@@ -415,10 +420,14 @@ function MaintenanceSection() {
   const triggerHermes = useMutation({
     mutationFn: triggerHermesUpdate,
     onSuccess: () => {
-      toast.push({ tone: 'success', title: 'Hermes-Update gestartet' });
+      toast.push({ tone: 'success', title: t('settings.hermesUpdate.startedToast') });
     },
     onError: (e: Error) =>
-      toast.push({ tone: 'error', title: 'Hermes-Update fehlgeschlagen', description: e.message }),
+      toast.push({
+        tone: 'error',
+        title: t('settings.hermesUpdate.failedToast'),
+        description: e.message,
+      }),
   });
 
   const hu = hermesUpdate.data?.state;
@@ -433,46 +442,46 @@ function MaintenanceSection() {
       <div className="grid gap-3 sm:grid-cols-2">
         {/* Control Center Version + Self-Update */}
         <div className="card p-4">
-          <p className="text-xs text-[var(--color-ink-faint)]">Control Center</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.ccTitle')}</p>
           <MetaVersionRow />
         </div>
 
         {/* Hermes Agent Update + Button */}
         <div className="card p-4 col-span-full">
-          <p className="text-xs text-[var(--color-ink-faint)]">Hermes Agent Update</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.hermesUpdate.title')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm text-[var(--color-ink)]">
               {update.data?.currentVersion ?? '—'}
             </span>
             {update.data?.updateAvailable && (
               <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
-                Update verfügbar
+                {t('settings.update.available')}
               </span>
             )}
             {!update.data?.updateAvailable && !huRunning && hu?.status !== 'installed' && (
               <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
-                ✓ Aktuell (v{update.data?.currentVersion ?? ''})
+                {t('settings.update.current', { version: update.data?.currentVersion ?? '' })}
               </span>
             )}
             {hu?.status === 'running' && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
                 <span className="size-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
-                Update läuft…
+                {t('settings.update.running')}
               </span>
             )}
             {hu?.status === 'uptodate' && (
               <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
-                ✅ Bereits aktuell — nichts zu installieren
+                {t('settings.update.uptodate')}
               </span>
             )}
             {hu?.status === 'installed' && (
               <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
-                ✅ Update installiert — Gateway startet neu
+                {t('settings.update.installed')}
               </span>
             )}
             {hu?.status === 'failed' && (
               <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
-                ❌ Update fehlgeschlagen
+                {t('settings.update.failed')}
               </span>
             )}
             {hu?.message && hu?.status !== 'running' && (
@@ -485,7 +494,9 @@ function MaintenanceSection() {
               className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
             >
               <RefreshCw size={13} className={huRunning ? 'animate-spin' : ''} />
-              {huRunning ? 'Update läuft…' : 'Hermes updaten'}
+              {huRunning
+                ? t('settings.update.button.running')
+                : t('settings.hermesUpdate.button')}
             </button>
           </div>
           {hu?.log && hu.status !== 'idle' && (
@@ -497,40 +508,42 @@ function MaintenanceSection() {
 
         {/* Self-Update Karte (CC) */}
         <div className="card p-4 col-span-full">
-          <p className="text-xs text-[var(--color-ink-faint)]">Control Center Update</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.ccUpdate.title')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm text-[var(--color-ink)]">
               {ccUpdate.data?.currentVersion ?? '—'}
             </span>
             {ccUpdate.data?.updateAvailable && (
               <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
-                Update verfügbar ({ccUpdate.data.latestVersion})
+                {t('settings.update.latest', { version: ccUpdate.data.latestVersion ?? '' })}
               </span>
             )}
             {!ccUpdate.data?.updateAvailable && !suRunning && su?.status !== 'installed' && (
               <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
-                ✓ Aktuell (v{ccUpdate.data?.currentVersion ?? ''})
+                {t('settings.update.current', {
+                  version: ccUpdate.data?.currentVersion ?? '',
+                })}
               </span>
             )}
             {su?.status === 'running' && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
                 <span className="size-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
-                Update läuft…
+                {t('settings.update.running')}
               </span>
             )}
             {su?.status === 'uptodate' && (
               <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
-                ✅ Bereits aktuell — nichts zu installieren
+                {t('settings.update.uptodate')}
               </span>
             )}
             {su?.status === 'installed' && (
               <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
-                ✅ Update installiert — Dienst startet neu
+                {t('settings.update.installed')}
               </span>
             )}
             {su?.status === 'failed' && (
               <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
-                ❌ Update fehlgeschlagen
+                {t('settings.update.failed')}
               </span>
             )}
             {su?.message && su?.status !== 'running' && (
@@ -543,7 +556,9 @@ function MaintenanceSection() {
               className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
             >
               <RefreshCw size={13} className={suRunning ? 'animate-spin' : ''} />
-              {suRunning ? 'Update läuft…' : 'Jetzt updaten'}
+              {suRunning
+                ? t('settings.update.button.running')
+                : t('settings.update.button')}
             </button>
           </div>
           {su?.log && su.status !== 'idle' && (
