@@ -296,7 +296,6 @@ function ToolsetsSection() {
 
 /** Control Center eigene Version + Update-Status (aus /api/meta + /api/meta/update). */
 function MetaVersionRow() {
-  const { t } = useI18n();
   const meta = useQuery({
     queryKey: queryKeys.meta,
     queryFn: getMeta,
@@ -309,16 +308,21 @@ function MetaVersionRow() {
     staleTime: 60_000,
     retry: false,
   });
+  const available = updateCheck.data?.updateAvailable && updateCheck.data.latestVersion;
   return (
     <div>
       <p className="mt-1 font-mono text-lg">{meta.data?.version ? `v${meta.data.version}` : '—'}</p>
-      <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-        {updateCheck.data?.updateAvailable && updateCheck.data.latestVersion
-          ? t('settings.updateAvailable', {
-              command: `v${updateCheck.data.latestVersion}`,
-            })
-          : t('settings.updateAvailable', { command: 'bis jetzt aktuell' })}
-      </p>
+      <div className="mt-1.5">
+        {available ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
+            Update verfügbar (v{updateCheck.data?.latestVersion})
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
+            ✓ Aktuell (v{meta.data?.version ?? ''})
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -445,6 +449,11 @@ function MaintenanceSection() {
                 Update verfügbar
               </span>
             )}
+            {!update.data?.updateAvailable && !huRunning && hu?.status !== 'installed' && (
+              <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
+                ✓ Aktuell (v{update.data?.currentVersion ?? ''})
+              </span>
+            )}
             {hu?.status === 'running' && (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
                 <span className="size-2 animate-pulse rounded-full bg-[var(--color-accent)]" />
@@ -498,7 +507,7 @@ function MaintenanceSection() {
                 Update verfügbar ({ccUpdate.data.latestVersion})
               </span>
             )}
-            {!ccUpdate.data?.updateAvailable && su?.status !== 'running' && su?.status !== 'installed' && (
+            {!ccUpdate.data?.updateAvailable && !suRunning && su?.status !== 'installed' && (
               <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs text-green-400">
                 ✓ Aktuell (v{ccUpdate.data?.currentVersion ?? ''})
               </span>
