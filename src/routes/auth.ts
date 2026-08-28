@@ -10,7 +10,12 @@ import { loadControlCenterConfig, updateControlCenterConfig } from '../config.js
 import { log } from '../log.js';
 
 /** Paths reachable without a session; everything else under /api is gated. */
-const PUBLIC_API_PATHS = new Set(['/api/auth/status', '/api/auth/login', '/api/auth/logout']);
+const PUBLIC_API_PATHS = new Set([
+  '/api/auth/status',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/meta',
+]);
 
 /**
  * True when the connection reached the client over TLS. Behind Cloudflare or a

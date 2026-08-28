@@ -2,7 +2,7 @@ import { NavLink } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { FOOTER_NAV, PRIMARY_NAV, type NavItem } from '@/lib/nav';
-import { getAuthStatus, logout, queryKeys } from '@/lib/api';
+import { getAuthStatus, getMeta, logout, queryKeys } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
 interface SidebarProps {
@@ -10,6 +10,22 @@ interface SidebarProps {
   onToggleCollapsed: () => void;
   /** Mobile drawer: closes after a navigation so the content is visible. */
   onNavigate?: () => void;
+}
+
+/** Tiny version pill in the sidebar header, fed by /api/meta. */
+function VersionBadge() {
+  const { data } = useQuery({
+    queryKey: queryKeys.meta,
+    queryFn: getMeta,
+    staleTime: 10 * 60_000,
+    retry: false,
+  });
+  if (!data?.version) return null;
+  return (
+    <span className="rounded-full border border-[var(--color-hairline)] bg-[var(--color-raised)] px-1.5 py-px text-[0.6rem] font-medium leading-tight text-[var(--color-ink-faint)]">
+      v{data.version}
+    </span>
+  );
 }
 
 function NavRow({
@@ -121,8 +137,11 @@ export function Sidebar({ collapsed, onToggleCollapsed, onNavigate }: SidebarPro
         {!collapsed && (
           <span className="min-w-0">
             <span className="block text-sm leading-tight font-semibold tracking-tight">Hermes</span>
-            <span className="block text-[0.65rem] leading-tight tracking-[0.14em] text-[var(--color-ink-faint)] uppercase">
-              Control Center
+            <span className="flex items-center gap-1.5">
+              <span className="block text-[0.65rem] leading-tight tracking-[0.14em] text-[var(--color-ink-faint)] uppercase">
+                Control Center
+              </span>
+              <VersionBadge />
             </span>
           </span>
         )}

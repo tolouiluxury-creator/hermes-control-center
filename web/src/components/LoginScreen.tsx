@@ -1,7 +1,8 @@
 import { useId, useState } from 'react';
 import { KeyRound, Loader2 } from 'lucide-react';
-import { ApiError, login } from '@/lib/api';
+import { ApiError, login, getMeta } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * Password gate. It says as little as possible about why a login failed — the
@@ -14,6 +15,13 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fieldId = useId();
+
+  const meta = useQuery({
+    queryKey: ['meta'],
+    queryFn: getMeta,
+    staleTime: 10 * 60_000,
+    retry: false,
+  });
   const errorId = useId();
 
   const submit = async (event: React.FormEvent): Promise<void> => {
@@ -56,7 +64,14 @@ export function LoginScreen({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <h1 className="mt-3 text-lg font-semibold tracking-tight">Hermes Control Center</h1>
-        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{t('login.prompt')}</p>
+        <div className="mt-1 flex items-center gap-2">
+          <p className="text-sm text-[var(--color-ink-muted)]">{t('login.prompt')}</p>
+          {meta.data?.version && (
+            <span className="rounded-full border border-[var(--color-hairline)] bg-[var(--color-raised)] px-2 py-0.5 text-xs font-medium text-[var(--color-ink-muted)]">
+              v{meta.data.version}
+            </span>
+          )}
+        </div>
 
         <label htmlFor={fieldId} className="mt-5 block text-xs text-[var(--color-ink-faint)]">
           {t('login.password')}
