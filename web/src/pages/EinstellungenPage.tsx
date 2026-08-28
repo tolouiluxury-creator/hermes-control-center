@@ -25,6 +25,8 @@ import {
   getProfiles,
   getToolsets,
   getUpdate,
+  getUpdateCheck,
+  getMeta,
   getSelfUpdateState,
   triggerSelfUpdate,
   queryKeys,
@@ -290,6 +292,35 @@ function ToolsetsSection() {
 
 // --- Maintenance: update + curator -----------------------------------------
 
+/** Control Center eigene Version + Update-Status (aus /api/meta + /api/meta/update). */
+function MetaVersionRow() {
+  const { t } = useI18n();
+  const meta = useQuery({
+    queryKey: queryKeys.meta,
+    queryFn: getMeta,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const updateCheck = useQuery({
+    queryKey: queryKeys.updateCheck,
+    queryFn: getUpdateCheck,
+    staleTime: 60_000,
+    retry: false,
+  });
+  return (
+    <div>
+      <p className="mt-1 font-mono text-lg">{meta.data?.version ? `v${meta.data.version}` : '—'}</p>
+      <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+        {updateCheck.data?.updateAvailable && updateCheck.data.latestVersion
+          ? t('settings.updateAvailable', {
+              command: `v${updateCheck.data.latestVersion}`,
+            })
+          : t('settings.updateAvailable', { command: 'bis jetzt aktuell' })}
+      </p>
+    </div>
+  );
+}
+
 function MaintenanceSection() {
   const queryClient = useQueryClient();
   const toast = useToast();
@@ -345,6 +376,11 @@ function MaintenanceSection() {
   });
 
   // --- Self-Update ---------------------------------------------------------
+  const ccUpdate = useQuery({
+    queryKey: queryKeys.updateCheck,
+    queryFn: getUpdateCheck,
+    staleTime: 60_000,
+  });
   const selfUpdate = useQuery({
     queryKey: queryKeys.selfUpdate,
     queryFn: getSelfUpdateState,
@@ -370,6 +406,13 @@ function MaintenanceSection() {
       description={t('settings.maintenance.desc')}
     >
       <div className="grid gap-3 sm:grid-cols-2">
+        {/* Control Center Version + Self-Update */}
+        <div className="card p-4">
+          <p className="text-xs text-[var(--color-ink-faint)]">Control Center</p>
+          <MetaVersionRow />
+        </div>
+
+        {/* Hermes Agent Update-Status */}
         <div className="card p-4">
           <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.version')}</p>
           {update.isPending ? (
@@ -392,16 +435,16 @@ function MaintenanceSection() {
           )}
         </div>
 
-        {/* Self-Update Karte */}
+        {/* Self-Update Karte (CC) */}
         <div className="card p-4 col-span-full">
           <p className="text-xs text-[var(--color-ink-faint)]">Control Center Update</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm text-[var(--color-ink)]">
-              {update.data?.currentVersion ?? '—'}
+              {ccUpdate.data?.currentVersion ?? '—'}
             </span>
-            {update.data?.updateAvailable && (
+            {ccUpdate.data?.updateAvailable && (
               <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
-                {t('settings.updateAvailable', { command: '' })}
+                Update verfügbar ({ccUpdate.data.latestVersion})
               </span>
             )}
             {su?.ok === true && (
@@ -424,11 +467,6 @@ function MaintenanceSection() {
               {suRunning ? 'Update läuft…' : 'Jetzt updaten'}
             </button>
           </div>
-          {su?.log && (
-            <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-[0.65rem] leading-relaxed text-[var(--color-ink-muted)]">
-              {su.log}
-            </pre>
-          )}
         </div>
 
         <div className="card p-4">
