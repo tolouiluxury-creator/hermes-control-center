@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project uses
 [semantic versioning](https://semver.org/).
 
+## [1.1.1] — 2026-08-28
+
+### Fixed
+
+- **Bot suite UI restored**: `BotsPage` (full bot management with avatars/stickers,
+  accent colors, pause/resume, archive, routines & schedule builder, DM fan-out,
+  cron linking) and `GroupRoomsPage` (group rooms + deliberation) were stripped
+  from the release branch by `chore(release): strip bot-suite work` and are back.
+- **Navigation**: `Bots` and `Räume` (Group Rooms) tabs now render in the sidebar
+  (nav items + routes wired).
+- **i18n parity**: `nav.rooms` added to de/en/fa.
+- **Database bootstrap**: on first run the control center now seeds existing
+  Hermes profiles as bot records (no manual DB setup required).
+
 ## [1.1.0] — 2026-08-26
 
 ### Added
