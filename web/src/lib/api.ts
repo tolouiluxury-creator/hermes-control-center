@@ -288,6 +288,23 @@ export const getConfigRaw = (): Promise<ConfigRaw> => apiRequest<ConfigRaw>('/he
 export const getCurator = (): Promise<CuratorStatus> =>
   apiRequest<CuratorStatus>('/hermes/curator');
 export const getUpdate = (): Promise<UpdateStatus> => apiRequest<UpdateStatus>('/hermes/update');
+
+/** Self-update: Status + Auslösung via Hintergrundprozess. */
+export interface SelfUpdateState {
+  running: boolean;
+  startedAt: string | null;
+  finishedAt: string | null;
+  ok: boolean | null;
+  log: string;
+}
+
+export const getSelfUpdateState = (): Promise<{ state: SelfUpdateState }> =>
+  apiRequest<{ state: SelfUpdateState }>('/self-update');
+
+export const triggerSelfUpdate = (): Promise<{ ok: boolean; started: boolean }> =>
+  apiRequest<{ ok: boolean; started: boolean }>('/self-update', {
+    method: 'POST',
+  });
 export const getToolsets = (): Promise<Toolset[]> => apiRequest<Toolset[]>('/hermes/toolsets');
 
 /** Writes into `profile`'s own .env; empty means the profile the dashboard runs as. */
@@ -1087,6 +1104,7 @@ export const queryKeys = {
   configRaw: ['hermes', 'config', 'raw'] as const,
   curator: ['hermes', 'curator'] as const,
   update: ['hermes', 'update'] as const,
+  selfUpdate: ['self-update'] as const,
   toolsets: ['hermes', 'toolsets'] as const,
   logs: (lines: number) => ['hermes', 'logs', lines] as const,
   sessions: (limit: number) => ['hermes', 'sessions', limit] as const,

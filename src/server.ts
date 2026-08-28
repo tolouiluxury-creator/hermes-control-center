@@ -16,6 +16,7 @@ import { registerWorkflowEventRoutes } from './routes/workflowEvents.js';
 import { registerFileRoutes } from './routes/files.js';
 import { registerChatRoutes } from './routes/chat.js';
 import { registerMetaRoutes } from './routes/meta.js';
+import { registerSelfUpdateRoutes } from './routes/selfUpdate.js';
 import { registerStatusRoutes } from './routes/status.js';
 import { registerStreamRoutes } from './routes/stream.js';
 import { UpstreamError } from './hermes/client.js';
@@ -86,6 +87,7 @@ export async function buildServer(ctx: AppContext): Promise<FastifyInstance> {
   const cache = new ResponseCache(CACHE_TTL_MS);
 
   await registerMetaRoutes(app, ctx.options, ctx.updateChecker);
+  await registerSelfUpdateRoutes(app);
   await registerStatusRoutes(app, ctx);
   await registerDashboardRoutes(app, ctx);
   await registerInventoryRoutes(app, ctx, cache);

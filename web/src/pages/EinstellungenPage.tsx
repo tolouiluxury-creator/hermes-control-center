@@ -25,6 +25,8 @@ import {
   getProfiles,
   getToolsets,
   getUpdate,
+  getSelfUpdateState,
+  triggerSelfUpdate,
   queryKeys,
   runCurator,
   setCuratorPaused,
@@ -342,6 +344,25 @@ function MaintenanceSection() {
       toast.push({ tone: 'error', title: t('toast.actionFailed'), description: e.message }),
   });
 
+  // --- Self-Update ---------------------------------------------------------
+  const selfUpdate = useQuery({
+    queryKey: queryKeys.selfUpdate,
+    queryFn: getSelfUpdateState,
+    staleTime: 5_000,
+    refetchInterval: (query) => (query.state.data?.state.running ? 3_000 : false),
+  });
+  const trigger = useMutation({
+    mutationFn: triggerSelfUpdate,
+    onSuccess: () => {
+      toast.push({ tone: 'success', title: 'Update gestartet' });
+    },
+    onError: (e: Error) =>
+      toast.push({ tone: 'error', title: 'Update fehlgeschlagen', description: e.message }),
+  });
+
+  const su = selfUpdate.data?.state;
+  const suRunning = su?.running ?? false;
+
   return (
     <Section
       id="maintenance"
@@ -368,6 +389,45 @@ function MaintenanceSection() {
                 </p>
               )}
             </>
+          )}
+        </div>
+
+        {/* Self-Update Karte */}
+        <div className="card p-4 col-span-full">
+          <p className="text-xs text-[var(--color-ink-faint)]">Control Center Update</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <span className="font-mono text-sm text-[var(--color-ink)]">
+              {update.data?.currentVersion ?? '—'}
+            </span>
+            {update.data?.updateAvailable && (
+              <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 text-xs text-[var(--color-accent)]">
+                {t('settings.updateAvailable', { command: '' })}
+              </span>
+            )}
+            {su?.ok === true && (
+              <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs text-green-400">
+                ✅ Update installiert
+              </span>
+            )}
+            {su?.ok === false && (
+              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400">
+                ❌ Update fehlgeschlagen
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => trigger.mutate()}
+              disabled={suRunning || trigger.isPending}
+              className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
+            >
+              <RefreshCw size={13} className={suRunning ? 'animate-spin' : ''} />
+              {suRunning ? 'Update läuft…' : 'Jetzt updaten'}
+            </button>
+          </div>
+          {su?.log && (
+            <pre className="mt-3 max-h-40 overflow-auto rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] p-2 font-mono text-[0.65rem] leading-relaxed text-[var(--color-ink-muted)]">
+              {su.log}
+            </pre>
           )}
         </div>
 
