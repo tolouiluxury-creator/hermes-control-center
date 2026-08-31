@@ -18,3 +18,4 @@ coverage/
 .eslintcache
 *.tsbuildinfo
 dist.bak/
+data/hermes.db
