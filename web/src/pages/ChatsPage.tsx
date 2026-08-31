@@ -227,6 +227,8 @@ export function ChatsPage({
     loadSessionsRef.current = loadSessions;
   }, [loadSessions]);
 
+  const wantNewRef = useRef(false);
+
   /**
    * Clear the thread and wait.
    *
@@ -234,8 +236,14 @@ export function ChatsPage({
    * session every single time, so a handful of visits left a trail of empty
    * conversations behind. The session is now created on the first message
    * instead — see `send` — which means looking at the chat costs nothing.
+   *
+   * `wantNewRef` tells the auto-open effect below that this empty canvas is a
+   * deliberate user gesture: without it, the effect would immediately reopen
+   * the most recent conversation and the "New conversation" button would do
+   * nothing — the new message would land in the old session.
    */
   const startNew = useCallback(() => {
+    wantNewRef.current = true;
     sessionRef.current = null;
     liveRef.current = null;
     setSessionId(null);
@@ -475,6 +483,13 @@ export function ChatsPage({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void (async () => {
       const list = await loadSessions();
+      // A deliberate "new conversation" (startNew ran) must stay empty even
+      // when the profile has sessions — reopening the most recent would make
+      // the button a no-op.
+      if (wantNewRef.current) {
+        wantNewRef.current = false;
+        return;
+      }
       // No handover landed and nothing is open yet: land on the most recent
       // conversation instead of an empty "start a conversation" canvas, so a
       // bot's chat area is never a dead end. `sessionId` (state, not the ref)

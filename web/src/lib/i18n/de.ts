@@ -1075,6 +1075,7 @@ export const de: Dict = {
   'bots.stateActive': 'Aktiv',
   'bots.statePaused': 'Pausiert',
   'bots.dmTo': 'DM an',
+  'bots.chatWith': 'Chat mit',
   'bots.dmChoose': 'Bot wählen …',
   'bots.dmTargetLabel': 'Ziel-Bot für Direktnachricht',
   'bots.dmPlaceholder': 'Nachricht an den Bot …',

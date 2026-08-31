@@ -1062,6 +1062,7 @@ export const fa: Dict = {
   'bots.stateActive': 'فعال',
   'bots.statePaused': 'متوقف',
   'bots.dmTo': 'پیام به',
+  'bots.chatWith': 'گفتگو با',
   'bots.dmChoose': 'بات را انتخاب کنید…',
   'bots.dmTargetLabel': 'بات مقصد برای پیام مستقیم',
   'bots.dmPlaceholder': 'پیام به بات…',

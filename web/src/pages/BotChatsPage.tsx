@@ -72,10 +72,43 @@ export function BotChatsPage() {
     }
   };
 
+  const botPickerStrip =
+    selected && bots.data ? (
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-hairline)] bg-[var(--color-raised)] p-2">
+        <span className="px-1 text-xs font-medium text-[var(--color-ink-muted)]">
+          {t('bots.chatWith')}
+        </span>
+        {bots.data.bots.map((entry) => {
+          const isActive = entry.bot.id === selected.bot.id;
+          return (
+            <button
+              key={entry.bot.id}
+              type="button"
+              onClick={() => navigate(`/bots/chats?bot=${encodeURIComponent(entry.bot.id)}`)}
+              aria-pressed={isActive}
+              className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs transition-colors ${
+                isActive
+                  ? 'border-[var(--color-accent)]/60 bg-[var(--color-accent)]/15 text-[var(--color-accent)]'
+                  : 'border-[var(--color-hairline)] text-[var(--color-ink-muted)] hover:bg-[var(--color-raised)]'
+              }`}
+            >
+              <span className="text-sm leading-none" aria-hidden>
+                {entry.bot.avatarKey || '🤖'}
+              </span>
+              {entry.bot.name}
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
+
   const dmStrip =
     selected && bots.data ? (
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-hairline)] bg-[var(--color-raised)] p-2">
-        <span className="px-1 text-xs font-medium text-[var(--color-ink-muted)]">
+      <div
+        className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-[var(--color-hairline)] bg-[var(--color-base)] p-2"
+        aria-label={t('bots.dmTargetLabel')}
+      >
+        <span className="px-1 text-xs font-medium text-[var(--color-ink-faint)]">
           {t('bots.dmTo')}
         </span>
         <div className="flex flex-wrap gap-1.5">
@@ -220,7 +253,9 @@ export function BotChatsPage() {
   }
 
   return (
-    <ChatsPage
+    <>
+      {botPickerStrip && <div className="mx-auto max-w-[1600px] px-6 pb-0">{botPickerStrip}</div>}
+      <ChatsPage
       key={selected.bot.id}
       title={`${t('bots.chatCenterTitle')} · ${selected.bot.name}`}
       description={t('bots.chatCenterDesc')}
@@ -246,5 +281,6 @@ export function BotChatsPage() {
         onSelect: (id) => navigate(`/bots/chats?bot=${encodeURIComponent(id)}`),
       }}
     />
+    </>
   );
 }
