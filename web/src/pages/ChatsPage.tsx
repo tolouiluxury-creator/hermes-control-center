@@ -75,6 +75,11 @@ export interface ChatsPageProps {
   /** The bot this transcript belongs to; enables the DM fan-out on @mention. */
   botId?: string;
   initialSessionId?: string | null;
+  /** Bot chats start on the bot's own model unless the user overrides the
+   * toolbar pick. Without an explicit model, session.create inherits the
+   * launch profile's default — not the bot's — so a bot chat would silently
+   * run on the wrong model. */
+  initialModel?: { provider?: string | null; model?: string | null } | null;
   /** Bot↔Bot DM replies the parent page wants surfaced in this transcript. */
   injectedMessages?: { sender: string; text: string }[];
   /** Roster for the @mention picker; defaults to all bots. */
@@ -89,6 +94,7 @@ export function ChatsPage({
   profileSelectable = true,
   botId,
   initialSessionId,
+  initialModel,
   injectedMessages,
   botRoster,
 }: ChatsPageProps) {
@@ -136,7 +142,11 @@ export function ChatsPage({
    * profile scopes the whole surface, because each profile keeps its own
    * conversation database.
    */
-  const [modelPick, setModelPick] = useState<ModelPick | null>(null);
+  const [modelPick, setModelPick] = useState<ModelPick | null>(() =>
+    initialModel?.provider && initialModel.model
+      ? { provider: initialModel.provider, model: initialModel.model }
+      : null,
+  );
   /** Working directory for the next conversation; null means the workspace root. */
   const [cwd, setCwd] = useState<string | null>(null);
   /**

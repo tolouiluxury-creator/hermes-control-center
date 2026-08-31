@@ -234,6 +234,7 @@ export function BotChatsPage() {
       profileSelectable={false}
       botId={selected.bot.id}
       initialSessionId={selected.bot.canonicalChatSessionId}
+      initialModel={selected.profile}
       injectedMessages={
         dmResults?.results
           .filter((r) => r.ok && r.reply)
