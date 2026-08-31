@@ -6,7 +6,7 @@ export const fa: Dict = {
   'nav.dashboard': 'داشبورد',
   'nav.chats': 'گفتگوها',
   'nav.workflows': 'گردش‌کارها',
-    'nav.bots': 'بات‌ها',
+  'nav.bots': 'بات‌ها',
   'nav.rooms': 'اتاق‌های گروهی',
   'nav.aufgaben': 'وظایف',
   'nav.wissen': 'دانش (RAG)',

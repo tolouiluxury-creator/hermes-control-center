@@ -79,11 +79,7 @@ export class GroupRoomsRepo {
       now,
     );
     for (const botId of new Set(memberBotIds)) {
-      this.store.run(
-        'INSERT INTO group_room_members (room_id, bot_id) VALUES (?, ?)',
-        id,
-        botId,
-      );
+      this.store.run('INSERT INTO group_room_members (room_id, bot_id) VALUES (?, ?)', id, botId);
     }
     return this.getRoom(id) as GroupRoomWithMembers;
   }
@@ -115,11 +111,7 @@ export class GroupRoomsRepo {
     if (!this.getRoom(id)) return null;
     this.store.run('DELETE FROM group_room_members WHERE room_id = ?', id);
     for (const botId of new Set(memberBotIds)) {
-      this.store.run(
-        'INSERT INTO group_room_members (room_id, bot_id) VALUES (?, ?)',
-        id,
-        botId,
-      );
+      this.store.run('INSERT INTO group_room_members (room_id, bot_id) VALUES (?, ?)', id, botId);
     }
     this.store.run('UPDATE group_rooms SET updated_at = ? WHERE id = ?', Date.now(), id);
     return this.getRoom(id);
@@ -145,7 +137,10 @@ export class GroupRoomsRepo {
       now,
     );
     this.store.run('UPDATE group_rooms SET updated_at = ? WHERE id = ?', now, roomId);
-    const row = this.store.get<GroupMessageRow>('SELECT * FROM group_room_messages WHERE id = ?', id);
+    const row = this.store.get<GroupMessageRow>(
+      'SELECT * FROM group_room_messages WHERE id = ?',
+      id,
+    );
     return row ? toMessage(row) : null;
   }
 

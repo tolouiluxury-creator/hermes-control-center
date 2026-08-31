@@ -156,8 +156,8 @@ export function ChatsPage({
    */
   const [searchParams] = useSearchParams();
   // A bot chat locks the profile; the URL query only applies when free-standing.
-  const [profile, setProfile] = useState<string | null>(() =>
-    profileOverride ?? searchParams.get('profile'),
+  const [profile, setProfile] = useState<string | null>(
+    () => profileOverride ?? searchParams.get('profile'),
   );
   /**
    * The model a conversation started here was created with.
@@ -480,7 +480,6 @@ export function ChatsPage({
   useEffect(() => {
     // State is only touched after the await, so this is not the synchronous
     // set-state-in-effect the rule is guarding against.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void (async () => {
       const list = await loadSessions();
       // A deliberate "new conversation" (startNew ran) must stay empty even
@@ -692,11 +691,15 @@ export function ChatsPage({
   };
 
   // Bot↔Bot DM replies the parent page wants surfaced in this transcript.
+  const prevInjected = useRef(injectedMessages);
   useEffect(() => {
-    if (!injectedMessages?.length) return;
+    const prev = prevInjected.current;
+    prevInjected.current = injectedMessages;
+    const fresh = injectedMessages?.slice(prev?.length ?? 0) ?? [];
+    if (fresh.length === 0) return;
     setMessages((current) => [
       ...current,
-      ...injectedMessages.map((m) => ({
+      ...fresh.map((m) => ({
         role: 'assistant' as const,
         text: `[DM von ${m.sender}]: ${m.text}`,
       })),
@@ -723,11 +726,15 @@ export function ChatsPage({
   const [dmSending, setDmSending] = useState(false);
 
   // Own @mention fan-out replies surface the same way.
+  const prevDmReplies = useRef(dmReplies);
   useEffect(() => {
-    if (!dmReplies.length) return;
+    const prev = prevDmReplies.current;
+    prevDmReplies.current = dmReplies;
+    const fresh = dmReplies.slice(prev.length);
+    if (fresh.length === 0) return;
     setMessages((current) => [
       ...current,
-      ...dmReplies.map((m) => ({
+      ...fresh.map((m) => ({
         role: 'assistant' as const,
         text: `[DM von ${m.sender}]: ${m.text}`,
       })),
@@ -801,10 +808,12 @@ export function ChatsPage({
     setDmSending(true);
     try {
       const res = await sendBotDM(botId, targets, text);
-      const replies = res.results.filter((r) => r.ok && r.reply).map((r) => ({
-        sender: r.botName ?? '?',
-        text: r.reply ?? '',
-      }));
+      const replies = res.results
+        .filter((r) => r.ok && r.reply)
+        .map((r) => ({
+          sender: r.botName ?? '?',
+          text: r.reply ?? '',
+        }));
       setDmReplies((current) => [...current, ...replies]);
     } catch {
       // A failed fan-out must not break the chat itself — the toast from the

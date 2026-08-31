@@ -48,7 +48,9 @@ export function getSelfUpdateState(): UpdateState {
  */
 export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
   if (state.running) {
-    return reply.code(409).send({ error: 'update_running', message: 'An update is already running.' });
+    return reply
+      .code(409)
+      .send({ error: 'update_running', message: 'An update is already running.' });
   }
 
   state = {
@@ -92,9 +94,13 @@ export async function runSelfUpdate(reply: FastifyReply): Promise<void> {
       await run('git', ['fetch', GIT_REMOTE, GIT_BRANCH]);
       const { stdout } = await execFileAsync('git', ['rev-parse', 'HEAD'], { cwd: REPO_DIR });
       const current = stdout.trim();
-      const { stdout: remoteOut } = await execFileAsync('git', ['rev-parse', `${GIT_REMOTE}/${GIT_BRANCH}`], {
-        cwd: REPO_DIR,
-      });
+      const { stdout: remoteOut } = await execFileAsync(
+        'git',
+        ['rev-parse', `${GIT_REMOTE}/${GIT_BRANCH}`],
+        {
+          cwd: REPO_DIR,
+        },
+      );
       const remote = remoteOut.trim();
       if (current === remote && !state.log.includes('ERROR')) {
         append('Already up to date. No changes to install.');

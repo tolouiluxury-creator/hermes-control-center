@@ -30,18 +30,28 @@ export async function botHandoff(
       `hermes -p ${shellQuote(targetProfile)} chat --in ${shellQuote(inboxDir)} -q "$(cat ${shellQuote(queryFile)})"`,
       { timeout: timeoutMs, maxBuffer: 4 * 1024 * 1024 },
     );
-    const lines = stdout.split('\n').map((line) => line.trim()).filter(Boolean);
+    const lines = stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
     const boxStart = lines.findIndex((line) => line.includes('╭'));
     const boxEnd = lines.findIndex((line) => line.includes('╰'));
     let reply =
       boxStart >= 0 && boxEnd > boxStart
-        ? lines.slice(boxStart + 1, boxEnd).join(' ').replace(/\s+/g, ' ').trim()
+        ? lines
+            .slice(boxStart + 1, boxEnd)
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim()
         : '';
     if (!reply) {
       // No boxed answer: drop session/resume metadata lines and keep the last
       // line of actual content (the CLI's plain-mode answer tail).
       const content = lines.filter(
-        (line) => !/^(Session:|Title:|.*Resume|.*>|.*chat\b)/i.test(line) && !line.startsWith('╭') && !line.startsWith('╰'),
+        (line) =>
+          !/^(Session:|Title:|.*Resume|.*>|.*chat\b)/i.test(line) &&
+          !line.startsWith('╭') &&
+          !line.startsWith('╰'),
       );
       reply = content.length > 0 ? content.slice(-3).join(' ') : lines.slice(-4).join(' ');
     }

@@ -889,7 +889,7 @@ export function WorkflowsPage() {
     });
 
     return () => source.close();
-  }, []);
+  }, [queryClient, t, toast]);
 
   const startRun = useMutation({
     mutationFn: ({ workflowId, mode }: { workflowId: string; mode: WorkflowRunMode }) =>

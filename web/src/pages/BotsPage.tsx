@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Archive,
@@ -55,11 +55,46 @@ const ACCENTS = [
 ] as const;
 
 const STICKERS = [
-  '🤖', '🧠', '⚡', '🎯', '🚀', '👾', '🛸', '🧙',
-  '🦊', '🐱', '🐶', '🐼', '🦉', '🐝', '🌈', '🔥',
-  '💎', '🔮', '🧩', '🎨', '🖥️', '🧑‍💻', '👨‍💻', '🤝',
-  '💡', '📚', '🔍', '📊', '📈', '📝', '✍️', '🗣️',
-  '🌍', '🌙', '⭐', '☀️', '🍀', '🦾', '🎓', '🏆',
+  '🤖',
+  '🧠',
+  '⚡',
+  '🎯',
+  '🚀',
+  '👾',
+  '🛸',
+  '🧙',
+  '🦊',
+  '🐱',
+  '🐶',
+  '🐼',
+  '🦉',
+  '🐝',
+  '🌈',
+  '🔥',
+  '💎',
+  '🔮',
+  '🧩',
+  '🎨',
+  '🖥️',
+  '🧑‍💻',
+  '👨‍💻',
+  '🤝',
+  '💡',
+  '📚',
+  '🔍',
+  '📊',
+  '📈',
+  '📝',
+  '✍️',
+  '🗣️',
+  '🌍',
+  '🌙',
+  '⭐',
+  '☀️',
+  '🍀',
+  '🦾',
+  '🎓',
+  '🏆',
 ] as const;
 
 function BotAvatar({
@@ -69,8 +104,7 @@ function BotAvatar({
   bot: Pick<BotDetails['bot'], 'name' | 'avatarKey' | 'accent'>;
   size?: number;
 }) {
-  const accent =
-    ACCENTS.find((a) => a.key === bot.accent)?.value ?? 'var(--color-accent)';
+  const accent = ACCENTS.find((a) => a.key === bot.accent)?.value ?? 'var(--color-accent)';
   return (
     <span
       className="grid shrink-0 place-items-center rounded-2xl text-white ring-2 ring-[var(--color-accent)]/25 ring-offset-2 ring-offset-[var(--color-base)]"
@@ -88,7 +122,14 @@ function BotAvatar({
 }
 
 function PresenceDot({ bot }: { bot: BotDetails['bot'] }) {
-  const active = bot.lastSeenAt != null && Date.now() - bot.lastSeenAt < 90_000;
+  // Re-evaluated on a 30s tick so "active now" stays roughly fresh without
+  // calling Date.now() during render (react-hooks/purity).
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const active = bot.lastSeenAt != null && now - bot.lastSeenAt < 90_000;
   if (!active) return null;
   return (
     <span className="relative flex h-2.5 w-2.5" aria-label="Active now">
@@ -248,7 +289,7 @@ export function BotsPage() {
   // routine IDs resolve to real names instead of raw IDs.
   const botCronJobs = useQuery({
     queryKey: [...queryKeys.cron, 'bot-profile', selected?.bot.profileName ?? '__none__'],
-    queryFn: () => getCronJobs(selected?.bot.profileName),
+    queryFn: () => getCronJobs(),
     enabled: !!selected?.bot.profileName,
     staleTime: 60_000,
   });
@@ -291,9 +332,7 @@ export function BotsPage() {
               profile: bot.profileName,
             });
             const routineId =
-              (result as { id?: string }).id ??
-              (result as { job?: { id?: string } }).job?.id ??
-              '';
+              (result as { id?: string }).id ?? (result as { job?: { id?: string } }).job?.id ?? '';
             if (routineId) {
               await setBotRoutine(bot.id, { type: 'cron', routineId, enabled: true });
             }
@@ -843,7 +882,9 @@ export function BotsPage() {
                     </div>
                   </label>
                   <div>
-                    <span className="text-xs text-[var(--color-ink-faint)]">{t('bots.accent')}</span>
+                    <span className="text-xs text-[var(--color-ink-faint)]">
+                      {t('bots.accent')}
+                    </span>
                     <div className="mt-1.5 flex gap-1.5">
                       {ACCENTS.map((a) => (
                         <button
@@ -873,8 +914,8 @@ export function BotsPage() {
                     <ul className="space-y-1.5">
                       {selected.routines.map((routine) => {
                         const job =
-                        botCronJobs.data?.find((j) => j.id === routine.routineId) ??
-                        cronJobs.data?.find((j) => j.id === routine.routineId);
+                          botCronJobs.data?.find((j) => j.id === routine.routineId) ??
+                          cronJobs.data?.find((j) => j.id === routine.routineId);
                         return (
                           <li key={routine.routineId} className="flex items-center gap-2 text-xs">
                             <span className="min-w-0 flex-1 truncate">

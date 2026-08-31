@@ -44,7 +44,7 @@ export async function registerGroupRoomsRoutes(
   app: FastifyInstance,
   deps: GroupRoomsRoutesDeps,
 ): Promise<void> {
-  app.get('/api/rooms', async (_request, reply) => {
+  app.get('/api/rooms', async (_request, _reply) => {
     const rooms = await Promise.all(
       deps.rooms.listRooms().map((room) => toRoomWithBots(deps, room)),
     );
@@ -55,12 +55,10 @@ export async function registerGroupRoomsRoutes(
     const { id } = request.params as { id: string };
     const room = deps.rooms.getRoom(id);
     if (!room) return notFound(reply);
-    const messages = deps.rooms
-      .messages(id)
-      .map((m) => ({
-        ...m,
-        senderBotName: null as string | null,
-      }));
+    const messages = deps.rooms.messages(id).map((m) => ({
+      ...m,
+      senderBotName: null as string | null,
+    }));
     // Resolve sender names for stored messages.
     const withNames = await Promise.all(
       messages.map(async (m) => {
@@ -75,9 +73,10 @@ export async function registerGroupRoomsRoutes(
   app.post('/api/rooms', async (request, reply) => {
     const parsed = roomSchema.safeParse(request.body);
     if (!parsed.success)
-      return reply
-        .code(400)
-        .send({ error: 'invalid_request', message: 'A room name and at least one bot are required.' });
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: 'A room name and at least one bot are required.',
+      });
     const room = deps.rooms.createRoom(parsed.data.name, parsed.data.memberBotIds);
     return toRoomWithBots(deps, room);
   });
@@ -91,7 +90,9 @@ export async function registerGroupRoomsRoutes(
     const { id } = request.params as { id: string };
     const parsed = membersSchema.safeParse(request.body);
     if (!parsed.success)
-      return reply.code(400).send({ error: 'invalid_request', message: 'At least one bot is required.' });
+      return reply
+        .code(400)
+        .send({ error: 'invalid_request', message: 'At least one bot is required.' });
     const room = deps.rooms.setMembers(id, parsed.data.memberBotIds);
     if (!room) return notFound(reply);
     return toRoomWithBots(deps, room);
@@ -153,7 +154,9 @@ export async function registerGroupRoomsRoutes(
     const { id } = request.params as { id: string };
     const parsed = messageSchema.safeParse(request.body);
     if (!parsed.success)
-      return reply.code(400).send({ error: 'invalid_request', message: 'A message text is required.' });
+      return reply
+        .code(400)
+        .send({ error: 'invalid_request', message: 'A message text is required.' });
     const room = deps.rooms.getRoom(id);
     if (!room) return notFound(reply);
 

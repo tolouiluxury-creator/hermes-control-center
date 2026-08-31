@@ -27,17 +27,17 @@
 
   /* Accents. `accent` is the product colour; `agent` marks anything the agent
      itself produced, so a user can always tell the two apart. */
-  --color-accent: #F5B027;
-  --color-accent-strong: #FFC85C;
-  --color-accent-soft: #3A2A0D;
-  --color-accent-contrast: #2A1A00;
+  --color-accent: #f5b027;
+  --color-accent-strong: #ffc85c;
+  --color-accent-soft: #3a2a0d;
+  --color-accent-contrast: #2a1a00;
   --color-agent: #a78bfa;
   --color-agent-soft: #3b2f63;
 
   /* Status. Never used alone — always paired with a label or icon, so the
      information survives for anyone who cannot separate these hues. */
-  --color-ok: #F5B027;
-  --color-warn: #F97316;
+  --color-ok: #f5b027;
+  --color-warn: #f97316;
   --color-danger: #f87171;
   --color-info: #60a5fa;
 
@@ -95,15 +95,15 @@
        token is used at (timestamps, meta lines). This clears 6:1. */
     --color-ink-faint: #5b6b82;
 
-    --color-accent: #B45309;
-    --color-accent-strong: #D97706;
-    --color-accent-soft: #3A2A0D;
-    --color-accent-contrast: #2A1A00;
+    --color-accent: #b45309;
+    --color-accent-strong: #d97706;
+    --color-accent-soft: #3a2a0d;
+    --color-accent-contrast: #2a1a00;
     --color-agent: #7c3aed;
     --color-agent-soft: #ede9fe;
 
-    --color-ok: #F5B027;
-    --color-warn: #F97316;
+    --color-ok: #f5b027;
+    --color-warn: #f97316;
     --color-danger: #dc2626;
     --color-info: #2563eb;
 
@@ -127,15 +127,15 @@
   --color-ink-muted: #475569;
   --color-ink-faint: #64748b;
 
-  --color-accent: #B45309;
-  --color-accent-strong: #D97706;
-  --color-accent-soft: #3A2A0D;
-  --color-accent-contrast: #2A1A00;
+  --color-accent: #b45309;
+  --color-accent-strong: #d97706;
+  --color-accent-soft: #3a2a0d;
+  --color-accent-contrast: #2a1a00;
   --color-agent: #7c3aed;
   --color-agent-soft: #ede9fe;
 
-  --color-ok: #F5B027;
-  --color-warn: #F97316;
+  --color-ok: #f5b027;
+  --color-warn: #f97316;
   --color-danger: #dc2626;
   --color-info: #2563eb;
 
@@ -220,7 +220,9 @@ body {
 
   &:hover {
     border-color: color-mix(in oklab, var(--color-accent) 28%, var(--color-hairline));
-    box-shadow: var(--shadow-card), 0 12px 32px -20px color-mix(in oklab, var(--color-accent) 12%, transparent);
+    box-shadow:
+      var(--shadow-card),
+      0 12px 32px -20px color-mix(in oklab, var(--color-accent) 12%, transparent);
     transform: translateY(-1px);
   }
 
@@ -421,7 +423,9 @@ body {
 
 .quick-action:hover {
   border-color: color-mix(in oklab, var(--color-accent) 32%, var(--color-hairline));
-  box-shadow: var(--shadow-card), 0 12px 32px -20px color-mix(in oklab, var(--color-accent) 14%, transparent);
+  box-shadow:
+    var(--shadow-card),
+    0 12px 32px -20px color-mix(in oklab, var(--color-accent) 14%, transparent);
   transform: translateY(-1px);
   color: var(--color-ink);
   background-color: color-mix(in oklab, var(--color-accent-soft) 12%, var(--color-surface));

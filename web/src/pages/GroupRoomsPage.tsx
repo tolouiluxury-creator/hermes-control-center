@@ -38,14 +38,18 @@ export function GroupRoomsPage() {
   const [memberDraft, setMemberDraft] = useState<string[]>([]);
 
   const rooms = useQuery({ queryKey: queryKeys.rooms, queryFn: getGroupRooms, staleTime: 15_000 });
-  const bots = useQuery({ queryKey: queryKeys.bots(false), queryFn: () => getBots(false), staleTime: 15_000 });
+  const bots = useQuery({
+    queryKey: queryKeys.bots(false),
+    queryFn: () => getBots(false),
+    staleTime: 15_000,
+  });
   const room = useQuery({
     queryKey: queryKeys.room(selectedId ?? '__none__'),
     queryFn: () => getGroupRoom(selectedId as string),
     enabled: !!selectedId,
     // Bot-Antworten treffen im Hintergrund ein — solange das Polling-Fenster
     // aktiv ist, alle 4s nachziehen, damit Antworten sofort sichtbar werden.
-    refetchInterval: pollUntil && Date.now() < pollUntil ? 4000 : false,
+    refetchInterval: () => (pollUntil && pollUntil > Date.now() ? 4000 : false),
   });
 
   const createRoom = async () => {
@@ -170,7 +174,11 @@ export function GroupRoomsPage() {
                     : 'border-[var(--color-hairline)] hover:bg-[var(--color-raised)]'
                 }`}
               >
-                <MessageSquare size={14} className="shrink-0 text-[var(--color-ink-muted)]" aria-hidden />
+                <MessageSquare
+                  size={14}
+                  className="shrink-0 text-[var(--color-ink-muted)]"
+                  aria-hidden
+                />
                 <span className="min-w-0 flex-1 truncate text-sm">{entry.room.name}</span>
                 <span className="hidden shrink-0 text-[0.65rem] text-[var(--color-ink-faint)] group-hover:inline">
                   {entry.members.length}
@@ -308,10 +316,14 @@ export function GroupRoomsPage() {
                   <div key={m.id} className="flex flex-col">
                     <span
                       className={`text-[0.65rem] font-medium ${
-                        m.kind === 'user' ? 'text-[var(--color-accent)]' : 'text-[var(--color-ink-muted)]'
+                        m.kind === 'user'
+                          ? 'text-[var(--color-accent)]'
+                          : 'text-[var(--color-ink-muted)]'
                       }`}
                     >
-                      {m.kind === 'user' ? t('rooms.you') : (m.senderBotName ?? m.senderBotId ?? '?')}
+                      {m.kind === 'user'
+                        ? t('rooms.you')
+                        : (m.senderBotName ?? m.senderBotId ?? '?')}
                     </span>
                     <span className="text-sm">{m.text}</span>
                   </div>

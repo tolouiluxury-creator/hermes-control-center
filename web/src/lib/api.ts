@@ -892,11 +892,14 @@ export const sendBotDM = (
   id: string,
   toBotIds: string[],
   text: string,
-): Promise<{ ok: boolean; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[] }> =>
-  apiRequest<{ ok: boolean; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[] }>(
-    `/bots/${encodeURIComponent(id)}/dm`,
-    { method: 'POST', ...jsonBody({ text, toBotIds }) },
-  );
+): Promise<{
+  ok: boolean;
+  results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+}> =>
+  apiRequest<{
+    ok: boolean;
+    results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+  }>(`/bots/${encodeURIComponent(id)}/dm`, { method: 'POST', ...jsonBody({ text, toBotIds }) });
 
 /** Remove a bot–routine link entirely (distinct from disabling it). */
 export const unlinkBotRoutine = (
@@ -931,12 +934,11 @@ export const getGroupRooms = (): Promise<{ rooms: GroupRoomSummary[] }> =>
 export const getGroupRoom = (
   id: string,
 ): Promise<{ room: GroupRoomSummary; messages: GroupMessage[] }> =>
-  apiRequest<{ room: GroupRoomSummary; messages: GroupMessage[] }>(`/rooms/${encodeURIComponent(id)}`);
+  apiRequest<{ room: GroupRoomSummary; messages: GroupMessage[] }>(
+    `/rooms/${encodeURIComponent(id)}`,
+  );
 
-export const createGroupRoom = (
-  name: string,
-  memberBotIds: string[],
-): Promise<GroupRoomSummary> =>
+export const createGroupRoom = (name: string, memberBotIds: string[]): Promise<GroupRoomSummary> =>
   apiRequest<GroupRoomSummary>('/rooms', {
     method: 'POST',
     ...jsonBody({ name, memberBotIds }),
@@ -957,19 +959,27 @@ export const setGroupRoomMembers = (
 export const sendGroupRoomMessage = (
   id: string,
   text: string,
-): Promise<{ userMessage: GroupMessage; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }> =>
-  apiRequest<{ userMessage: GroupMessage; results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }>(
-    `/rooms/${encodeURIComponent(id)}/messages`,
-    { method: 'POST', ...jsonBody({ text }) },
-  );
+): Promise<{
+  userMessage: GroupMessage;
+  results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+  messages: GroupMessage[];
+}> =>
+  apiRequest<{
+    userMessage: GroupMessage;
+    results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+    messages: GroupMessage[];
+  }>(`/rooms/${encodeURIComponent(id)}/messages`, { method: 'POST', ...jsonBody({ text }) });
 
 export const deliberateGroupRoom = (
   id: string,
-): Promise<{ results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }> =>
-  apiRequest<{ results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[]; messages: GroupMessage[] }>(
-    `/rooms/${encodeURIComponent(id)}/deliberate`,
-    { method: 'POST' },
-  );
+): Promise<{
+  results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+  messages: GroupMessage[];
+}> =>
+  apiRequest<{
+    results: { botId: string; botName?: string; ok: boolean; reply?: string; error?: string }[];
+    messages: GroupMessage[];
+  }>(`/rooms/${encodeURIComponent(id)}/deliberate`, { method: 'POST' });
 
 export const getProfiles = (): Promise<ProfileOverview> =>
   apiRequest<ProfileOverview>('/hermes/profiles');

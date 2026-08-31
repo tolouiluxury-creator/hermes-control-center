@@ -41,7 +41,9 @@ export function getHermesUpdateState(): HermesUpdateState {
  */
 export async function runHermesUpdate(reply: FastifyReply): Promise<void> {
   if (state.running) {
-    return reply.code(409).send({ error: 'update_running', message: 'An update is already running.' });
+    return reply
+      .code(409)
+      .send({ error: 'update_running', message: 'An update is already running.' });
   }
 
   state = {

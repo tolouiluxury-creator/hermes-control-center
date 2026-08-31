@@ -259,26 +259,26 @@ export function BotChatsPage() {
         {dmStrip}
       </div>
       <ChatsPage
-      key={selected.bot.id}
-      title={`${t('bots.chatCenterTitle')} · ${selected.bot.name}`}
-      description={t('bots.chatCenterDesc')}
-      actions={newBotAction}
-      profileOverride={selected.bot.profileName}
-      profileSelectable={false}
-      botId={selected.bot.id}
-      initialSessionId={selected.bot.canonicalChatSessionId}
-      initialModel={selected.profile}
-      injectedMessages={
-        dmResults?.results
-          .filter((r) => r.ok && r.reply)
-          .map((r) => ({ sender: r.botName ?? '?', text: r.reply ?? '' })) ?? undefined
-      }
-      botRoster={{
-        bots: bots.data.bots,
-        selectedId: selected.bot.id,
-        onSelect: (id) => navigate(`/bots/chats?bot=${encodeURIComponent(id)}`),
-      }}
-    />
+        key={selected.bot.id}
+        title={`${t('bots.chatCenterTitle')} · ${selected.bot.name}`}
+        description={t('bots.chatCenterDesc')}
+        actions={newBotAction}
+        profileOverride={selected.bot.profileName}
+        profileSelectable={false}
+        botId={selected.bot.id}
+        initialSessionId={selected.bot.canonicalChatSessionId}
+        initialModel={selected.profile}
+        injectedMessages={
+          dmResults?.results
+            .filter((r) => r.ok && r.reply)
+            .map((r) => ({ sender: r.botName ?? '?', text: r.reply ?? '' })) ?? undefined
+        }
+        botRoster={{
+          bots: bots.data.bots,
+          selectedId: selected.bot.id,
+          onSelect: (id) => navigate(`/bots/chats?bot=${encodeURIComponent(id)}`),
+        }}
+      />
     </>
   );
 }

@@ -6,7 +6,7 @@ export const en: Dict = {
   'nav.dashboard': 'Dashboard',
   'nav.chats': 'Chats',
   'nav.workflows': 'Workflows',
-    'nav.bots': 'Bots',
+  'nav.bots': 'Bots',
   'nav.rooms': 'Group Rooms',
   'nav.aufgaben': 'Tasks',
   'nav.wissen': 'Knowledge (RAG)',

@@ -208,94 +208,102 @@ export async function registerBotRoutes(
   });
 
   app.delete('/api/bots/:id/routines', async (request, reply) => {
-      const parsed = routineUnlinkSchema.safeParse(request.body);
-      if (!parsed.success)
-        return reply
-          .code(400)
-          .send({ error: 'invalid_request', message: 'Invalid Bot routine request.' });
-      const { id } = request.params as { id: string };
-      const routine = { type: parsed.data.type, routineId: parsed.data.routineId };
-      service.unlinkRoutine(id, routine);
-      return { ok: true };
-    });
+    const parsed = routineUnlinkSchema.safeParse(request.body);
+    if (!parsed.success)
+      return reply
+        .code(400)
+        .send({ error: 'invalid_request', message: 'Invalid Bot routine request.' });
+    const { id } = request.params as { id: string };
+    const routine = { type: parsed.data.type, routineId: parsed.data.routineId };
+    service.unlinkRoutine(id, routine);
+    return { ok: true };
+  });
 
-    /** Bot↔Bot DM: hand a message to another bot's own chat via the CLI
-     * handoff (`hermes -p <target> chat --in <dir> -q …`), the same mechanism
-     * the Hermes desktop bot mode uses. The target bot answers in its own
-     * profile chat; the sender's identity is embedded in the message. */
-    app.post('/api/bots/:id/dm', async (request, reply) => {
-      const parsed = dmSchema.safeParse(request.body);
-      if (!parsed.success)
-        return reply
-          .code(400)
-          .send({ error: 'invalid_request', message: 'A message text and a target bot are required.' });
-      const { id } = request.params as { id: string };
-      const sender = await service.get(id);
-      if (!sender) return notFound(reply);
-      const senderName = sender.bot.name;
-      const prompt = `[Von @${senderName}]: ${parsed.data.text}`;
+  /** Bot↔Bot DM: hand a message to another bot's own chat via the CLI
+   * handoff (`hermes -p <target> chat --in <dir> -q …`), the same mechanism
+   * the Hermes desktop bot mode uses. The target bot answers in its own
+   * profile chat; the sender's identity is embedded in the message. */
+  app.post('/api/bots/:id/dm', async (request, reply) => {
+    const parsed = dmSchema.safeParse(request.body);
+    if (!parsed.success)
+      return reply.code(400).send({
+        error: 'invalid_request',
+        message: 'A message text and a target bot are required.',
+      });
+    const { id } = request.params as { id: string };
+    const sender = await service.get(id);
+    if (!sender) return notFound(reply);
+    const senderName = sender.bot.name;
+    const prompt = `[Von @${senderName}]: ${parsed.data.text}`;
 
-      // Fan-out: several targets at once. Each handoff runs in its own
-      // temp inbox; failures are collected per-bot instead of failing all.
-      const targets = parsed.data.toBotIds ?? (parsed.data.toBotId ? [parsed.data.toBotId] : []);
-      if (targets.length === 0)
-        return reply
-          .code(400)
-          .send({ error: 'invalid_request', message: 'A target bot is required.' });
-      const results = await Promise.all(
-        targets.map(async (toBotId) => {
-          const target = await service.get(toBotId);
-          if (!target) return { botId: toBotId, ok: false, error: 'not_found' };
-          const inboxDir = mkdtempSync(join(tmpdir(), 'cc-dm-'));
-          try {
-            const queryFile = join(inboxDir, 'msg.txt');
-            writeFileSync(queryFile, prompt, 'utf8');
-            const { stdout } = await execAsync(
-              `hermes -p ${shellQuote(target.bot.profileName)} chat --in ${shellQuote(inboxDir)} -q "$(cat ${shellQuote(queryFile)})"`,
-              { timeout: 120_000, maxBuffer: 4 * 1024 * 1024 },
-            );
-            // The CLI prints the agent's answer inside a box header/footer; the
-            // tail beyond it is resume hints. Extract the boxed answer if present.
-            const lines = stdout.split('\n').map((line) => line.trim()).filter(Boolean);
-            const boxStart = lines.findIndex((line) => line.includes('╭'));
-            const boxEnd = lines.findIndex((line) => line.includes('╰'));
-            const replyText =
-              boxStart >= 0 && boxEnd > boxStart
-                ? lines.slice(boxStart + 1, boxEnd).join(' ').replace(/\s+/g, ' ').trim()
-                : lines.slice(-4).join(' ');
-            return { botId: toBotId, botName: target.bot.name, ok: true, reply: replyText };
-          } catch (error) {
-            request.log.error({ err: error }, 'bot dm handoff failed');
-            return {
-              botId: toBotId,
-              botName: target.bot.name,
-              ok: false,
-              error: error instanceof Error ? error.message : 'DM handoff failed.',
-            };
-          } finally {
-            rmSync(inboxDir, { recursive: true, force: true });
-          }
-        }),
-      );
-      const failed = results.filter((r) => !r.ok);
-      if (results.length === 1 && failed.length === 1) {
-        service.recordActivity?.(
-          `DM @${senderName} → ${results[0]?.botName ?? '?'}`,
-          failed[0]?.error ?? 'DM handoff failed.',
-          { status: 'failed' },
-        );
-        return reply
-          .code(502)
-          .send({ error: 'dm_failed', message: failed[0]?.error ?? 'DM handoff failed.' });
-      }
+    // Fan-out: several targets at once. Each handoff runs in its own
+    // temp inbox; failures are collected per-bot instead of failing all.
+    const targets = parsed.data.toBotIds ?? (parsed.data.toBotId ? [parsed.data.toBotId] : []);
+    if (targets.length === 0)
+      return reply
+        .code(400)
+        .send({ error: 'invalid_request', message: 'A target bot is required.' });
+    const results = await Promise.all(
+      targets.map(async (toBotId) => {
+        const target = await service.get(toBotId);
+        if (!target) return { botId: toBotId, ok: false, error: 'not_found' };
+        const inboxDir = mkdtempSync(join(tmpdir(), 'cc-dm-'));
+        try {
+          const queryFile = join(inboxDir, 'msg.txt');
+          writeFileSync(queryFile, prompt, 'utf8');
+          const { stdout } = await execAsync(
+            `hermes -p ${shellQuote(target.bot.profileName)} chat --in ${shellQuote(inboxDir)} -q "$(cat ${shellQuote(queryFile)})"`,
+            { timeout: 120_000, maxBuffer: 4 * 1024 * 1024 },
+          );
+          // The CLI prints the agent's answer inside a box header/footer; the
+          // tail beyond it is resume hints. Extract the boxed answer if present.
+          const lines = stdout
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean);
+          const boxStart = lines.findIndex((line) => line.includes('╭'));
+          const boxEnd = lines.findIndex((line) => line.includes('╰'));
+          const replyText =
+            boxStart >= 0 && boxEnd > boxStart
+              ? lines
+                  .slice(boxStart + 1, boxEnd)
+                  .join(' ')
+                  .replace(/\s+/g, ' ')
+                  .trim()
+              : lines.slice(-4).join(' ');
+          return { botId: toBotId, botName: target.bot.name, ok: true, reply: replyText };
+        } catch (error) {
+          request.log.error({ err: error }, 'bot dm handoff failed');
+          return {
+            botId: toBotId,
+            botName: target.bot.name,
+            ok: false,
+            error: error instanceof Error ? error.message : 'DM handoff failed.',
+          };
+        } finally {
+          rmSync(inboxDir, { recursive: true, force: true });
+        }
+      }),
+    );
+    const failed = results.filter((r) => !r.ok);
+    if (results.length === 1 && failed.length === 1) {
       service.recordActivity?.(
-        `DM @${senderName} → ${results.map((r) => r.botName ?? r.botId).join(', ')}`,
-        results
-          .filter((r) => r.ok)
-          .map((r) => `${r.botName}: ${r.reply}`)
-          .join('\n') || 'keine erfolgreiche Antwort',
-        { status: failed.length > 0 ? 'failed' : 'completed' },
+        `DM @${senderName} → ${results[0]?.botName ?? '?'}`,
+        failed[0]?.error ?? 'DM handoff failed.',
+        { status: 'failed' },
       );
-      return { ok: failed.length === 0, results };
-    });
+      return reply
+        .code(502)
+        .send({ error: 'dm_failed', message: failed[0]?.error ?? 'DM handoff failed.' });
+    }
+    service.recordActivity?.(
+      `DM @${senderName} → ${results.map((r) => r.botName ?? r.botId).join(', ')}`,
+      results
+        .filter((r) => r.ok)
+        .map((r) => `${r.botName}: ${r.reply}`)
+        .join('\n') || 'keine erfolgreiche Antwort',
+      { status: failed.length > 0 ? 'failed' : 'completed' },
+    );
+    return { ok: failed.length === 0, results };
+  });
 }

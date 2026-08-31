@@ -448,7 +448,9 @@ function MaintenanceSection() {
 
         {/* Hermes Agent Update + Button */}
         <div className="card p-4 col-span-full">
-          <p className="text-xs text-[var(--color-ink-faint)]">{t('settings.hermesUpdate.title')}</p>
+          <p className="text-xs text-[var(--color-ink-faint)]">
+            {t('settings.hermesUpdate.title')}
+          </p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="font-mono text-sm text-[var(--color-ink)]">
               {update.data?.currentVersion ?? '—'}
@@ -494,9 +496,7 @@ function MaintenanceSection() {
               className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
             >
               <RefreshCw size={13} className={huRunning ? 'animate-spin' : ''} />
-              {huRunning
-                ? t('settings.update.button.running')
-                : t('settings.hermesUpdate.button')}
+              {huRunning ? t('settings.update.button.running') : t('settings.hermesUpdate.button')}
             </button>
           </div>
           {hu?.log && hu.status !== 'idle' && (
@@ -556,9 +556,7 @@ function MaintenanceSection() {
               className="flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-3 py-1.5 text-xs font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)]/20 disabled:opacity-40"
             >
               <RefreshCw size={13} className={suRunning ? 'animate-spin' : ''} />
-              {suRunning
-                ? t('settings.update.button.running')
-                : t('settings.update.button')}
+              {suRunning ? t('settings.update.button.running') : t('settings.update.button')}
             </button>
           </div>
           {su?.log && su.status !== 'idle' && (
