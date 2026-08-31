@@ -105,7 +105,7 @@ export function BotChatsPage() {
   const dmStrip =
     selected && bots.data ? (
       <div
-        className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed border-[var(--color-hairline)] bg-[var(--color-base)] p-2"
+        className="flex w-full min-w-0 flex-wrap items-center gap-2 rounded-xl border border-dashed border-[var(--color-hairline)] bg-[var(--color-base)] p-2"
         aria-label={t('bots.dmTargetLabel')}
       >
         <span className="px-1 text-xs font-medium text-[var(--color-ink-faint)]">
@@ -143,7 +143,7 @@ export function BotChatsPage() {
             if (event.key === 'Enter') void sendDm();
           }}
           placeholder={t('bots.dmPlaceholder')}
-          className="h-9 min-w-48 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 text-xs"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--color-hairline)] bg-[var(--color-base)] px-2 text-xs"
           aria-label={t('bots.dmPlaceholder')}
         />
         <button
@@ -254,17 +254,15 @@ export function BotChatsPage() {
 
   return (
     <>
-      {botPickerStrip && <div className="mx-auto max-w-[1600px] px-6 pb-0">{botPickerStrip}</div>}
+      <div className="mx-auto max-w-[1600px] space-y-3 px-6 pb-0">
+        {botPickerStrip}
+        {dmStrip}
+      </div>
       <ChatsPage
       key={selected.bot.id}
       title={`${t('bots.chatCenterTitle')} · ${selected.bot.name}`}
       description={t('bots.chatCenterDesc')}
-      actions={
-        <>
-          {dmStrip}
-          {newBotAction}
-        </>
-      }
+      actions={newBotAction}
       profileOverride={selected.bot.profileName}
       profileSelectable={false}
       botId={selected.bot.id}
