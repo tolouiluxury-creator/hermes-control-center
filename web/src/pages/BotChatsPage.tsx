@@ -254,7 +254,7 @@ export function BotChatsPage() {
 
   return (
     <>
-      <div className="mx-auto max-w-[1600px] space-y-3 px-6 pb-0">
+      <div className="sticky top-0 z-20 mx-auto max-w-[1600px] space-y-3 bg-[var(--color-base)] px-6 pb-3 pt-3">
         {botPickerStrip}
         {dmStrip}
       </div>
